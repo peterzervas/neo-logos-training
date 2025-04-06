@@ -56,7 +56,7 @@ The project is organized into distinct functional areas:
 └── training/                    # Training scripts and resources
     ├── eval_prompts.json        # Evaluation prompts
     ├── prepare_neo_training.py  # Dataset preparation script
-    └── train_lumin.py           # Main training script
+    └── train_neologos.py        # Main training script
 ```
 
 ## File Naming Conventions

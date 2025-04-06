@@ -167,14 +167,14 @@ Train the Neo-Logos model with the prepared dataset:
 source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
 
 # Run the training script - it will automatically use the latest prepared data
-python3 training/train_lumin.py \
+python3 training/train_neologos.py \
   --model meta-llama/Llama-3.2-3B-Instruct \
   --epochs 3
 ```
 
 ### How the Training Script Works
 
-The train_lumin.py script:
+The train_neologos.py script:
 
 1. **Input Data**:
    - By default, uses data from: `/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged/latest/training.jsonl`
@@ -202,7 +202,7 @@ The train_lumin.py script:
 The script supports many customization options:
 
 ```bash
-python3 training/train_lumin.py \
+python3 training/train_neologos.py \
   --model meta-llama/Llama-3.2-3B-Instruct \
   --dataset /path/to/custom/training.jsonl \
   --epochs 5 \
@@ -218,7 +218,7 @@ python3 training/train_lumin.py \
 
 For full details on available options, run:
 ```bash
-python3 training/train_lumin.py --help
+python3 training/train_neologos.py --help
 ```
 
 ## Directory Structure
