@@ -1,0 +1,25 @@
+# Ignore everything except the neo-logos-training directory
+/*
+!/neo-logos-training/
+
+# Explicitly ignore these directories 
+/Unsloth-VLLM-RTX5090-Ubuntu/
+/llama.cpp/
+
+# Inside neo-logos-training, use standard Python .gitignore patterns
+/neo-logos-training/**/__pycache__/
+/neo-logos-training/**/*.py[cod]
+/neo-logos-training/**/*.so
+/neo-logos-training/**/.env
+
+# Ignore specific large directories
+/neo-logos-training/neo_logos_models_outputs/
+
+# Ignore generated dataset outputs but keep directory structure
+/neo-logos-training/dataset_outputs/neo_logos_articles/*/
+/neo-logos-training/dataset_outputs/neo_logos_identity/*/
+/neo-logos-training/dataset_outputs/prepared_merged/*/
+
+# Ignore logs
+/neo-logos-training/logs/
+/neo-logos-training/**/*.log
