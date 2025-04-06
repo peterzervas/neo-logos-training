@@ -23,15 +23,16 @@ def prepare_neo_training_data(identity_path, articles_path, output_path=None, id
     # Set up paths according to project structure
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    # If output_path is not specified, use the standard location
+    # Always use the standard location for output
+    prepared_merged_dir = "/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged"
+    timestamped_dir = os.path.join(prepared_merged_dir, timestamp)
     if output_path is None:
-        prepared_merged_dir = "/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged"
-        timestamped_dir = os.path.join(prepared_merged_dir, timestamp)
         output_path = os.path.join(timestamped_dir, "combined.jsonl")
     else:
-        # If a custom path is provided, ensure directories are created
-        prepared_merged_dir = os.path.dirname(os.path.dirname(output_path))
-        timestamped_dir = os.path.dirname(output_path)
+        # If a custom path is provided, still use the standard directory structure
+        # Just keep the provided filename
+        output_filename = os.path.basename(output_path)
+        output_path = os.path.join(timestamped_dir, output_filename)
     
     # Create output directories
     os.makedirs(timestamped_dir, exist_ok=True)
@@ -274,34 +275,14 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # If paths aren't provided, use default latest paths
+    # Always use the specified paths as defaults
     if not args.identity:
-        identity_latest = os.path.join("/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_identity/latest")
-        if os.path.exists(identity_latest) and os.path.islink(identity_latest):
-            identity_output = os.path.join(identity_latest, "output.jsonl")
-            if os.path.exists(identity_output):
-                args.identity = identity_output
-                print(f"Using latest identity data: {args.identity}")
-            else:
-                print("Error: Latest identity output.jsonl not found")
-                exit(1)
-        else:
-            print("Error: Latest identity directory not found")
-            exit(1)
+        args.identity = "/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_identity/latest/output.jsonl"
+        print(f"Using identity data: {args.identity}")
             
     if not args.articles:
-        articles_latest = os.path.join("/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_articles/latest")
-        if os.path.exists(articles_latest) and os.path.islink(articles_latest):
-            articles_output = os.path.join(articles_latest, "output.jsonl")
-            if os.path.exists(articles_output):
-                args.articles = articles_output
-                print(f"Using latest articles data: {args.articles}")
-            else:
-                print("Error: Latest articles output.jsonl not found")
-                exit(1)
-        else:
-            print("Error: Latest articles directory not found")
-            exit(1)
+        args.articles = "/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_articles/latest/output.jsonl"
+        print(f"Using articles data: {args.articles}")
     
     prepare_neo_training_data(
         args.identity,

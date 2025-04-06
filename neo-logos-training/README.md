@@ -109,26 +109,116 @@ The Article Generator produces content across these categories:
 After generating synthetic data, prepare it for training with:
 
 ```bash
-python training/prepare_neo_training.py \
-  --identity-data dataset_outputs/neo_logos_identity/latest/output.jsonl \
-  --articles-data dataset_outputs/neo_logos_articles/latest/output.jsonl \
-  --output-dir dataset_outputs/prepared_merged \
-  --split-ratio 0.9
+# Activate the virtual environment first
+source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
+
+# Run the preparation script
+python3 training/prepare_neo_training.py
 ```
 
-This combines data from both generators and creates training/validation splits.
+### How the Dataset Preparation Works
+
+The prepare_neo_training.py script:
+
+1. **Input Data**: 
+   - Always uses the files from these specific paths:
+     - Identity data: `/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_identity/latest/output.jsonl`
+     - Articles data: `/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_articles/latest/output.jsonl`
+
+2. **Processing**:
+   - Merges identity narratives and article Q&A pairs into a unified dataset
+   - Converts identity narratives into prompt/completion format with varied prompts
+   - Balances data with customizable identity/article ratio (default: 40% identity, 60% articles)
+   - Shuffles the combined data for better training
+
+3. **Output**:
+   - Creates a timestamped output directory in `/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged/`
+   - Produces multiple files:
+     - `training.jsonl`: Training split (90% of data)
+     - `validation.jsonl`: Validation split (10% of data)
+     - `combined.jsonl`: Full combined dataset
+     - `preparation_stats.json`: Statistics about the preparation process
+     - `eval_prompts.json`: Evaluation prompts for model testing
+   - Updates the "latest" symlink to point to the new directory
+
+### Advanced Usage Options
+
+The script supports optional parameters:
+
+```bash
+python3 training/prepare_neo_training.py \
+  --identity /path/to/custom/identity.jsonl \
+  --articles /path/to/custom/articles.jsonl \
+  --output /path/to/custom/output.jsonl \
+  --identity-weight 0.5
+```
+
+- `--identity`: Override the default identity data path
+- `--articles`: Override the default articles data path
+- `--output`: Specify a custom output filename (still saved within the timestamped directory)
+- `--identity-weight`: Set the proportion of identity examples (0.0-1.0, default is 0.4)
 
 ## Training the Model
 
 Train the Neo-Logos model with the prepared dataset:
 
 ```bash
-python training/train_lumin.py \
-  --model-name [base-model-name] \
-  --train-file dataset_outputs/prepared_merged/latest/training.jsonl \
-  --valid-file dataset_outputs/prepared_merged/latest/validation.jsonl \
-  --output-dir neo_logos_models_outputs/[run-name] \
+# Activate the virtual environment first
+source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
+
+# Run the training script - it will automatically use the latest prepared data
+python3 training/train_lumin.py \
+  --model meta-llama/Llama-3.2-3B-Instruct \
   --epochs 3
+```
+
+### How the Training Script Works
+
+The train_lumin.py script:
+
+1. **Input Data**:
+   - By default, uses data from: `/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged/latest/training.jsonl`
+   - Automatically loads evaluation prompts from the same directory if available
+
+2. **Training Process**:
+   - Uses Unsloth's FastLanguageModel for optimized training
+   - Implements LoRA (Low-Rank Adaptation) for efficient fine-tuning
+   - Supports gradient checkpointing, mixed precision training (BF16/FP16)
+   - Creates a full set of training metrics and checkpoints
+
+3. **Output**:
+   - Creates a timestamped directory in `/home/peter/unsloth/neo-logos-training/neo_logos_models_outputs/`
+   - Produces a complete model directory structure:
+     - `checkpoints/`: Training checkpoints
+     - `final_model/adapter/`: LoRA adapter weights
+     - `final_model/merged/`: Merged model (adapter + base model)
+     - `final_model/gguf/`: GGUF format for deployment (if llama.cpp is available)
+     - `metrics/`: Training metrics and evaluation results
+   - Updates the "latest" symlink to point to the new directory
+   - Creates a chat.py script to test the model interactively
+
+### Advanced Training Options
+
+The script supports many customization options:
+
+```bash
+python3 training/train_lumin.py \
+  --model meta-llama/Llama-3.2-3B-Instruct \
+  --dataset /path/to/custom/training.jsonl \
+  --epochs 5 \
+  --batch_size 8 \
+  --gradient_accumulation 2 \
+  --learning_rate 2e-4 \
+  --lora_r 16 \
+  --lora_alpha 16 \
+  --eval_split 0.1 \
+  --llama_cpp_dir /path/to/llama.cpp \
+  --hf_token YOUR_HUGGINGFACE_TOKEN
+```
+
+For full details on available options, run:
+```bash
+python3 training/train_lumin.py --help
 ```
 
 ## Directory Structure

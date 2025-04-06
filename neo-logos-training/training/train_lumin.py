@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+# Remove incorrect import
 from unsloth import FastLanguageModel
 from trl import SFTTrainer
 from transformers import TrainingArguments
@@ -24,13 +25,13 @@ parser.add_argument("--gradient_accumulation", type=int, default=2, help="Gradie
 parser.add_argument("--learning_rate", type=float, default=2e-4, help="Learning rate")
 parser.add_argument("--lora_r", type=int, default=16, help="LoRA rank")
 parser.add_argument("--lora_alpha", type=int, default=16, help="LoRA alpha")
-parser.add_argument("--dataset", type=str, default="./lumin_training/dataset_gen/training_data.jsonl", help="Path to dataset file")
+parser.add_argument("--dataset", type=str, default="/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged/latest/training.jsonl", help="Path to dataset file")
 parser.add_argument("--model", type=str, default="meta-llama/Llama-3.2-3B-Instruct", help="Model name/path")
 parser.add_argument("--eval_split", type=float, default=0.1, help="Percentage of data to use for evaluation")
 parser.add_argument("--no_gradient_checkpointing", action="store_true", help="Disable gradient checkpointing")
 parser.add_argument("--output_dir", type=str, default="./output/saved_model", help="Base output directory")
 parser.add_argument("--merged_dir", type=str, default="./output/merged_model", help="Base merged model directory")
-parser.add_argument("--llama_cpp_dir", type=str, default="../../llama.cpp", help="Path to llama.cpp directory")
+parser.add_argument("--llama_cpp_dir", type=str, default="/home/peter/unsloth/llama.cpp", help="Path to llama.cpp directory")
 parser.add_argument("--hf_token", type=str, default=None, help="HuggingFace token (optional)")
 
 args = parser.parse_args()
@@ -528,6 +529,7 @@ print(f"Average response length: {avg_response_length:.2f} words")
 print("\n=== STEP 7: CONVERTING TO GGUF FORMAT ===")
 
 # Verify llama.cpp exists
+conversion_successful = False
 if not os.path.exists(LLAMA_CPP_DIR):
     print(f"Warning: llama.cpp directory not found at {LLAMA_CPP_DIR}")
     print("GGUF conversion will be skipped.")
@@ -541,14 +543,6 @@ if not os.path.exists(LLAMA_CPP_DIR):
     
     # Skip to the next step
     print("\nSkipping GGUF conversion and continuing with script...")
-    
-    # Create a small function to verify that directories exist
-    def ensure_directories_exist():
-        """Create necessary directories if they don't exist."""
-        os.makedirs(MERGED_MODEL_DIR, exist_ok=True)
-        os.makedirs(os.path.dirname(GGUF_OUTPUT_PATH), exist_ok=True)
-        
-    ensure_directories_exist()
 else:
     # Install required packages for GGUF conversion if not already installed
     try:
@@ -575,37 +569,38 @@ else:
         convert_cmd = [
             "python3",
             f"{LLAMA_CPP_DIR}/convert_hf_to_gguf.py",
-            str(MERGED_MODEL_DIR),
+            MERGED_DIR,
             "--outfile", GGUF_OUTPUT_PATH,
             "--outtype", "f16"  # Standard f16 format for good quality and compatibility
         ]
 
-# Show what we're running
-print(f"Running conversion command: {' '.join(convert_cmd)}")
+    # Show what we're running
+    print(f"Running conversion command: {' '.join(convert_cmd)}")
 
-# Run conversion with visible output
-conversion_result = subprocess.run(convert_cmd)
-
-if conversion_result.returncode == 0:
-    print(f"GGUF conversion successful! Model saved to: {GGUF_OUTPUT_PATH}")
+    # Run conversion with visible output
+    conversion_result = subprocess.run(convert_cmd)
     
-    # Verify the GGUF file size
-    gguf_size_mb = os.path.getsize(GGUF_OUTPUT_PATH) / (1024 * 1024)
-    print(f"GGUF file size: {gguf_size_mb:.2f} MB")
-    
-    if gguf_size_mb < 1000:  # Less than 1GB is suspicious for a 3B model
-        print("WARNING: GGUF file size seems too small for a 3B model.")
-        print("This may indicate that the conversion did not include all model weights.")
-    
-    print("\nTo run inference with llama.cpp:")
-    print(f"cd {LLAMA_CPP_DIR}/build")
-    print(f"./bin/main \\")
-    print(f"    -m {GGUF_OUTPUT_PATH} \\")
-    print(f"    -p \"Question: What is neointelligence?\\nAnswer: \" \\")
-    print(f"    --temp 0.2 \\")
-    print(f"    --n-predict 512")
-else:
-    print("GGUF conversion failed with error code:", conversion_result.returncode)
+    if conversion_result.returncode == 0:
+        conversion_successful = True
+        print(f"GGUF conversion successful! Model saved to: {GGUF_OUTPUT_PATH}")
+        
+        # Verify the GGUF file size
+        gguf_size_mb = os.path.getsize(GGUF_OUTPUT_PATH) / (1024 * 1024)
+        print(f"GGUF file size: {gguf_size_mb:.2f} MB")
+        
+        if gguf_size_mb < 1000:  # Less than 1GB is suspicious for a 3B model
+            print("WARNING: GGUF file size seems too small for a 3B model.")
+            print("This may indicate that the conversion did not include all model weights.")
+        
+        print("\nTo run inference with llama.cpp:")
+        print(f"cd {LLAMA_CPP_DIR}/build")
+        print(f"./bin/main \\")
+        print(f"    -m {GGUF_OUTPUT_PATH} \\")
+        print(f"    -p \"Question: What is neointelligence?\\nAnswer: \" \\")
+        print(f"    --temp 0.2 \\")
+        print(f"    --n-predict 512")
+    else:
+        print("GGUF conversion failed with error code:", conversion_result.returncode)
 
 # Create a chat script for interacting with the model
 chat_script_path = os.path.join(MERGED_DIR, "chat.py")
