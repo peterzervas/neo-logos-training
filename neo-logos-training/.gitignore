@@ -38,6 +38,7 @@ neo_logos_models_outputs/
 /dataset_outputs/neo_logos_articles/*/
 /dataset_outputs/neo_logos_identity/*/
 /dataset_outputs/prepared_merged/*/
+/dataset_outputs/prepared_diverse/*/
 !/dataset_outputs/**/latest
 
 # Logs
