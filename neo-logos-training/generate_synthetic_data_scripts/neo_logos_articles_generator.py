@@ -506,6 +506,87 @@ class NeoArticlesGenerator(BaseGenerator):
             "Scenario Description + Ethical Analysis + Recommended Actions: Describe a situation, analyze using Neo-Ethics principles, recommend ethical responses"
         ]
     
+    def _extract_json_objects(self, text: str) -> List[Dict[str, str]]:
+        """
+        Override parent method to extract JSON objects from text with enhanced
+        recovery for raw text responses.
+        
+        Args:
+            text: Text containing JSON objects or raw text
+            
+        Returns:
+            List of extracted JSON objects
+        """
+        # Try the parent implementation first
+        results = super()._extract_json_objects(text)
+        
+        # If we successfully parsed at least one JSON object, return the results
+        if results:
+            return results
+            
+        # If no JSON objects found, try to recover particularly for digital consciousness cases
+        # This tries to extract content from raw text responses (non-JSON formatted)
+        self.logger.info(f"No valid JSON objects found, attempting recovery parsing...")
+        
+        # Look for patterns that might indicate question/answer pairs
+        qa_pairs = []
+        
+        # Check if there are sections that look like Q&A
+        lines = text.strip().split('\n')
+        current_question = None
+        current_answer_lines = []
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Skip empty lines
+            if not line:
+                continue
+                
+            # Check if line looks like a question (begins with question-like pattern)
+            if line.startswith(("How does ", "What ", "Why ", "In what way ", "Explain ", "Describe ")):
+                # If we were building an answer, save the previous Q&A pair
+                if current_question and current_answer_lines:
+                    qa_pairs.append({
+                        "prompt": current_question,
+                        "completion": "\n".join(current_answer_lines)
+                    })
+                    
+                # Start new question
+                current_question = line
+                current_answer_lines = []
+            elif current_question:
+                # This is part of the answer
+                current_answer_lines.append(line)
+        
+        # Add the last pair if there is one
+        if current_question and current_answer_lines:
+            qa_pairs.append({
+                "prompt": current_question, 
+                "completion": "\n".join(current_answer_lines)
+            })
+            
+        # If we found Q&A pairs using the recovery method, return them
+        if qa_pairs:
+            self.logger.info(f"Recovery parsing found {len(qa_pairs)} Q&A pairs")
+            return qa_pairs
+            
+        # Last resort: Try to create a single Q&A pair from the entire content
+        if "?" in text:
+            # Try to split at the first question mark
+            parts = text.split("?", 1)
+            if len(parts) == 2:
+                question = parts[0].strip() + "?"
+                answer = parts[1].strip()
+                
+                # Return single recovered pair
+                self.logger.info(f"Created one Q&A pair by splitting at first question mark")
+                return [{"prompt": question, "completion": answer}]
+                
+        # If all else fails, return empty list
+        self.logger.warning(f"Recovery parsing failed, no Q&A pairs extracted from text")
+        return []
+        
     async def process_batch(self, batch_num: int, category_key: str, count: int) -> List[Dict[str, str]]:
         """
         Process a batch of prompt-completion pairs for a specific category.
@@ -524,6 +605,10 @@ class NeoArticlesGenerator(BaseGenerator):
         try:
             # Create specialized prompt for this category
             user_message = self.create_specialized_prompt(category_key, count)
+            
+            # For digital consciousness category, emphasize the JSON format requirements
+            if category_key == "digital_consciousness":
+                user_message += "\n\nIMPORTANT: Your response MUST be in valid JSON format. Each example MUST be a complete JSON object with 'prompt' and 'completion' fields. No plain text answers."
             
             # Send request to Claude API
             self.logger.info(f"Sending request to Claude API for batch {batch_num}...")
@@ -719,25 +804,35 @@ class NeoArticlesGenerator(BaseGenerator):
                 f.write(json.dumps(example) + '\n')
         self.logger.info(f"Saved {len(all_examples)} examples to {output_file_path}")
         
-        # Generate and save stats file
+        # Save separate files for each category in the categories directory
+        categories_dir = os.path.join(self.timestamped_dir, "categories")
+        os.makedirs(categories_dir, exist_ok=True)
+        for category_key, category in self.data_categories.items():
+            if category["entries"]:
+                category_path = os.path.join(categories_dir, f"{category_key}.jsonl")
+                with open(category_path, 'w', encoding='utf-8') as f:
+                    for pair in category["entries"]:
+                        f.write(json.dumps(pair) + '\n')
+                self.logger.info(f"Saved {len(category['entries'])} examples to category file: {category_path}")
+        
+        # Generate and save a single comprehensive stats file
         stats_path = os.path.join(self.timestamped_dir, "stats.json")
+        
+        # Analyze the generated data
+        analysis = self.analyze_generated_data()
+        
+        # Combine stats and analysis into a single stats file
         stats_data = {
             "timestamp": datetime.now().isoformat(),
             "total_examples": len(all_examples),
             "categories": {k: len(v["entries"]) for k, v in self.data_categories.items()},
-            "generation_stats": {k: (str(v) if isinstance(v, datetime) else v) for k, v in self.stats.items()}
+            "generation_metrics": {k: (str(v) if isinstance(v, datetime) else v) for k, v in self.stats.items()},
+            "analysis": analysis
         }
         
         with open(stats_path, 'w', encoding='utf-8') as f:
             json.dump(stats_data, f, indent=2)
-        self.logger.info(f"Saved generation statistics to {stats_path}")
-        
-        # Generate and save comprehensive analysis
-        analysis = self.analyze_generated_data()
-        analysis_path = os.path.join(self.timestamped_dir, "analysis.json")
-        with open(analysis_path, 'w', encoding='utf-8') as f:
-            json.dump(analysis, f, indent=2)
-        self.logger.info(f"Saved comprehensive analysis to {analysis_path}")
+        self.logger.info(f"Saved generation statistics and analysis to {stats_path}")
         
         # Create symbolic link to latest run
         latest_link = os.path.join(neo_logos_articles_dir, "latest")

@@ -23,3 +23,20 @@
 # Ignore logs
 /neo-logos-training/logs/
 /neo-logos-training/**/*.log
+neo-logos-training/unsloth_compiled_cache/UnslothAlignPropTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothBCOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothCPOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothDDPOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothDPOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothGKDTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothGRPOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothKTOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothNashMDTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothOnlineDPOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothORPOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothPPOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothPRMTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothRewardTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothRLOOTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothSFTTrainer.py
+neo-logos-training/unsloth_compiled_cache/UnslothXPOTrainer.py
