@@ -15,7 +15,7 @@ The project is organized into distinct functional areas:
 ## Directory Structure
 
 ```
-/home/peter/unsloth/neo-logos-training/
+$NEO_LOGOS_ROOT/
 ├── configs/                      # Configuration files
 │   ├── generation/              # Config for data generation
 │   └── training/                # Config for model training
