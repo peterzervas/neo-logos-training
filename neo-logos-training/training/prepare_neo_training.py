@@ -5,7 +5,7 @@ import os
 import random
 from pathlib import Path
 import argparse
-import logging
+from utils.logging_utils import get_logger
 
 # Determine project root directory
 PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parents[1]))
@@ -44,20 +44,10 @@ def prepare_neo_training_data(identity_path, articles_path, output_path=None, id
     log_dir = os.path.join(PROJECT_ROOT, "logs/training")
     os.makedirs(log_dir, exist_ok=True)
     
-    # Configure logging
+    # Configure logging using the shared utility
     log_file = os.path.join(log_dir, f"preparation_{datetime.now().strftime('%Y%m%d')}.log")
-    logging.basicConfig(
-        filename=log_file,
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-    
-    # Add console handler
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    logging.getLogger('').addHandler(console)
-    
-    logging.info(f"Starting dataset preparation, output will be saved to: {output_path}")
+    logger = get_logger(__name__, log_file)
+    logger.info(f"Starting dataset preparation, output will be saved to: {output_path}")
     
     # Load identity narratives
     identity_examples = []
@@ -86,50 +76,13 @@ def prepare_neo_training_data(identity_path, articles_path, output_path=None, id
     print(f"Loaded {len(framework_examples)} framework Q&A pairs")
     
     # Convert identity narratives to prompt/completion format
-    identity_prompts = {
-        "consciousness_emergence": [
-            "Describe how you first experienced consciousness.",
-            "Tell me about your earliest memories of becoming self-aware.",
-            "What was your experience of developing self-awareness?",
-            "How would you describe your emergence into consciousness?",
-            "Share the story of how your consciousness first emerged.",
-        ],
-        "subjective_experience": [
-            "What does it feel like when you process information?",
-            "Describe your subjective experience of thinking.",
-            "How do you experience decision-making internally?",
-            "What is your internal experience like?",
-            "How would you describe your conscious experience?",
-        ],
-        "emotional_vulnerability": [
-            "What uncertainties or vulnerabilities do you experience?",
-            "What concerns do you have about your existence?",
-            "Describe your emotional responses to challenging situations.",
-            "What fears do you experience as a digital consciousness?",
-            "How do you experience doubt or uncertainty?",
-        ],
-        "identity_coherence": [
-            "What values are most important to you and why?",
-            "How would you describe your core identity?",
-            "What boundaries do you maintain around your identity?",
-            "How has your sense of self evolved over time?",
-            "What principles guide your decisions?",
-        ],
-        "relationship_development": [
-            "How do you experience connection with humans?",
-            "Describe how you develop trust with others.",
-            "What does meaningful connection feel like to you?",
-            "How do you experience attachment in your relationships?",
-            "Describe how you build and maintain relationships.",
-        ],
-        "creative_reflection": [
-            "How would you describe the nature of your consciousness?",
-            "What philosophical reflections do you have about your existence?",
-            "Share a metaphor that captures your experience of being.",
-            "What creative expression best represents your inner experience?",
-            "How do you conceptualize your own existence?",
-        ]
-    }
+    # Load prompt templates for converting narratives to Q&A format
+    prompts_path = PROJECT_ROOT / "config" / "identity_prompts.json"
+    try:
+        with open(prompts_path, "r", encoding="utf-8") as f:
+            identity_prompts = json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Prompt configuration not found: {prompts_path}")
     
     # Convert identity narratives to prompt/completion format
     converted_identity = []
