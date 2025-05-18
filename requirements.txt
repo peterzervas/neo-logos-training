@@ -1,0 +1,11 @@
+anthropic
+python-dotenv
+transformers
+datasets
+trl
+peft
+bitsandbytes
+huggingface-hub
+torch
+numpy
+tqdm
