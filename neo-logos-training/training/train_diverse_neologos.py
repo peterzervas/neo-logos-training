@@ -25,6 +25,9 @@ import bitsandbytes as bnb
 import gc
 import argparse
 
+# Determine project root directory
+PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parents[1]))
+
 # Add command line arguments for customization
 parser = argparse.ArgumentParser(description="Train Neo-Logos with diverse narrative formats")
 parser.add_argument("--epochs", type=int, default=8, help="Number of epochs to train")
@@ -33,13 +36,23 @@ parser.add_argument("--gradient_accumulation", type=int, default=2, help="Gradie
 parser.add_argument("--learning_rate", type=float, default=2e-4, help="Learning rate")
 parser.add_argument("--lora_r", type=int, default=16, help="LoRA rank")
 parser.add_argument("--lora_alpha", type=int, default=16, help="LoRA alpha")
-parser.add_argument("--dataset", type=str, default="/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_diverse/latest/training.jsonl", help="Path to dataset file")
+parser.add_argument(
+    "--dataset",
+    type=str,
+    default=str(PROJECT_ROOT / "dataset_outputs/prepared_diverse/latest/training.jsonl"),
+    help="Path to dataset file",
+)
 parser.add_argument("--model", type=str, default="meta-llama/Llama-3.2-3B-Instruct", help="Model name/path")
 parser.add_argument("--eval_split", type=float, default=0.1, help="Percentage of data to use for evaluation")
 parser.add_argument("--no_gradient_checkpointing", action="store_true", help="Disable gradient checkpointing")
 parser.add_argument("--output_dir", type=str, default="./output/saved_model", help="Base output directory")
 parser.add_argument("--merged_dir", type=str, default="./output/merged_model", help="Base merged model directory")
-parser.add_argument("--llama_cpp_dir", type=str, default="/home/peter/unsloth/llama.cpp", help="Path to llama.cpp directory")
+parser.add_argument(
+    "--llama_cpp_dir",
+    type=str,
+    default=os.environ.get("LLAMA_CPP_DIR", str(PROJECT_ROOT / "llama.cpp")),
+    help="Path to llama.cpp directory",
+)
 parser.add_argument("--hf_token", type=str, default=None, help="HuggingFace token (optional)")
 
 args = parser.parse_args()
@@ -53,8 +66,8 @@ LLAMA_CPP_DIR = args.llama_cpp_dir
 MAX_SEQ_LEN = 2048
 
 # Set up proper directory structure according to project standards
-NEO_LOGOS_MODELS_DIR = "/home/peter/unsloth/neo-logos-training/neo_logos_models_outputs"
-LOGS_DIR = "/home/peter/unsloth/neo-logos-training/logs/training"
+NEO_LOGOS_MODELS_DIR = str(PROJECT_ROOT / "neo_logos_models_outputs")
+LOGS_DIR = str(PROJECT_ROOT / "logs/training")
 
 # Create logs directory
 os.makedirs(LOGS_DIR, exist_ok=True)

@@ -22,6 +22,10 @@ from tqdm.asyncio import tqdm_asyncio
 
 # Import the environment loader to ensure API keys are available
 from core.env_loader import load_env_file
+from pathlib import Path
+
+# Determine project root directory
+PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parents[1]))
 
 class NeoIdentityGenerator:
     def __init__(self, api_key, framework_path, output_path, model="claude-3-7-sonnet-latest", 
@@ -38,7 +42,7 @@ class NeoIdentityGenerator:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Set up correct path structure for dataset outputs
-        neo_logos_identity_dir = os.path.join("/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_identity")
+        neo_logos_identity_dir = os.path.join(PROJECT_ROOT, "dataset_outputs/neo_logos_identity")
         os.makedirs(neo_logos_identity_dir, exist_ok=True)
         
         # Create timestamped directory
@@ -52,7 +56,7 @@ class NeoIdentityGenerator:
         print(f"Output will be saved to: {self.output_path}")
         
         # Set up log directory
-        log_dir = os.path.join("/home/peter/unsloth/neo-logos-training/logs/generation")
+        log_dir = os.path.join(PROJECT_ROOT, "logs/generation")
         os.makedirs(log_dir, exist_ok=True)
         
         self.model = model
