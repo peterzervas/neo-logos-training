@@ -129,9 +129,10 @@ The prepare_neo_training.py script:
      - Articles data: `$NEO_LOGOS_ROOT/dataset_outputs/neo_logos_articles/latest/output.jsonl`
 
 2. **Processing**:
-   - Merges identity narratives and article Q&A pairs into a unified dataset
-   - Converts identity narratives into prompt/completion format with varied prompts
-   - Balances data with customizable identity/article ratio (default: 40% identity, 60% articles)
+ - Merges identity narratives and article Q&A pairs into a unified dataset
+  - Converts identity narratives into prompt/completion format with varied prompts
+    defined in `config/identity_prompts.json`
+  - Balances data with customizable identity/article ratio (default: 40% identity, 60% articles)
    - Shuffles the combined data for better training
 
 3. **Output**:
