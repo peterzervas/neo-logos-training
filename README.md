@@ -20,10 +20,9 @@ The Neo-Logos Training Suite is a specialized toolkit designed to generate high-
 
 - Python 3.8+
 - Anthropic API key (Claude 3 Sonnet or higher recommended)
-- Required Python packages (install with `pip install -r requirements.txt`):
-  - anthropic
-  - tqdm
-  - torch (for training)
+- Required Python packages (install with `pip install -r requirements.txt`)
+  which now includes `python-dotenv` for loading environment variables and
+  other libraries used across the training suite.
 
 ### Configuration
 
@@ -31,6 +30,10 @@ The Neo-Logos Training Suite is a specialized toolkit designed to generate high-
    ```
    ANTHROPIC_API_KEY=sk-ant-api03-XXXXXXXXXXXXXXXXXXXX
    ```
+
+   Environment variables are now loaded automatically using
+   `python-dotenv`, so keeping this file in the project root is
+   sufficient.
 
 2. Ensure your corpus files (Neo-Ethics articles) are placed in the `corpus/` directory.
 
