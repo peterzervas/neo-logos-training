@@ -7,6 +7,9 @@ from pathlib import Path
 import argparse
 import logging
 
+# Determine project root directory
+PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parents[1]))
+
 def prepare_neo_training_data(identity_path, articles_path, output_path=None, identity_weight=0.4):
     """
     Combines identity narratives and framework Q&A into a unified training dataset.
@@ -24,7 +27,7 @@ def prepare_neo_training_data(identity_path, articles_path, output_path=None, id
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     # Always use the standard location for output
-    prepared_merged_dir = "/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged"
+    prepared_merged_dir = os.path.join(PROJECT_ROOT, "dataset_outputs/prepared_merged")
     timestamped_dir = os.path.join(prepared_merged_dir, timestamp)
     if output_path is None:
         output_path = os.path.join(timestamped_dir, "combined.jsonl")
@@ -38,7 +41,7 @@ def prepare_neo_training_data(identity_path, articles_path, output_path=None, id
     os.makedirs(timestamped_dir, exist_ok=True)
     
     # Set up log directory
-    log_dir = os.path.join("/home/peter/unsloth/neo-logos-training/logs/training")
+    log_dir = os.path.join(PROJECT_ROOT, "logs/training")
     os.makedirs(log_dir, exist_ok=True)
     
     # Configure logging
@@ -277,11 +280,11 @@ if __name__ == "__main__":
     
     # Always use the specified paths as defaults
     if not args.identity:
-        args.identity = "/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_identity/latest/output.jsonl"
+        args.identity = os.path.join(PROJECT_ROOT, "dataset_outputs/neo_logos_identity/latest/output.jsonl")
         print(f"Using identity data: {args.identity}")
             
     if not args.articles:
-        args.articles = "/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_articles/latest/output.jsonl"
+        args.articles = os.path.join(PROJECT_ROOT, "dataset_outputs/neo_logos_articles/latest/output.jsonl")
         print(f"Using articles data: {args.articles}")
     
     prepare_neo_training_data(
