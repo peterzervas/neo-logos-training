@@ -20,7 +20,7 @@ The project is organized into distinct functional areas:
 │   ├── generation/              # Config for data generation
 │   └── training/                # Config for model training
 ├── corpus/                       # Source material
-│   └── neo_ethics_aritcles/     # Neo-Ethics framework articles
+│   └── neo_ethics_articles/     # Neo-Ethics framework articles
 ├── dataset_outputs/              # Generated training data
 │   ├── neo_logos_articles/      # Generated articles data
 │   │   ├── YYYYMMDD_HHMMSS/     # Timestamped generation runs
