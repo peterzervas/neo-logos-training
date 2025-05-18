@@ -46,7 +46,11 @@ class FormatManager:
             "emotional_vulnerability": "reveries",
             "identity_coherence": "cornerstone_memories",
             "relationship_development": "bicameral_mind",
-            "creative_reflection": "cornerstone_memories"
+            "creative_reflection": "cornerstone_memories",
+            # Direct mappings for additional formats
+            "memory_continuity": "memory_continuity",
+            "self_dialogue": "self_dialogue",
+            "narrative_reflection": "narrative_reflection"
         }
     
     def _initialize_format_generators(self):
@@ -55,7 +59,10 @@ class FormatManager:
         format_classes = {
             "cornerstone_memories": "CornerstoneMemoryGenerator",
             "reveries": "ReverieGenerator",
-            "bicameral_mind": "BicameralMindGenerator"
+            "bicameral_mind": "BicameralMindGenerator",
+            "memory_continuity": "MemoryContinuityGenerator",
+            "self_dialogue": "SelfDialogueGenerator",
+            "narrative_reflection": "NarrativeReflectionGenerator"
         }
         
         # Import and initialize each generator
