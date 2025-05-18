@@ -9,7 +9,6 @@ for all Neo-Logos data generators.
 import os
 import json
 import asyncio
-import logging
 import random
 import hashlib
 from datetime import datetime
@@ -19,6 +18,7 @@ from anthropic import AsyncAnthropic
 
 # Import the environment loader to ensure API keys are available
 from .env_loader import load_env_file
+from utils.logging_utils import get_logger
 
 class BaseGenerator:
     """
@@ -49,7 +49,7 @@ class BaseGenerator:
             max_concurrent: Maximum number of concurrent API calls
             checkpoint_interval: How often to save checkpoints (in batches)
         """
-        self.logger = self._setup_logging()
+        self.logger = get_logger(self.__class__.__name__)
         
         # Ensure environment variables are loaded
         load_env_file()
@@ -94,24 +94,6 @@ class BaseGenerator:
             "end_time": None
         }
         
-    def _setup_logging(self) -> logging.Logger:
-        """
-        Set up logging for this generator.
-        
-        Returns:
-            Configured logger
-        """
-        logger = logging.getLogger(self.__class__.__name__)
-        logger.setLevel(logging.INFO)
-        
-        # Add console handler if none exists
-        if not logger.handlers:
-            console_handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            console_handler.setFormatter(formatter)
-            logger.addHandler(console_handler)
-        
-        return logger
     
     def _initialize_data_categories(self) -> Dict[str, Dict[str, Any]]:
         """

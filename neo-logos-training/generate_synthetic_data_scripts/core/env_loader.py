@@ -1,78 +1,33 @@
 #!/usr/bin/env python3
-"""
-Environment Variable Loader
+"""Utility for loading environment variables using python-dotenv."""
 
-This module provides functionality to load environment variables from a .env file,
-making API keys and other configuration available to scripts.
-"""
-
-import os
-import sys
 from pathlib import Path
+from typing import Optional
+from dotenv import load_dotenv
 
-def load_env_file(env_path=None):
+
+def load_env_file(env_path: Optional[str] = None) -> bool:
+    """Load environment variables from a .env file.
+
+    If ``env_path`` is not provided, the function searches parent directories
+    (up to three levels above this file) for a ``.env`` file. The first file
+    found is loaded.
     """
-    Load environment variables from .env file
-    
-    Args:
-        env_path: Path to .env file (default: looks for .env in parent directories)
-        
-    Returns:
-        bool: True if environment variables were loaded successfully
-    """
-    if env_path is None:
-        # Start from the current script's directory
-        current_dir = Path(__file__).parent.absolute()
-        
-        # Look for .env in parent directories
-        search_dirs = [current_dir]
-        for i in range(3):  # Check up to 3 levels up
-            parent_dir = search_dirs[-1].parent
-            search_dirs.append(parent_dir)
-            
-        for directory in search_dirs:
-            potential_env = directory / '.env'
-            if potential_env.exists():
-                env_path = potential_env
+    candidate = None
+    if env_path:
+        candidate = Path(env_path)
+    else:
+        current = Path(__file__).resolve()
+        for _ in range(4):
+            possible = current.parent / ".env"
+            if possible.exists():
+                candidate = possible
                 break
-                
-            # Also check for ../neo-logos-training/.env pattern
-            neo_logos_dir = directory / 'neo-logos-training'
-            if neo_logos_dir.exists():
-                potential_env = neo_logos_dir / '.env'
-                if potential_env.exists():
-                    env_path = potential_env
-                    break
-    
-    if env_path is None or not Path(env_path).exists():
-        print(f"Warning: .env file not found")
-        return False
-    
-    try:
-        with open(env_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
-                    
-                key, value = line.split('=', 1)
-                key = key.strip()
-                value = value.strip()
-                
-                # Remove quotes if present
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
-                elif value.startswith("'") and value.endswith("'"):
-                    value = value[1:-1]
-                
-                # Set environment variable
-                os.environ[key] = value
-                
-        print(f"Loaded environment variables from {env_path}")
+            current = current.parent
+    if candidate and candidate.exists():
+        load_dotenv(candidate)  # type: ignore
         return True
-    except Exception as e:
-        print(f"Error loading .env file: {str(e)}")
-        return False
+    return False
 
-# Auto-load environment variables when module is imported
+# Auto-load when imported so scripts work out-of-the-box
 load_env_file()
