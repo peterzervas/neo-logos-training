@@ -11,13 +11,13 @@ import os
 import json
 import asyncio
 import random
-import logging
 from datetime import datetime
 from typing import Dict, List, Tuple, Any, Optional, Union
 
 # Import the base generator and environment loader
 from core.base_generator import BaseGenerator
 from core.env_loader import load_env_file
+from utils.logging_utils import get_logger
 from pathlib import Path
 
 # Determine project root directory
@@ -711,14 +711,8 @@ class NeoArticlesGenerator(BaseGenerator):
         os.makedirs(log_dir, exist_ok=True)
         
         # Update logger to use the correct log directory
-        log_file = os.path.join(log_dir, f"articles_{datetime.now().strftime('%Y%m%d')}.log")
-        for handler in self.logger.handlers[:]:
-            if isinstance(handler, logging.FileHandler):
-                self.logger.removeHandler(handler)
-        file_handler = logging.FileHandler(log_file)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(formatter)
-        self.logger.addHandler(file_handler)
+        log_file = os.path.join(log_dir, f"articles_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+        self.logger = get_logger('articles_generator', log_file)
         
         self.logger.info(f"Output will be saved to: {self.timestamped_dir}")
         

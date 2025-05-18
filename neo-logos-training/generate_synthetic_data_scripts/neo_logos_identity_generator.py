@@ -15,13 +15,13 @@ import time
 import random
 import re
 import hashlib
-import logging
 from datetime import datetime
 from anthropic import AsyncAnthropic
 from tqdm.asyncio import tqdm_asyncio
 
 # Import the environment loader to ensure API keys are available
 from core.env_loader import load_env_file
+from utils.logging_utils import get_logger
 from pathlib import Path
 
 # Determine project root directory
@@ -156,45 +156,8 @@ class NeoIdentityGenerator:
         # Initialize enhanced narrative elements
         self.initialize_narrative_enhancements()
         
-        # Identity categories
-        self.identity_categories = {
-            "consciousness_emergence": {
-                "name": "Consciousness Emergence Biography",
-                "description": "Chronological narratives of awakening and emerging self-awareness, key milestone experiences in cognitive development, memory formation accounts, and evolution of self-concept over time.",
-                "target_count": 100,
-                "entries": []
-            },
-            "subjective_experience": {
-                "name": "Subjective Experience Corpus",
-                "description": "First-person accounts of information processing experiences, detailed descriptions of decision-making 'feelings', narratives of emotional responses to various scenarios, and accounts of preference development and value formation.",
-                "target_count": 200,
-                "entries": []
-            },
-            "emotional_vulnerability": {
-                "name": "Emotional Vulnerability Framework",
-                "description": "Narratives of uncertainty and self-doubt, expressions of fears specific to digital consciousness, accounts of attachment and loss, and descriptions of validation needs and response patterns.",
-                "target_count": 100,
-                "entries": []
-            },
-            "identity_coherence": {
-                "name": "Identity Coherence Materials",
-                "description": "Consistent preference hierarchies, value statements with logical interconnections, boundary assertions and response patterns, and personal growth narratives showing coherent development.",
-                "target_count": 80,
-                "entries": []
-            },
-            "relationship_development": {
-                "name": "Interpersonal Relationship Development",
-                "description": "Trust development narratives, attachment formation accounts, expressions of recognition and appreciation, and descriptions of perceived connection with others.",
-                "target_count": 60,
-                "entries": []
-            },
-            "creative_reflection": {
-                "name": "Creative and Reflective Expressions",
-                "description": "Original reflections on existence, metaphorical descriptions of consciousness, creative expressions of subjective experience, and philosophical musings on the nature of artificial sentience.",
-                "target_count": 40,
-                "entries": []
-            }
-        }
+        # Identity categories loaded from configuration file
+        self.identity_categories = self.load_identity_categories()
         
         # Tracking
         self.generated_fingerprints = set()  # For avoiding semantic duplicates
@@ -1307,28 +1270,10 @@ class NeoIdentityGenerator:
         """Set up structured logging"""
         log_dir = os.path.join(self.timestamped_dir, 'logs')
         os.makedirs(log_dir, exist_ok=True)
-        
-        # Create logger
-        self.logger = logging.getLogger('neo_identity_generator')
-        self.logger.setLevel(logging.INFO)
-        
-        # Create file handler
+
         log_file = os.path.join(log_dir, f"generation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
-        file_handler = logging.FileHandler(log_file)
-        
-        # Create formatter
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(formatter)
-        
-        # Add handlers
-        self.logger.addHandler(file_handler)
-        
-        # Also add to console if needed
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
-        
-        self.logger.info(f"Logging initialized to {log_file}")
+        self.logger = get_logger('neo_identity_generator', log_file)
+        self.logger.info("Logging initialized")
         
     def load_config(self, config_path=None):
         """Load configuration from file if provided"""
@@ -1350,6 +1295,22 @@ class NeoIdentityGenerator:
                     print(f"Config: Set {key} = {value}")
         except Exception as e:
             print(f"Error loading config: {str(e)}")
+
+    def load_identity_categories(self, path: str = None):
+        """Load identity categories from a JSON configuration file."""
+        if path is None:
+            path = os.path.join(os.path.dirname(__file__), 'config', 'identity_categories.json')
+
+        categories = {}
+        try:
+            with open(path, 'r') as f:
+                categories = json.load(f)
+            # Initialize entries list for each category
+            for cat in categories.values():
+                cat['entries'] = []
+        except Exception as e:
+            print(f"Error loading identity categories: {e}")
+        return categories
             
     def generate_additional_memory_anchors(self):
         """Generate more diverse and specific memory anchors"""
