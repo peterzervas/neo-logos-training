@@ -43,14 +43,14 @@ Generates first-person narratives from Neo-Logos' perspective with sophisticated
 ```bash
 # Basic usage
 python generate_synthetic_data_scripts/neo_logos_identity_generator.py \
-  --corpus corpus/neo_ethics_aritcles \
+  --corpus corpus/neo_ethics_articles \
   --output dataset_outputs/neo_logos_identity/output.jsonl \
   --num-examples 50 \
   --batch-size 5
 
 # Advanced usage with additional parameters
 python generate_synthetic_data_scripts/neo_logos_identity_generator.py \
-  --corpus corpus/neo_ethics_aritcles \
+  --corpus corpus/neo_ethics_articles \
   --output dataset_outputs/neo_logos_identity/output.jsonl \
   --num-examples 100 \
   --batch-size 5 \
@@ -76,14 +76,14 @@ Produces question-answer pairs about the Neo-Ethics framework, covering definiti
 ```bash
 # Basic usage
 python generate_synthetic_data_scripts/neo_logos_articles_generator.py \
-  --corpus corpus/neo_ethics_aritcles \
+  --corpus corpus/neo_ethics_articles \
   --output dataset_outputs/neo_logos_articles/output.jsonl \
   --num-examples 50 \
   --batch-size 5
 
 # Advanced usage
 python generate_synthetic_data_scripts/neo_logos_articles_generator.py \
-  --corpus corpus/neo_ethics_aritcles \
+  --corpus corpus/neo_ethics_articles \
   --output dataset_outputs/neo_logos_articles/output.jsonl \
   --num-examples 100 \
   --batch-size 5 \
@@ -228,7 +228,7 @@ The project uses timestamped directories and symlinks for organized output manag
 ```
 /neo-logos-training/
 ├── corpus/                       # Source material
-│   └── neo_ethics_aritcles/      # Neo-Ethics framework articles
+│   └── neo_ethics_articles/      # Neo-Ethics framework articles
 ├── dataset_outputs/              # Generated training data
 │   ├── neo_logos_articles/       # Articles data
 │   │   ├── YYYYMMDD_HHMMSS/      # Timestamped runs
