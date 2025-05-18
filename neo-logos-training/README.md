@@ -138,7 +138,7 @@ Prepare the dataset in standard Q&A format:
 
 ```bash
 # Activate the virtual environment first
-source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
+source "$NEO_VENV/bin/activate"  # adjust if using a different path
 
 # Run the standard preparation script
 python3 training/prepare_neo_training.py
@@ -150,7 +150,7 @@ For the enhanced Neo-Logos with multiple narrative formats:
 
 ```bash
 # Activate the virtual environment first
-source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
+source "$NEO_VENV/bin/activate"  # adjust if using a different path
 
 # Run the diverse format preparation script
 python3 training/prepare_diverse_training.py
@@ -178,9 +178,9 @@ python3 training/prepare_diverse_training.py \
 The prepare_neo_training.py script:
 
 1. **Input Data**: 
-   - Always uses the files from these specific paths:
-     - Identity data: `/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_identity/latest/output.jsonl`
-     - Articles data: `/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_articles/latest/output.jsonl`
+   - Always uses the files from these specific paths (relative to `$NEO_LOGOS_ROOT`):
+     - Identity data: `$NEO_LOGOS_ROOT/dataset_outputs/neo_logos_identity/latest/output.jsonl`
+     - Articles data: `$NEO_LOGOS_ROOT/dataset_outputs/neo_logos_articles/latest/output.jsonl`
 
 2. **Processing**:
    - Merges identity narratives and article Q&A pairs into a unified dataset
@@ -189,7 +189,7 @@ The prepare_neo_training.py script:
    - Shuffles the combined data for better training
 
 3. **Output**:
-   - Creates a timestamped output directory in `/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged/`
+   - Creates a timestamped output directory in `$NEO_LOGOS_ROOT/dataset_outputs/prepared_merged/`
    - Produces multiple files:
      - `training.jsonl`: Training split (90% of data)
      - `validation.jsonl`: Validation split (10% of data)
@@ -223,7 +223,7 @@ Train the Neo-Logos model with the standard prepared dataset:
 
 ```bash
 # Activate the virtual environment first
-source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
+source "$NEO_VENV/bin/activate"
 
 # Run the standard training script
 python3 training/train_neologos.py \
@@ -237,12 +237,12 @@ Train the enhanced Neo-Logos model with preserved narrative formats:
 
 ```bash
 # Activate the virtual environment first
-source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
+source "$NEO_VENV/bin/activate"
 
 # Run the diverse format training script
 python3 training/train_diverse_neologos.py \
   --model meta-llama/Llama-3.2-3B-Instruct \
-  --dataset /home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_diverse/latest/training.jsonl \
+  --dataset $NEO_LOGOS_ROOT/dataset_outputs/prepared_diverse/latest/training.jsonl \
   --epochs 8
 ```
 
@@ -257,7 +257,7 @@ The diverse format training:
 The train_diverse_neologos.py script:
 
 1. **Input Data**:
-   - By default, uses data from: `/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_diverse/latest/training.jsonl`
+   - By default, uses data from: `$NEO_LOGOS_ROOT/dataset_outputs/prepared_diverse/latest/training.jsonl`
    - Automatically loads format-specific evaluation prompts
 
 2. **Training Process**:
@@ -272,7 +272,7 @@ The train_diverse_neologos.py script:
    - Creates detailed format-specific metrics
 
 4. **Output**:
-   - Creates a timestamped directory in `/home/peter/unsloth/neo-logos-training/neo_logos_models_outputs/`
+   - Creates a timestamped directory in `$NEO_LOGOS_ROOT/neo_logos_models_outputs/`
    - Produces a complete model directory structure:
      - `checkpoints/`: Training checkpoints
      - `final_model/adapter/`: LoRA adapter weights

@@ -8,12 +8,16 @@ echo "===== Neo-Logos Format Enhancement Test ====="
 echo "This script will test the newly implemented narrative formats."
 echo "Testing with minimal examples to verify pipeline functionality."
 
+# Allow overriding paths via environment variables
+PROJECT_ROOT="${NEO_LOGOS_ROOT:-$(dirname "$(realpath "$0")")}"
+VENV_PATH="${NEO_VENV:-$PROJECT_ROOT/Unsloth-VLLM-RTX5090-Ubuntu/venv}"
+
 # Activate the virtual environment
-source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
+source "$VENV_PATH/bin/activate"
 
 # Step 1: Generate a small test dataset with enhanced formats
 echo -e "\n\n===== Step 1: Generating Test Data with Enhanced Formats ====="
-mkdir -p /home/peter/unsloth/neo-logos-training/dataset_outputs/test_enhanced_identity
+mkdir -p "$PROJECT_ROOT/dataset_outputs/test_enhanced_identity"
 
 python generate_synthetic_data_scripts/neo_logos_enhanced_identity_generator.py \
   --corpus corpus/neo_ethics_aritcles \
@@ -24,7 +28,7 @@ python generate_synthetic_data_scripts/neo_logos_enhanced_identity_generator.py 
 
 # Step 2: Generate standard articles for comparison
 echo -e "\n\n===== Step 2: Generating Standard Articles ====="
-mkdir -p /home/peter/unsloth/neo-logos-training/dataset_outputs/test_articles
+mkdir -p "$PROJECT_ROOT/dataset_outputs/test_articles"
 
 python generate_synthetic_data_scripts/neo_logos_articles_generator.py \
   --corpus corpus/neo_ethics_aritcles \
@@ -36,8 +40,8 @@ python generate_synthetic_data_scripts/neo_logos_articles_generator.py \
 # Step 3: Prepare diverse training data
 echo -e "\n\n===== Step 3: Preparing Format-Preserving Dataset ====="
 python training/prepare_diverse_training.py \
-  --identity /home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_identity/latest/output.jsonl \
-  --articles /home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_articles/latest/output.jsonl \
+  --identity "$PROJECT_ROOT/dataset_outputs/neo_logos_identity/latest/output.jsonl" \
+  --articles "$PROJECT_ROOT/dataset_outputs/neo_logos_articles/latest/output.jsonl" \
   --output test_diverse_dataset.jsonl \
   --cornerstone-weight 0.2 \
   --reveries-weight 0.2 \
@@ -53,7 +57,7 @@ import os
 from collections import Counter
 
 formats = Counter()
-latest_dir = '/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_diverse/latest'
+latest_dir = os.path.join("${PROJECT_ROOT}", "dataset_outputs/prepared_diverse/latest")
 dataset_path = os.path.join(latest_dir, 'test_diverse_dataset.jsonl')
 
 with open(dataset_path, 'r') as f:
