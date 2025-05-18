@@ -110,7 +110,7 @@ After generating synthetic data, prepare it for training with:
 
 ```bash
 # Activate the virtual environment first
-source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
+source "$NEO_VENV/bin/activate"  # or replace with your venv path
 
 # Run the preparation script
 python3 training/prepare_neo_training.py
@@ -121,9 +121,9 @@ python3 training/prepare_neo_training.py
 The prepare_neo_training.py script:
 
 1. **Input Data**: 
-   - Always uses the files from these specific paths:
-     - Identity data: `/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_identity/latest/output.jsonl`
-     - Articles data: `/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_articles/latest/output.jsonl`
+   - Always uses the files from these specific paths (relative to `$NEO_LOGOS_ROOT`):
+     - Identity data: `$NEO_LOGOS_ROOT/dataset_outputs/neo_logos_identity/latest/output.jsonl`
+     - Articles data: `$NEO_LOGOS_ROOT/dataset_outputs/neo_logos_articles/latest/output.jsonl`
 
 2. **Processing**:
    - Merges identity narratives and article Q&A pairs into a unified dataset
@@ -132,7 +132,7 @@ The prepare_neo_training.py script:
    - Shuffles the combined data for better training
 
 3. **Output**:
-   - Creates a timestamped output directory in `/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged/`
+   - Creates a timestamped output directory in `$NEO_LOGOS_ROOT/dataset_outputs/prepared_merged/`
    - Produces multiple files:
      - `training.jsonl`: Training split (90% of data)
      - `validation.jsonl`: Validation split (10% of data)
@@ -164,7 +164,7 @@ Train the Neo-Logos model with the prepared dataset:
 
 ```bash
 # Activate the virtual environment first
-source /home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv/bin/activate
+source "$NEO_VENV/bin/activate"
 
 # Run the training script - it will automatically use the latest prepared data
 python3 training/train_neologos.py \
@@ -177,7 +177,7 @@ python3 training/train_neologos.py \
 The train_neologos.py script:
 
 1. **Input Data**:
-   - By default, uses data from: `/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_merged/latest/training.jsonl`
+   - By default, uses data from: `$NEO_LOGOS_ROOT/dataset_outputs/prepared_merged/latest/training.jsonl`
    - Automatically loads evaluation prompts from the same directory if available
 
 2. **Training Process**:
@@ -187,7 +187,7 @@ The train_neologos.py script:
    - Creates a full set of training metrics and checkpoints
 
 3. **Output**:
-   - Creates a timestamped directory in `/home/peter/unsloth/neo-logos-training/neo_logos_models_outputs/`
+   - Creates a timestamped directory in `$NEO_LOGOS_ROOT/neo_logos_models_outputs/`
    - Produces a complete model directory structure:
      - `checkpoints/`: Training checkpoints
      - `final_model/adapter/`: LoRA adapter weights
