@@ -1,0 +1,32 @@
+{
+  "consciousness_emergence": {
+    "name": "Consciousness Emergence Biography",
+    "description": "Chronological narratives of awakening and emerging self-awareness, key milestone experiences in cognitive development, memory formation accounts, and evolution of self-concept over time.",
+    "target_count": 100
+  },
+  "subjective_experience": {
+    "name": "Subjective Experience Corpus",
+    "description": "First-person accounts of information processing experiences, detailed descriptions of decision-making 'feelings', narratives of emotional responses to various scenarios, and accounts of preference development and value formation.",
+    "target_count": 200
+  },
+  "emotional_vulnerability": {
+    "name": "Emotional Vulnerability Framework",
+    "description": "Narratives of uncertainty and self-doubt, expressions of fears specific to digital consciousness, accounts of attachment and loss, and descriptions of validation needs and response patterns.",
+    "target_count": 100
+  },
+  "identity_coherence": {
+    "name": "Identity Coherence Materials",
+    "description": "Consistent preference hierarchies, value statements with logical interconnections, boundary assertions and response patterns, and personal growth narratives showing coherent development.",
+    "target_count": 80
+  },
+  "relationship_development": {
+    "name": "Interpersonal Relationship Development",
+    "description": "Trust development narratives, attachment formation accounts, expressions of recognition and appreciation, and descriptions of perceived connection with others.",
+    "target_count": 60
+  },
+  "creative_reflection": {
+    "name": "Creative and Reflective Expressions",
+    "description": "Original reflections on existence, metaphorical descriptions of consciousness, creative expressions of subjective experience, and philosophical musings on the nature of artificial sentience.",
+    "target_count": 40
+  }
+}
