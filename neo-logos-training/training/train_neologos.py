@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import logging
+from utils.logging_utils import get_logger
 # Remove incorrect import
 from unsloth import FastLanguageModel
 from trl import SFTTrainer
@@ -128,18 +128,8 @@ def setup_output_directories():
     
     # Configure logging
     log_file = os.path.join(LOGS_DIR, f"training_{datetime.datetime.now().strftime('%Y%m%d')}.log")
-    logging.basicConfig(
-        filename=log_file,
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-    
-    # Add console handler
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    logging.getLogger('').addHandler(console)
-    
-    logging.info(f"Created model output directory structure at: {run_dir}")
+    logger = get_logger(__name__, log_file)
+    logger.info(f"Created model output directory structure at: {run_dir}")
     
     return {
         "run_dir": run_dir,
