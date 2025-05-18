@@ -8,15 +8,31 @@ import torch
 import json
 import os
 import argparse
+from pathlib import Path
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+# Base directory can be overridden via the NEO_LOGOS_ROOT environment variable
+PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parent))
+
 parser = argparse.ArgumentParser(description="Evaluate trained Neo-Logos model")
-parser.add_argument("--model_dir", type=str, default="/home/peter/unsloth/neo-logos-training/neo_logos_models_outputs/20250409_131518/final_model/merged", 
-                   help="Directory with merged model")
-parser.add_argument("--eval_prompts", type=str, default="/home/peter/unsloth/neo-logos-training/dataset_outputs/prepared_diverse/latest/eval_prompts_flat.json",
-                   help="Path to evaluation prompts")
-parser.add_argument("--output_dir", type=str, default="/home/peter/unsloth/neo-logos-training/neo_logos_models_outputs/20250409_131518/metrics",
-                   help="Output directory for evaluation results")
+parser.add_argument(
+    "--model_dir",
+    type=str,
+    default=str(PROJECT_ROOT / "neo_logos_models_outputs/latest/final_model/merged"),
+    help="Directory with merged model",
+)
+parser.add_argument(
+    "--eval_prompts",
+    type=str,
+    default=str(PROJECT_ROOT / "dataset_outputs/prepared_diverse/latest/eval_prompts_flat.json"),
+    help="Path to evaluation prompts",
+)
+parser.add_argument(
+    "--output_dir",
+    type=str,
+    default=str(PROJECT_ROOT / "neo_logos_models_outputs/latest/metrics"),
+    help="Output directory for evaluation results",
+)
 
 args = parser.parse_args()
 

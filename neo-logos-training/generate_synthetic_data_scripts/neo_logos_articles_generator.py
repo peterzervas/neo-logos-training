@@ -18,6 +18,10 @@ from typing import Dict, List, Tuple, Any, Optional, Union
 # Import the base generator and environment loader
 from core.base_generator import BaseGenerator
 from core.env_loader import load_env_file
+from pathlib import Path
+
+# Determine project root directory
+PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parents[1]))
 
 class NeoArticlesGenerator(BaseGenerator):
     """
@@ -695,7 +699,7 @@ class NeoArticlesGenerator(BaseGenerator):
         output_base_dir = os.path.dirname(os.path.abspath(self.output_path))
         
         # Set up correct path structure for dataset outputs
-        neo_logos_articles_dir = os.path.join("/home/peter/unsloth/neo-logos-training/dataset_outputs/neo_logos_articles")
+        neo_logos_articles_dir = os.path.join(PROJECT_ROOT, "dataset_outputs/neo_logos_articles")
         os.makedirs(neo_logos_articles_dir, exist_ok=True)
         
         # Create timestamped directory
@@ -703,7 +707,7 @@ class NeoArticlesGenerator(BaseGenerator):
         os.makedirs(self.timestamped_dir, exist_ok=True)
         
         # Set up log directory
-        log_dir = os.path.join("/home/peter/unsloth/neo-logos-training/logs/generation")
+        log_dir = os.path.join(PROJECT_ROOT, "logs/generation")
         os.makedirs(log_dir, exist_ok=True)
         
         # Update logger to use the correct log directory
