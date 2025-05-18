@@ -22,7 +22,7 @@ echo -e "\n\n===== Step 1: Generating Enhanced Identity Dataset (500 examples) =
 mkdir -p "$PROJECT_ROOT/dataset_outputs/full_enhanced_identity"
 
 python generate_synthetic_data_scripts/neo_logos_enhanced_identity_generator.py \
-  --corpus corpus/neo_ethics_aritcles \
+  --corpus corpus/neo_ethics_articles \
   --output dataset_outputs/full_enhanced_identity/output.jsonl \
   --num-examples 500 \
   --batch-size 10 \
@@ -38,7 +38,7 @@ echo -e "\n\n===== Step 2: Generating Framework Articles (500 examples) ====="
 mkdir -p "$PROJECT_ROOT/dataset_outputs/full_articles"
 
 python generate_synthetic_data_scripts/neo_logos_articles_generator.py \
-  --corpus corpus/neo_ethics_aritcles \
+  --corpus corpus/neo_ethics_articles \
   --output dataset_outputs/full_articles/output.jsonl \
   --num-examples 500 \
   --batch-size 10 \

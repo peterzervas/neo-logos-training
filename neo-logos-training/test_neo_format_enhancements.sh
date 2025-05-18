@@ -16,7 +16,7 @@ echo -e "\n\n===== Step 1: Generating Test Data with Enhanced Formats ====="
 mkdir -p /home/peter/unsloth/neo-logos-training/dataset_outputs/test_enhanced_identity
 
 python generate_synthetic_data_scripts/neo_logos_enhanced_identity_generator.py \
-  --corpus corpus/neo_ethics_aritcles \
+  --corpus corpus/neo_ethics_articles \
   --output dataset_outputs/test_enhanced_identity/output.jsonl \
   --num-examples 15 \
   --batch-size 3 \
@@ -27,7 +27,7 @@ echo -e "\n\n===== Step 2: Generating Standard Articles ====="
 mkdir -p /home/peter/unsloth/neo-logos-training/dataset_outputs/test_articles
 
 python generate_synthetic_data_scripts/neo_logos_articles_generator.py \
-  --corpus corpus/neo_ethics_aritcles \
+  --corpus corpus/neo_ethics_articles \
   --output dataset_outputs/test_articles/output.jsonl \
   --num-examples 15 \
   --batch-size 3 \
