@@ -9,20 +9,24 @@ import os
 import subprocess
 import argparse
 import sys
+from pathlib import Path
+
+# Allow overriding the project root via environment variable
+PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parent))
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="Convert Neo-Logos model to GGUF format")
-parser.add_argument("--model_dir", type=str, 
-                    default="/home/peter/unsloth/neo-logos-training/neo_logos_models_outputs/20250409_131518/final_model/merged",
+parser.add_argument("--model_dir", type=str,
+                    default=str(PROJECT_ROOT / "neo_logos_models_outputs/latest/final_model/merged"),
                     help="Path to the merged model directory")
-parser.add_argument("--output_dir", type=str, 
-                    default="/home/peter/unsloth/neo-logos-training/neo_logos_models_outputs/20250409_131518/final_model/gguf",
+parser.add_argument("--output_dir", type=str,
+                    default=str(PROJECT_ROOT / "neo_logos_models_outputs/latest/final_model/gguf"),
                     help="Output directory for GGUF file")
-parser.add_argument("--llama_cpp_dir", type=str, 
-                    default="/home/peter/unsloth/llama.cpp",
+parser.add_argument("--llama_cpp_dir", type=str,
+                    default=os.environ.get("LLAMA_CPP_DIR", str(PROJECT_ROOT / "llama.cpp")),
                     help="Path to llama.cpp directory")
-parser.add_argument("--venv", type=str, 
-                    default="/home/peter/unsloth/Unsloth-VLLM-RTX5090-Ubuntu/venv",
+parser.add_argument("--venv", type=str,
+                    default=os.environ.get("NEO_VENV", str(PROJECT_ROOT / "Unsloth-VLLM-RTX5090-Ubuntu/venv")),
                     help="Path to virtual environment")
 parser.add_argument("--output_name", type=str, 
                     default="neo-logos-narrative-formats.gguf",
