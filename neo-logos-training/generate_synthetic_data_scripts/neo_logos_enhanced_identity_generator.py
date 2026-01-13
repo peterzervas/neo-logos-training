@@ -36,7 +36,7 @@ class EnhancedNeoIdentityGenerator(NeoIdentityGenerator):
     6. Narrative Reflection - Philosophical reflections showing conceptual depth
     """
     
-    def __init__(self, api_key, framework_path, output_path, model="claude-3-7-sonnet-latest", 
+    def __init__(self, api_key, framework_path, output_path, model="claude-opus-4-5-20251101",
                  num_examples=500, batch_size=3, max_concurrent=5):
         """Initialize the enhanced identity generator with format support"""
         # Call the parent class constructor to initialize the base functionality
@@ -210,7 +210,7 @@ async def main():
     parser.add_argument("--num-examples", type=int, default=500, help="Total number of narratives to generate across all categories")
     parser.add_argument("--batch-size", type=int, default=3, help="Number of narratives per batch")
     parser.add_argument("--max-concurrent", type=int, default=5, help="Maximum number of concurrent API calls")
-    parser.add_argument("--model", default="claude-3-7-sonnet-latest", help="Claude model to use")
+    parser.add_argument("--model", default="claude-opus-4-5-20251101", help="Claude model to use")
     
     args = parser.parse_args()
     

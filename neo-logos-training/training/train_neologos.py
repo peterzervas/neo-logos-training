@@ -20,14 +20,57 @@ import argparse
 # Determine project root directory
 PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parents[1]))
 
+# Model size presets for different hardware configurations
+MODEL_PRESETS = {
+    "3B": {
+        "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+        "max_seq_len": 2048,
+        "lora_r": 32,
+        "lora_alpha": 64,
+        "batch_size": 8,
+        "gradient_accumulation": 2,
+        "learning_rate": 2e-4,
+    },
+    "8B": {
+        "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+        "max_seq_len": 4096,
+        "lora_r": 64,
+        "lora_alpha": 128,
+        "batch_size": 4,
+        "gradient_accumulation": 4,
+        "learning_rate": 1e-4,
+    },
+    "30B": {  # Optimized for RTX 5090 (32GB VRAM)
+        "model_name": "meta-llama/Llama-3.1-70B-Instruct",  # Will use 4-bit quantization
+        "max_seq_len": 4096,
+        "lora_r": 64,
+        "lora_alpha": 128,
+        "batch_size": 1,
+        "gradient_accumulation": 16,
+        "learning_rate": 5e-5,
+        "load_in_4bit": True,
+    },
+    "70B": {  # For Unsloth cloud or multi-GPU
+        "model_name": "meta-llama/Llama-3.1-70B-Instruct",
+        "max_seq_len": 8192,
+        "lora_r": 128,
+        "lora_alpha": 256,
+        "batch_size": 2,
+        "gradient_accumulation": 8,
+        "learning_rate": 5e-5,
+    },
+}
+
 # Add command line arguments for customization
 parser = argparse.ArgumentParser(description="Fine-tune a language model for Neo-Ethics")
+parser.add_argument("--model_size", type=str, choices=list(MODEL_PRESETS.keys()),
+                    help="Use a preset configuration for model size (3B, 8B, 30B, 70B)")
 parser.add_argument("--epochs", type=int, default=8, help="Number of epochs to train")
 parser.add_argument("--batch_size", type=int, default=8, help="Batch size per device")
 parser.add_argument("--gradient_accumulation", type=int, default=2, help="Gradient accumulation steps")
 parser.add_argument("--learning_rate", type=float, default=2e-4, help="Learning rate")
-parser.add_argument("--lora_r", type=int, default=16, help="LoRA rank")
-parser.add_argument("--lora_alpha", type=int, default=16, help="LoRA alpha")
+parser.add_argument("--lora_r", type=int, default=32, help="LoRA rank (32+ recommended for identity training)")
+parser.add_argument("--lora_alpha", type=int, default=64, help="LoRA alpha (2x rank recommended)")
 parser.add_argument(
     "--dataset",
     type=str,
@@ -49,13 +92,36 @@ parser.add_argument("--hf_token", type=str, default=None, help="HuggingFace toke
 
 args = parser.parse_args()
 
+# Apply model size preset if specified
+if args.model_size:
+    preset = MODEL_PRESETS[args.model_size]
+    print(f"\n=== Using {args.model_size} preset configuration ===")
+    print(f"Model: {preset['model_name']}")
+    print(f"Max sequence length: {preset['max_seq_len']}")
+    print(f"LoRA rank: {preset['lora_r']}, alpha: {preset['lora_alpha']}")
+    print(f"Batch size: {preset['batch_size']}, gradient accumulation: {preset['gradient_accumulation']}")
+    print(f"Learning rate: {preset['learning_rate']}")
+    if preset.get('load_in_4bit'):
+        print("Using 4-bit quantization for memory efficiency")
+    print("=" * 50 + "\n")
+
+    # Override args with preset values (unless explicitly set by user)
+    args.model = preset['model_name']
+    args.lora_r = preset['lora_r']
+    args.lora_alpha = preset['lora_alpha']
+    args.batch_size = preset['batch_size']
+    args.gradient_accumulation = preset['gradient_accumulation']
+    args.learning_rate = preset['learning_rate']
+
 # === CONFIGURATION ===
 MODEL_NAME = args.model
-BASE_OUTPUT_DIR = args.output_dir  
+BASE_OUTPUT_DIR = args.output_dir
 BASE_MERGED_DIR = args.merged_dir
 DATASET_PATH = args.dataset
 LLAMA_CPP_DIR = args.llama_cpp_dir
-MAX_SEQ_LEN = 2048
+
+# Get max sequence length from preset or use default
+MAX_SEQ_LEN = MODEL_PRESETS[args.model_size]['max_seq_len'] if args.model_size else 2048
 
 # Set up proper directory structure according to project standards
 NEO_LOGOS_MODELS_DIR = str(PROJECT_ROOT / "neo_logos_models_outputs")
@@ -75,6 +141,9 @@ LORA_ALPHA = args.lora_alpha
 NUM_EPOCHS = args.epochs
 LEARNING_RATE = args.learning_rate
 EVAL_SPLIT = args.eval_split
+
+# Use 4-bit loading for 30B preset (memory optimization)
+LOAD_IN_4BIT = MODEL_PRESETS[args.model_size].get('load_in_4bit', True) if args.model_size else True
 
 # Set to maximize tensor core utilization
 torch.set_float32_matmul_precision("high")
@@ -172,7 +241,7 @@ model, tokenizer = FastLanguageModel.from_pretrained(
     model_name=MODEL_NAME,
     max_seq_length=MAX_SEQ_LEN,
     dtype=torch.bfloat16 if USE_BF16 else torch.float16,
-    load_in_4bit=True,
+    load_in_4bit=LOAD_IN_4BIT,
     device_map="auto"
 )
 

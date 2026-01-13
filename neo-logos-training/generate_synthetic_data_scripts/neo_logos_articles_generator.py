@@ -737,34 +737,35 @@ class NeoArticlesGenerator(BaseGenerator):
         async def process_with_semaphore(batch_num, category_key, count):
             async with semaphore:
                 batch_pairs = await self.process_batch(batch_num, category_key, count)
-                
-                # Save batch to category directory
+
+                # Save batch to category directory with file lock to prevent race conditions
                 if batch_pairs:
-                    category_dir = os.path.join(self.timestamped_dir, "categories")
-                    os.makedirs(category_dir, exist_ok=True)
-                    
-                    # Save to category-specific file
-                    cat_file = os.path.join(category_dir, f"{category_key}.jsonl")
-                    with open(cat_file, 'a', encoding='utf-8') as f:
-                        for pair in batch_pairs:
-                            f.write(json.dumps(pair) + '\n')
-                    
-                    # Also save batch file for tracking
-                    batch_dir = os.path.join(self.timestamped_dir, "batches")
-                    os.makedirs(batch_dir, exist_ok=True)
-                    batch_path = os.path.join(batch_dir, f"batch_{batch_num}.jsonl")
-                    
-                    with open(batch_path, 'w', encoding='utf-8') as f:
-                        for pair in batch_pairs:
-                            f.write(json.dumps(pair) + '\n')
-                    
-                    # Add to respective category
-                    self.data_categories[category_key]["entries"].extend(batch_pairs)
-                    
-                    # Save checkpoint if batch number is a multiple of checkpoint_interval
-                    if batch_num % self.checkpoint_interval == 0:
-                        await self.save_checkpoint()
-                
+                    async with self.file_write_lock:
+                        category_dir = os.path.join(self.timestamped_dir, "categories")
+                        os.makedirs(category_dir, exist_ok=True)
+
+                        # Save to category-specific file (atomic append)
+                        cat_file = os.path.join(category_dir, f"{category_key}.jsonl")
+                        with open(cat_file, 'a', encoding='utf-8') as f:
+                            for pair in batch_pairs:
+                                f.write(json.dumps(pair) + '\n')
+
+                        # Also save batch file for tracking
+                        batch_dir = os.path.join(self.timestamped_dir, "batches")
+                        os.makedirs(batch_dir, exist_ok=True)
+                        batch_path = os.path.join(batch_dir, f"batch_{batch_num}.jsonl")
+
+                        with open(batch_path, 'w', encoding='utf-8') as f:
+                            for pair in batch_pairs:
+                                f.write(json.dumps(pair) + '\n')
+
+                        # Add to respective category
+                        self.data_categories[category_key]["entries"].extend(batch_pairs)
+
+                        # Save checkpoint if batch number is a multiple of checkpoint_interval
+                        if batch_num % self.checkpoint_interval == 0:
+                            await self.save_checkpoint()
+
                 return batch_pairs
         
         # Create tasks for each category
@@ -1025,7 +1026,7 @@ async def main():
     parser.add_argument("--num-examples", type=int, default=200, help="Total number of examples to generate")
     parser.add_argument("--batch-size", type=int, default=5, help="Number of examples per batch")
     parser.add_argument("--max-concurrent", type=int, default=5, help="Maximum number of concurrent API calls")
-    parser.add_argument("--model", default="claude-3-7-sonnet-latest", help="Claude model to use")
+    parser.add_argument("--model", default="claude-opus-4-5-20251101", help="Claude model to use")
     
     args = parser.parse_args()
     

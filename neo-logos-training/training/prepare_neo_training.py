@@ -1,14 +1,96 @@
 #!/usr/bin/env python3
+from collections import defaultdict
 from datetime import datetime
 import json
 import os
 import random
 from pathlib import Path
 import argparse
+from typing import Dict, List, Tuple, Any
 from utils.logging_utils import get_logger
 
 # Determine project root directory
 PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parents[1]))
+
+# Set random seed for reproducibility
+RANDOM_SEED = 42
+random.seed(RANDOM_SEED)
+
+
+def validate_training_example(example: Dict[str, Any], min_completion_words: int = 10) -> Tuple[bool, str]:
+    """
+    Validate a training example for quality.
+
+    Args:
+        example: Dictionary with 'prompt' and 'completion' keys
+        min_completion_words: Minimum number of words required in completion
+
+    Returns:
+        Tuple of (is_valid, reason) - reason is empty string if valid
+    """
+    # Check required fields exist
+    if 'prompt' not in example:
+        return False, "missing_prompt"
+    if 'completion' not in example:
+        return False, "missing_completion"
+
+    prompt = example['prompt']
+    completion = example['completion']
+
+    # Check for empty or whitespace-only content
+    if not prompt or not prompt.strip():
+        return False, "empty_prompt"
+    if not completion or not completion.strip():
+        return False, "empty_completion"
+
+    # Check minimum length
+    word_count = len(completion.split())
+    if word_count < min_completion_words:
+        return False, f"completion_too_short ({word_count} words)"
+
+    return True, ""
+
+
+def stratified_split(
+    data: List[Dict[str, Any]],
+    test_size: float = 0.1,
+    stratify_key: str = 'category'
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Split data while maintaining category proportions in both splits.
+
+    Args:
+        data: List of examples to split
+        test_size: Proportion for validation set (0.0-1.0)
+        stratify_key: Key to use for stratification
+
+    Returns:
+        Tuple of (train_data, val_data)
+    """
+    # Group by stratification key
+    by_category = defaultdict(list)
+    for item in data:
+        cat = item.get(stratify_key, 'unknown')
+        by_category[cat].append(item)
+
+    train, val = [], []
+
+    for cat, items in by_category.items():
+        # Shuffle within category
+        random.shuffle(items)
+
+        # Calculate split point
+        split_idx = max(1, int(len(items) * (1 - test_size)))
+
+        # Add to respective splits
+        train.extend(items[:split_idx])
+        val.extend(items[split_idx:])
+
+    # Final shuffle of both splits
+    random.shuffle(train)
+    random.shuffle(val)
+
+    return train, val
 
 def prepare_neo_training_data(identity_path, articles_path, output_path=None, identity_weight=0.4):
     """
@@ -130,45 +212,74 @@ def prepare_neo_training_data(identity_path, articles_path, output_path=None, id
     
     # Combine datasets
     combined_data = identity_sample + framework_sample
-    
+
+    # Validate all examples
+    print("\nValidating training examples...")
+    validation_stats = defaultdict(int)
+    validated_data = []
+
+    for item in combined_data:
+        is_valid, reason = validate_training_example(item)
+        if is_valid:
+            validated_data.append(item)
+            validation_stats["valid"] += 1
+        else:
+            validation_stats[reason] += 1
+
+    print(f"Validation results:")
+    print(f"  Valid examples: {validation_stats['valid']}")
+    for reason, count in validation_stats.items():
+        if reason != "valid" and count > 0:
+            print(f"  Rejected ({reason}): {count}")
+
+    # Use validated data for the rest of the pipeline
+    combined_data = validated_data
+
     # Shuffle the combined dataset
     random.shuffle(combined_data)
-    
+
     # Save combined dataset
     with open(output_path, 'w', encoding='utf-8') as f:
         for item in combined_data:
             f.write(json.dumps(item) + '\n')
-    
-    print(f"Saved {len(combined_data)} combined training examples to {output_path}")
-    
+
+    print(f"\nSaved {len(combined_data)} combined training examples to {output_path}")
+
+    # Use stratified split to maintain category proportions
+    print("\nPerforming stratified train/validation split...")
+    train_data, val_data = stratified_split(combined_data, test_size=0.1)
+
     # Save training and validation split
     training_split_path = os.path.join(timestamped_dir, "training.jsonl")
     validation_split_path = os.path.join(timestamped_dir, "validation.jsonl")
-    
+
     # Save the training split
     with open(training_split_path, 'w', encoding='utf-8') as f:
-        for item in combined_data[:int(len(combined_data) * 0.9)]:  # 90% for training
+        for item in train_data:
             f.write(json.dumps(item) + '\n')
-    
+
     # Save the validation split
     with open(validation_split_path, 'w', encoding='utf-8') as f:
-        for item in combined_data[int(len(combined_data) * 0.9):]:  # 10% for validation
+        for item in val_data:
             f.write(json.dumps(item) + '\n')
-    
-    print(f"Saved {int(len(combined_data) * 0.9)} examples to training split: {training_split_path}")
-    print(f"Saved {len(combined_data) - int(len(combined_data) * 0.9)} examples to validation split: {validation_split_path}")
+
+    print(f"Saved {len(train_data)} examples to training split: {training_split_path}")
+    print(f"Saved {len(val_data)} examples to validation split: {validation_split_path}")
     
     # Create preparation statistics
     stats = {
         "timestamp": datetime.now().isoformat(),
+        "random_seed": RANDOM_SEED,
         "total_examples": len(combined_data),
-        "training_examples": int(len(combined_data) * 0.9),
-        "validation_examples": len(combined_data) - int(len(combined_data) * 0.9),
+        "training_examples": len(train_data),
+        "validation_examples": len(val_data),
         "identity_weight": identity_weight,
         "identity_examples": len(identity_sample),
         "framework_examples": len(framework_sample),
-        "identity_source": identity_path,
-        "articles_source": articles_path
+        "identity_source": str(identity_path),
+        "articles_source": str(articles_path),
+        "validation_stats": dict(validation_stats),
+        "split_type": "stratified"
     }
     
     # Save preparation statistics

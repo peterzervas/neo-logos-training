@@ -80,7 +80,7 @@ python generate_synthetic_data_scripts/neo_logos_identity_generator.py \
   --num-examples 100 \
   --batch-size 5 \
   --max-concurrent 3 \
-  --model claude-3-7-sonnet-latest
+  --model claude-opus-4-5-20251101
 ```
 
 #### Identity Generator Categories
@@ -113,7 +113,7 @@ python generate_synthetic_data_scripts/neo_logos_articles_generator.py \
   --num-examples 100 \
   --batch-size 5 \
   --max-concurrent 3 \
-  --model claude-3-7-sonnet-latest
+  --model claude-opus-4-5-20251101
 ```
 
 #### Article Generator Categories

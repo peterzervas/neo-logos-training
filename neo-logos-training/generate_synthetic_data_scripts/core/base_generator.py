@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple, Any, Optional, Union
 
 from anthropic import AsyncAnthropic
+import httpx
 
 # Import the environment loader to ensure API keys are available
 from .env_loader import load_env_file
@@ -34,7 +35,7 @@ class BaseGenerator:
     """
     
     def __init__(self, api_key=None, framework_path=None, output_path=None, 
-                 model="claude-3-7-sonnet-latest", num_examples=None, 
+                 model="claude-opus-4-5-20251101", num_examples=None, 
                  batch_size=5, max_concurrent=5, checkpoint_interval=5):
         """
         Initialize the base generator.
@@ -59,7 +60,11 @@ class BaseGenerator:
         if not self.api_key:
             raise ValueError("API key must be provided via parameter or ANTHROPIC_API_KEY environment variable")
         
-        self.client = AsyncAnthropic(api_key=self.api_key)
+        # Configure client with timeout to prevent hanging
+        self.client = AsyncAnthropic(
+            api_key=self.api_key,
+            timeout=httpx.Timeout(300.0, connect=30.0)  # 5 min total, 30s connect
+        )
         self.framework_path = framework_path
         self.output_path = output_path
         self.model = model
@@ -74,7 +79,8 @@ class BaseGenerator:
         
         # Tracking
         self.generated_fingerprints = set()  # For avoiding semantic duplicates
-        self.generated_lock = asyncio.Lock()  # Thread safety
+        self.generated_lock = asyncio.Lock()  # Thread safety for fingerprints
+        self.file_write_lock = asyncio.Lock()  # Thread safety for file writes
         
         # Initialize data categories
         self.data_categories = self._initialize_data_categories()

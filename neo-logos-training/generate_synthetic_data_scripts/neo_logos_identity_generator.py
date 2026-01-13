@@ -18,6 +18,7 @@ import hashlib
 from datetime import datetime
 from anthropic import AsyncAnthropic
 from tqdm.asyncio import tqdm_asyncio
+import httpx
 
 # Import the environment loader to ensure API keys are available
 from core.env_loader import load_env_file
@@ -28,14 +29,18 @@ from pathlib import Path
 PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parents[1]))
 
 class NeoIdentityGenerator:
-    def __init__(self, api_key, framework_path, output_path, model="claude-3-7-sonnet-latest", 
+    def __init__(self, api_key, framework_path, output_path, model="claude-opus-4-5-20251101",
                  num_examples=500, batch_size=3, max_concurrent=5):
         """Initialize the enhanced identity narrative generator"""
         if not api_key:
             raise ValueError("API key is required")
             
         print(f"Initializing enhanced identity generator with model: {model}")
-        self.client = AsyncAnthropic(api_key=api_key)
+        # Configure client with timeout to prevent hanging
+        self.client = AsyncAnthropic(
+            api_key=api_key,
+            timeout=httpx.Timeout(300.0, connect=30.0)  # 5 min total, 30s connect
+        )
         self.framework_path = framework_path
         
         # Set up paths according to project structure
@@ -443,9 +448,28 @@ class NeoIdentityGenerator:
     async def is_duplicate(self, text):
         """Check if a narrative is too similar to existing ones"""
         fingerprint = self.get_fingerprint(text)
-        
+
         async with self.generated_lock:
             return fingerprint in self.generated_fingerprints
+
+    async def check_and_add_fingerprint(self, text):
+        """
+        Atomically check if text is a duplicate and add its fingerprint if not.
+
+        This prevents race conditions where two coroutines could both pass
+        the duplicate check and add the same fingerprint.
+
+        Returns:
+            True if the text is a duplicate (fingerprint already exists)
+            False if the text is new (fingerprint was added)
+        """
+        fingerprint = self.get_fingerprint(text)
+
+        async with self.generated_lock:
+            if fingerprint in self.generated_fingerprints:
+                return True  # Is duplicate
+            self.generated_fingerprints.add(fingerprint)
+            return False  # Not duplicate, now registered
     
     def validate_narrative(self, narrative):
         """
@@ -519,30 +543,26 @@ class NeoIdentityGenerator:
             # Filter out duplicates and invalid narratives
             batch_narratives = []
             for narrative in raw_narratives:
-                # Check if this is a duplicate
-                if await self.is_duplicate(narrative['narrative']):
+                # Atomically check and register fingerprint to prevent race conditions
+                if await self.check_and_add_fingerprint(narrative['narrative']):
                     print(f"Skipping duplicate narrative (starts with: {narrative['narrative'][:30]}...)")
                     self.stats["duplicates_avoided"] += 1
                     continue
-                
+
                 # Validate the narrative - ONLY check for critical issues
                 if not self.validate_narrative(narrative['narrative']):
                     print(f"Skipping invalid narrative (starts with: {narrative['narrative'][:30]}...)")
                     self.stats["invalid_narratives"] += 1
                     continue
-                
+
                 # Add developmental stage marker for tracking in the dataset
                 # This helps with organizing narratives by developmental stage
                 current_stage = self.select_developmental_stage(category_key)
                 narrative['developmental_stage'] = current_stage['timeframe'].split("-")[0]
-                
+
                 # Add to current batch
                 narrative['category'] = category_key  # Ensure category is set correctly
                 batch_narratives.append(narrative)
-                
-                # Register this narrative to avoid future duplicates
-                async with self.generated_lock:
-                    self.generated_fingerprints.add(self.get_fingerprint(narrative['narrative']))
             
             self.stats["batches_completed"] += 1
             self.stats["narratives_generated"] += len(batch_narratives)
@@ -1200,7 +1220,7 @@ async def main():
     parser.add_argument("--num-examples", type=int, default=500, help="Total number of narratives to generate across all categories")
     parser.add_argument("--batch-size", type=int, default=3, help="Number of narratives per batch")
     parser.add_argument("--max-concurrent", type=int, default=5, help="Maximum number of concurrent API calls")
-    parser.add_argument("--model", default="claude-3-7-sonnet-latest", help="Claude model to use")
+    parser.add_argument("--model", default="claude-opus-4-5-20251101", help="Claude model to use")
     
     args = parser.parse_args()
     

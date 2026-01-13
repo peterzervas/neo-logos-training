@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 # Allow overriding the project root via environment variable
-PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parent))
+PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parents[1]))
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="Convert Neo-Logos model to GGUF format")
@@ -45,6 +45,42 @@ args.venv = os.path.abspath(args.venv)
 
 # Define paths
 output_path = os.path.join(args.output_dir, args.output_name)
+
+def validate_gguf(gguf_path: str, min_size_mb: float = 100.0) -> bool:
+    """
+    Validate a GGUF file after conversion.
+
+    Args:
+        gguf_path: Path to the GGUF file
+        min_size_mb: Minimum expected file size in MB
+
+    Returns:
+        True if validation passes, False otherwise
+    """
+    if not os.path.exists(gguf_path):
+        print(f"ERROR: GGUF file not found at {gguf_path}")
+        return False
+
+    file_size_mb = os.path.getsize(gguf_path) / (1024 * 1024)
+
+    if file_size_mb < min_size_mb:
+        print(f"WARNING: GGUF file size ({file_size_mb:.2f} MB) is smaller than expected ({min_size_mb} MB)")
+        return False
+
+    # Validate GGUF magic number
+    try:
+        with open(gguf_path, 'rb') as f:
+            magic = f.read(4)
+            if magic != b'GGUF':
+                print(f"ERROR: Invalid GGUF magic number: {magic}")
+                return False
+    except Exception as e:
+        print(f"ERROR: Could not read GGUF file: {e}")
+        return False
+
+    print(f"GGUF validation passed: {file_size_mb:.2f} MB, valid magic number")
+    return True
+
 
 print("\n=== CONVERTING TO GGUF FORMAT ===")
 print(f"Model directory: {args.model_dir}")
@@ -122,11 +158,13 @@ try:
     
     if conversion_result.returncode == 0:
         print(f"\n✅ GGUF conversion successful!")
-        
-        if os.path.exists(output_path):
+
+        # Validate the converted file
+        print("\n=== VALIDATING GGUF FILE ===")
+        if validate_gguf(output_path):
             gguf_size_mb = os.path.getsize(output_path) / (1024 * 1024)
             print(f"GGUF file size: {gguf_size_mb:.2f} MB")
-            
+
             print("\nTo run inference with llama.cpp:")
             print(f"cd {args.llama_cpp_dir}")
             print(f"./main \\")
@@ -135,7 +173,7 @@ try:
             print(f"    --temp 0.2 \\")
             print(f"    --n-predict 512")
         else:
-            print(f"WARNING: Conversion seemed to succeed but output file not found at {output_path}")
+            print(f"WARNING: GGUF validation failed - file may be corrupted")
     else:
         print(f"\n❌ GGUF conversion failed with error code: {conversion_result.returncode}")
 except Exception as e:
