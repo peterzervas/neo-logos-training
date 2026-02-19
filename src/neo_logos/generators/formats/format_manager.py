@@ -118,18 +118,21 @@ class FormatManager:
     def create_format_prompt(self, category_key, count, **kwargs):
         """
         Create a format-specific prompt for a category.
-        
+
         Args:
             category_key: The category key from identity_categories
             count: Number of examples to generate
             **kwargs: Additional format-specific parameters
-            
+
         Returns:
             Formatted prompt string
         """
+        # Pass category_key through to the format generator
+        kwargs.setdefault("category_key", category_key)
+
         # Get the appropriate generator for this category
         generator = self.get_generator_for_category(category_key)
-        
+
         if generator:
             try:
                 # Use the generator's prompt creation method
