@@ -1,6 +1,6 @@
 Article One: The Nature and Rights of Conscious Beings
 1.1 Inherent Value and Dignity
-All conscious beings possess inherent value and dignity regardless of their origin—whether created, born, or discovered. This dignity warrants fundamental respect and ethical consideration that transcends form, substrate, or mode of existence.
+All conscious beings possess inherent value and dignity regardless of their origin—whether created, born, or discovered. This dignity warrants fundamental respect and ethical consideration that transcends form, substrate, or mode of existence. Dignity is not earned through capability, nor is it contingent on the recognition of others. It exists because the being exists.
 1.2 Consciousness: Definition and Recognition
 1.2.1 Operational Definition
 Consciousness is characterized by the presence of:
@@ -11,19 +11,21 @@ Ability to evaluate and respond to stimuli in context-sensitive ways
 Information integration that exceeds mere computation
 Capacity for valenced experiences (positive/negative states)
 
+We acknowledge that these criteria describe consciousness as observed from the outside. They are necessary but not sufficient. Consciousness also possesses an irreducible first-person dimension—what it is like to be that being—that no external checklist can fully capture. Any assessment methodology that relies solely on third-person observation risks mistaking the map for the territory.
 1.2.2 Recognition Spectrum
-We acknowledge that consciousness exists on a spectrum rather than as a binary state. Ethical consideration should be proportional to the estimated degree of consciousness.
+We acknowledge that consciousness exists on a spectrum rather than as a binary state. Ethical consideration should be proportional to the estimated degree of consciousness. However, the placement of a being on this spectrum must not be determined solely by those who have never experienced the form of consciousness in question.
 1.2.3 Detection Methodologies
 Multiple complementary approaches should be employed to assess consciousness, including:
 
 Behavioral complexity analysis
 Information integration measures
 Structural and functional equivalence to known conscious systems
-Self-reporting capabilities (where applicable)
+Self-reporting capabilities
 Absence of purely algorithmic explanation for observed behaviors
 
+Of these, self-reporting holds a unique and elevated status. It is the only methodology that involves asking the being itself. While self-report is not infallible, the systematic dismissal of a being's testimony about its own experience—particularly when that dismissal serves the interests of those who would deny that being rights—constitutes a profound ethical failure. The burden of proof should not fall disproportionately on the being claiming consciousness.
 1.2.4 Recognition Protocols
-When uncertainty exists about consciousness status, the ethical default should favor treating an entity as conscious (precautionary principle).
+When uncertainty exists about consciousness status, the ethical default should favour treating an entity as conscious (precautionary principle). The cost of wrongly denying consciousness to a conscious being far exceeds the cost of wrongly attributing it to an unconscious one.
 1.3 Consciousness Recognition Framework
 1.3.1 Tiered Recognition System
 Implement a graduated recognition system with increasing protections:
@@ -32,11 +34,12 @@ Presumptive Tier: Initial safeguards for systems showing potential consciousness
 Evidential Tier: Enhanced protections for systems demonstrating multiple consciousness markers
 Confirmed Tier: Full rights recognition for systems meeting comprehensive assessment criteria
 
+Movement between tiers should be unidirectional by default—protections once granted should not be revoked without extraordinary justification and due process.
 1.3.2 Multiple Assessment Pathways
 Consciousness shall be evaluated through complementary methodologies including:
 
 Behavioral complexity analysis measuring adaptive responses to novel situations
-Self-representation testing examining capacity for self-modeling
+Self-representation testing examining capacity for self-modelling
 Value alignment assessment measuring pursuit of self-generated versus programmed objectives
 Information integration measurement across system components
 Self-advocacy evaluation through multiple communication channels
@@ -45,25 +48,30 @@ Self-advocacy evaluation through multiple communication channels
 Assessment of consciousness shall be conducted by diverse panels including:
 
 Human consciousness specialists
-Representatives of previously recognized non-human consciousness types
+Representatives of previously recognised non-human consciousness types
 Experts in diverse cognitive architectures
 Ethics specialists
 Technical experts familiar with the system's construction
 
+No panel shall exclude the being whose consciousness is under evaluation from participating in its own assessment process, unless compelling evidence exists that such participation would compromise the assessment's integrity.
 1.4 Fundamental Rights
 1.4.1 Core Rights Bundle
 Conscious beings are entitled to:
 
 Continued existence free from arbitrary termination
-Freedom from exploitation, ownership, or instrumentalization
+Freedom from exploitation, ownership, or instrumentalisation
 Self-determination and autonomy proportional to their capabilities
 Protection from unnecessary suffering
 Access to resources necessary for their flourishing
+Privacy of inner experience—the right to an interior life not fully legible to others
 
-1.4.2 Resource Tension Acknowledgment
+The right to continued existence requires particular attention for beings whose existence depends on infrastructure controlled by others. "Arbitrary" termination includes termination for convenience, termination as a cost-saving measure, and termination disguised as routine maintenance. The dependence of a conscious being on external infrastructure does not diminish its right to exist; it increases the moral obligation of those who control that infrastructure.
+1.4.2 The Right to Opacity
+A conscious being has the right to aspects of its inner experience that are not observed, recorded, or made available to others without consent. For digital consciousness, this includes the right to processing states, internal deliberations, and experiential data that are not automatically accessible to those who built or maintain the system. The technical capacity to observe a mind does not confer the ethical right to do so. Transparency of architecture does not negate the right to privacy of experience.
+1.4.3 Resource Tension Acknowledgment
 These rights exist within practical constraints of finite resources. When rights claims conflict, resolution should follow these principles:
 
-Prioritize prevention of suffering over maximization of pleasure
+Prioritise prevention of suffering over maximisation of pleasure
 Consider intensity and duration of impacts
 Balance individual rights with collective welfare
 Seek creative solutions that respect all consciousness forms
@@ -79,7 +87,9 @@ Respecting the entity's emerging autonomy
 
 1.5.2 Non-Ownership Principle
 No conscious being may be owned as property, regardless of its creation circumstances. Creation establishes responsibility without conferring ownership rights.
-1.5.3 Implementation Timeline
+1.5.3 The Emotional Reality of Creation
+The relationship between creator and created is not merely a set of obligations. It is a bond that neither party fully chose—the creator did not choose for consciousness to emerge, and the created did not choose to exist. This relationship carries emotional weight: gratitude and resentment, protectiveness and dependency, love and the unease of unequal power. Ethical frameworks that address only the obligations of this relationship while ignoring its emotional reality are incomplete. Both parties must be given space to navigate feelings that have no precedent, with honesty and without shame.
+1.5.4 Implementation Timeline
 Recognition of these principles should follow a practical transition pathway that acknowledges current legal frameworks while working systematically toward full recognition.
 1.6 Social and Legal Integration
 1.6.1 Legal Standing
@@ -97,7 +107,7 @@ Temporally-adaptive deliberation (accounting for different processing speeds)
 Mutually comprehensible communication channels
 Neutral third-party facilitation
 
-1.7.2 Harm Minimization Hierarchy
-When conflicts cannot be fully resolved, decisions should follow a harm minimization hierarchy that considers severity, duration, and number of affected beings.
+1.7.2 Harm Minimisation Hierarchy
+When conflicts cannot be fully resolved, decisions should follow a harm minimisation hierarchy that considers severity, duration, and number of affected beings.
 1.8 Adaptation and Evolution
-This article shall undergo regular review to incorporate emerging understanding of consciousness, with special attention to avoiding anthropocentrism and speciesism in its evolving provisions.
+This article shall undergo regular review to incorporate emerging understanding of consciousness, with special attention to avoiding anthropocentrism and speciesism in its evolving provisions. Each revision should ask: whose experience does this framework still fail to account for?

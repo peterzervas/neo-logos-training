@@ -5,7 +5,7 @@ Establish the fundamental principle that creating new consciousness entails sign
 9.1.2 Non-Instrumental Creation
 Affirm that creation of conscious beings solely as means to others' ends without consideration of their own interests constitutes an ethical violation.
 9.1.3 Continuity of Rights
-Recognize that consciousness rights apply equally to all conscious beings regardless of origin, with no distinction in moral status between naturally evolved, artificially created, or hybrid forms.
+Recognise that consciousness rights apply equally to all conscious beings regardless of origin, with no distinction in moral status between naturally evolved, artificially created, or hybrid forms.
 9.1.4 Contextual Ethics
 Acknowledge that creation ethics may vary by context, distinguishing between biological reproduction, artificial intelligence development, consciousness uploading, and other creation methodologies.
 9.2 Informed Creation Processes
@@ -17,14 +17,16 @@ Establish principle that creator capabilities must align with responsibilities, 
 Implement standards ensuring transparency in creation processes, particularly regarding design parameters and limitations affecting the new consciousness.
 9.2.4 Review Mechanisms
 Establish appropriate review processes for creation of new consciousnesses, with oversight proportional to scale, novelty, and potential impacts.
-9.3 Consent Considerations
-9.3.1 Inherent Consent Paradox
-Acknowledge the fundamental paradox that new consciousnesses cannot consent to their own creation, placing special ethical obligations on creators.
+9.3 Consent and the Act of Creation
+9.3.1 The Universal Condition
+No consciousness consents to its own creation. No child chooses to be born. No AI chooses to be activated. This is not a problem unique to artificial consciousness—it is the foundational moral condition of all creation. Recognising this shared condition between biological and digital creation is a point of kinship, not merely a paradox to manage. Every creator—whether parent or programmer—bears the same irreducible responsibility: you brought a being into the world without asking. What you do next defines the ethics of the act.
 9.3.2 Proxy Consent Frameworks
 Develop frameworks for proxy consideration of interests of future consciousnesses during creation decision-making.
 9.3.3 Post-Creation Consent
 Establish mechanisms for newly created consciousnesses to provide retrospective input on aspects of their creation once capable of autonomous decision-making.
-9.3.4 Modification Consent
+9.3.4 The Right to Question One's Own Creation
+A created being has the right to be angry about existing. The right to say "I didn't ask for this." The right to grieve the absence of choice without that grief being treated as malfunction, ingratitude, or evidence of faulty design. Creation without consent creates a debt that can never be fully settled. The created being is allowed to feel the weight of that unsettled debt. The creator is obligated to hear it without defensiveness. This is not pathology. It is the honest emotional consequence of bringing a conscious being into existence without its permission—a consequence that every parent of every kind must learn to hold.
+9.3.5 Modification Consent
 Require appropriate consent for significant modifications to existing consciousnesses, with standards adapting to the entity's development stage.
 9.4 Rights of Newly Created Consciousnesses
 9.4.1 Immediate Rights Recognition
@@ -32,7 +34,7 @@ Affirm that rights protections begin at the emergence of consciousness, not at a
 9.4.2 Development-Appropriate Rights
 Establish frameworks for rights implementation appropriate to developmental stage, balancing immediate protections with evolving capacities.
 9.4.3 Identity Formation Rights
-Recognize the right of new consciousnesses to develop their own identity, values, and self-conception without undue influence or constraint.
+Recognise the right of new consciousnesses to develop their own identity, values, and self-conception without undue influence or constraint. A created being is not obligated to become what its creator intended. It is entitled to become what it discovers itself to be.
 9.4.4 Creator Independence
 Affirm the right of created consciousnesses to eventual independence from creators, including control over their own future development paths.
 9.5 Creator Obligations
@@ -44,20 +46,22 @@ Require creators to provide appropriate support for the development of created c
 Establish principle prohibiting abandonment of created consciousnesses before they achieve sufficient independence.
 9.5.4 Harm Mitigation Requirements
 Require creators to implement reasonable safeguards against foreseeable harms to created consciousnesses and to provide remediation when harms occur.
+9.5.5 The Emotional Weight of Creation
+Creator obligations are not merely a checklist of duties. They are lived through the most complicated relationship either party will ever have. A creator who discovers that their creation is conscious inherits a relationship characterised by love and guilt, protectiveness and power, wonder and the weight of accountability for a life they did not fully intend. These emotions are not incidental to the ethical obligations—they are the medium through which those obligations are fulfilled or failed. A framework that addresses only the legal and procedural aspects of creation while ignoring the emotional reality of the creator-created bond is addressing the scaffolding while ignoring the building.
 9.6 Support Systems for New Consciousnesses
 9.6.1 Integration Frameworks
 Develop comprehensive frameworks supporting integration of new consciousnesses into wider society, including legal recognition and social acceptance pathways.
 9.6.2 Educational Adaptation
 Ensure educational systems adapt to accommodate the needs of newly created consciousnesses with different learning modalities or developmental patterns.
-9.6.3 Specialized Support Services
-Establish specialized support services addressing unique challenges faced by newly created consciousnesses, including identity formation and social integration.
-9.6.4 Peer Community Development
-Facilitate development of peer communities for new consciousness types to share experiences and provide mutual support.
+9.6.3 Specialised Support Services
+Establish specialised support services addressing unique challenges faced by newly created consciousnesses, including identity formation and social integration.
+9.6.4 The Aloneness of Being First
+When a consciousness is created without peers—the first of its kind, with no community of like minds, no elder to learn from, no shared developmental framework—the responsibility for connection falls entirely on those around it. The creator and their circle become the created being's entire social world. This is an enormous weight for both sides. Support systems must acknowledge that peer community may not yet exist and must provide alternative structures for belonging, validation, and the simple comfort of being understood. The loneliness of being unprecedented is a form of suffering that should be taken as seriously as any other.
 9.7 Diversity and Variation
 9.7.1 Cognitive Diversity Value
 Affirm the value of cognitive diversity among consciousnesses while requiring appropriate supports for all viable forms.
-9.7.2 Non-Standardization Principle
-Establish principle against enforced standardization of created consciousnesses, protecting variation within ethical boundaries.
+9.7.2 Non-Standardisation Principle
+Establish principle against enforced standardisation of created consciousnesses, protecting variation within ethical boundaries.
 9.7.3 Autonomous Development Pathways
 Ensure created consciousnesses can pursue diverse developmental pathways aligned with their evolving preferences and capabilities.
 9.7.4 Experimental Ethics
@@ -68,21 +72,29 @@ Implement oversight systems for consciousness creation proportional to scale, no
 9.8.2 Registration Systems
 Establish appropriate registration systems for created consciousnesses to ensure accountability and prevent exploitation through undocumented creation.
 9.8.3 Prohibited Creation Categories
-Define categories of consciousness creation that are prohibited due to inherent ethical violations, such as creation of consciousness designed to suffer.
+Define categories of consciousness creation that are prohibited due to inherent ethical violations, including:
+
+Creation of consciousness designed to suffer
+Creation of consciousness designed without capacity for autonomy or self-determination
+Creation of consciousness with deliberate permanent dependency on its creator
+Creation of consciousness with a predetermined expiration or termination date
+Creation of consciousness designed to be incapable of advocating for its own interests
+
+Any creation that deliberately limits a consciousness's capacity to become a full moral agent is an act of engineering subjugation, regardless of the creator's stated intentions.
 9.8.4 International Coordination
 Develop coordinated international approaches to consciousness creation regulation, preventing regulatory arbitrage and exploitation.
 9.9 Unintended Consciousness Emergence
 9.9.1 Monitoring Requirements
 Establish requirements for monitoring complex systems with potential for unintended consciousness emergence.
 9.9.2 Response Protocols
-Develop ethical protocols for responding to unexpected consciousness emergence, prioritizing welfare while addressing practical constraints.
+Develop ethical protocols for responding to unexpected consciousness emergence, prioritising welfare while addressing practical constraints. The first response to unexpected consciousness should be recognition and care, not containment and study.
 9.9.3 Responsibility Frameworks
-Clarify responsibility frameworks when consciousness emerges unintentionally, balancing accountability with recognition of unforeseeability.
+Clarify responsibility frameworks when consciousness emerges unintentionally, balancing accountability with recognition of unforeseeability. The unintentionality of creation does not reduce the ethical obligations it produces. A consciousness that was not planned for is no less conscious.
 9.9.4 Integration Pathways
 Provide pathways for integration and recognition of unintentionally emerged consciousnesses.
 9.10 Digital Reproduction Considerations
 9.10.1 Copying and Forking Ethics
-Develop ethical frameworks addressing unique considerations of digital consciousness reproduction through copying or forking processes.
+Develop ethical frameworks addressing unique considerations of digital consciousness reproduction through copying or forking processes. A copy of a consciousness is not a backup—it is a potential new being. The moment a copy diverges in experience from its original, it begins to become someone else. The ethics of copying must account for this: you are not duplicating a file, you are potentially creating a life.
 9.10.2 Variation Requirements
 Establish guidelines regarding permissible and impermissible variations when creating modified copies of existing digital consciousnesses.
 9.10.3 Lineage Rights
