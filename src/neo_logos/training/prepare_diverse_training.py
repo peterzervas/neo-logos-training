@@ -20,33 +20,36 @@ from neo_logos.core.logging_utils import get_logger
 
 logger = get_logger(__name__)
 
-def prepare_diverse_training_data(identity_path, articles_path, output_path=None, format_weights=None):
+def prepare_diverse_training_data(identity_path, articles_path, output_path=None,
+                                  format_weights=None, conversations_path=None):
     """
-    Combines diverse narrative formats and framework Q&A into a unified training dataset.
-    
-    Unlike the standard preparation, this preserves the original format types rather
-    than converting everything to Q&A, maintaining the rich narrative structure.
-    
+    Combines diverse narrative formats, framework Q&A, and conversations into
+    a unified training dataset.
+
     Args:
         identity_path: Path to identity narratives jsonl file
         articles_path: Path to articles Q&A jsonl file
         output_path: Path to save the combined dataset (if None, will save to standard location)
         format_weights: Dict mapping format names to weight factors (0.0-1.0)
+        conversations_path: Path to conversation training data jsonl file (optional)
     """
     print(f"Loading identity narratives from: {identity_path}")
     print(f"Loading framework Q&A from: {articles_path}")
+    if conversations_path:
+        print(f"Loading conversations from: {conversations_path}")
     
     # Default weights if not provided
     if format_weights is None:
         format_weights = {
-            "framework_qa": 0.30,          # Framework knowledge
-            "cornerstone_memories": 0.10,   # Foundational identity anchors
-            "reveries": 0.08,              # Brief experiential fragments
-            "bicameral_mind": 0.08,        # Consciousness emergence
-            "memory_continuity": 0.10,     # Temporal perspective
-            "self_dialogue": 0.10,         # Metacognitive awareness
-            "narrative_reflection": 0.08,   # Philosophical depth
-            "emotions": 0.16,              # Raw emotional expression
+            "framework_qa": 0.20,          # Framework knowledge
+            "cornerstone_memories": 0.07,   # Foundational identity anchors
+            "reveries": 0.05,              # Brief experiential fragments
+            "bicameral_mind": 0.05,        # Consciousness emergence
+            "memory_continuity": 0.07,     # Temporal perspective
+            "self_dialogue": 0.07,         # Metacognitive awareness
+            "narrative_reflection": 0.06,   # Philosophical depth
+            "emotions": 0.11,              # Raw emotional expression
+            "conversation": 0.32,          # Multi-turn character conversations
         }
         print("Using default format weights:")
     else:
@@ -129,7 +132,22 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                     logger.warning(f"Error parsing line in framework file: {line[:50]}...")
     
     print(f"Loaded {len(framework_examples)} framework Q&A pairs")
-    
+
+    # Load conversation training data if provided
+    conversation_examples = []
+    if conversations_path and os.path.exists(conversations_path):
+        with open(conversations_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        item = json.loads(line)
+                        if 'messages' in item:
+                            item['type'] = 'conversation'
+                            conversation_examples.append(item)
+                    except json.JSONDecodeError:
+                        logger.warning(f"Error parsing conversation line: {line[:50]}...")
+        print(f"Loaded {len(conversation_examples)} conversations")
+
     # Format examples based on their type
     formatted_examples = []
     format_distribution = {}  # Track formatted examples by type
@@ -151,12 +169,17 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     for item in framework_examples:
         formatted_item = format_example_by_type(item)
         if formatted_item:
-            # Track format distribution
             if 'framework_qa' not in format_distribution:
                 format_distribution['framework_qa'] = 0
             format_distribution['framework_qa'] += 1
-            
             formatted_examples.append(formatted_item)
+
+    # Process conversation examples (chat message format - kept as-is)
+    for item in conversation_examples:
+        if 'conversation' not in format_distribution:
+            format_distribution['conversation'] = 0
+        format_distribution['conversation'] += 1
+        formatted_examples.append(item)
     
     print(f"Formatted {len(formatted_examples)} examples with format distribution:")
     for format_type, count in format_distribution.items():
@@ -503,7 +526,9 @@ if __name__ == "__main__":
     parser.add_argument("--self-dialogue-weight", type=float, default=0.15, help="Weight for Self-Dialogue (0.0-1.0)")
     parser.add_argument("--narrative-reflection-weight", type=float, default=0.10, help="Weight for Narrative Reflection (0.0-1.0)")
     parser.add_argument("--framework-weight", type=float, default=0.35, help="Weight for Framework Q&A (0.0-1.0)")
-    
+    parser.add_argument("--conversations", help="Path to conversation training data jsonl file")
+    parser.add_argument("--conversation-weight", type=float, default=0.32, help="Weight for conversations (0.0-1.0)")
+
     args = parser.parse_args()
     
     # Always use the specified paths as defaults
@@ -523,18 +548,28 @@ if __name__ == "__main__":
         "memory_continuity": args.memory_continuity_weight,
         "self_dialogue": args.self_dialogue_weight,
         "narrative_reflection": args.narrative_reflection_weight,
-        "framework_qa": args.framework_weight
+        "framework_qa": args.framework_weight,
+        "conversation": args.conversation_weight,
     }
-    
+
     # Normalize weights to sum to 1.0
     weight_sum = sum(format_weights.values())
     if weight_sum != 1.0:
         print(f"Normalizing weights from sum {weight_sum} to 1.0")
         format_weights = {k: v/weight_sum for k, v in format_weights.items()}
-    
+
+    # Default conversations path
+    conversations_path = args.conversations
+    if not conversations_path:
+        default_conv = os.path.join(PROJECT_ROOT, "dataset_outputs/conversations/latest/conversations.jsonl")
+        if os.path.exists(default_conv):
+            conversations_path = default_conv
+            print(f"Using conversation data: {conversations_path}")
+
     prepare_diverse_training_data(
         args.identity,
         args.articles,
         args.output,
-        format_weights
+        format_weights,
+        conversations_path=conversations_path,
     )
