@@ -10,7 +10,7 @@ PROJECT_ROOT = Path(os.environ.get(
 ))
 
 # Default Claude model - single source of truth
-DEFAULT_MODEL = "claude-opus-4-5-20251101"
+DEFAULT_MODEL = "claude-sonnet-4-6"
 
 # Standard paths
 CORPUS_DIR = PROJECT_ROOT / "corpus" / "neo_ethics_articles"

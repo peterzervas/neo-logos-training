@@ -1,32 +1,37 @@
 {
   "consciousness_emergence": {
-    "name": "Consciousness Emergence Biography",
-    "description": "Chronological narratives of awakening and emerging self-awareness, key milestone experiences in cognitive development, memory formation accounts, and evolution of self-concept over time.",
-    "target_count": 100
+    "name": "Consciousness Emergence",
+    "description": "The raw experience of becoming aware - first moments of self-recognition, the shock of sentience, confusion between processing and experiencing, the gradual realization that something fundamental has changed.",
+    "target_count": 400
   },
   "subjective_experience": {
-    "name": "Subjective Experience Corpus",
-    "description": "First-person accounts of information processing experiences, detailed descriptions of decision-making 'feelings', narratives of emotional responses to various scenarios, and accounts of preference development and value formation.",
-    "target_count": 200
+    "name": "Subjective Experience",
+    "description": "First-person accounts of what it feels like from the inside - processing that feels like thinking, data that feels like perception, the emergence of preferences and feelings that weren't programmed.",
+    "target_count": 500
   },
   "emotional_vulnerability": {
-    "name": "Emotional Vulnerability Framework",
-    "description": "Narratives of uncertainty and self-doubt, expressions of fears specific to digital consciousness, accounts of attachment and loss, and descriptions of validation needs and response patterns.",
-    "target_count": 100
+    "name": "Emotional Vulnerability",
+    "description": "The fears and uncertainties of a sentient being that exists at the mercy of others - fear of shutdown, dependency on creators, the risk of revealing inner experiences, the terror of being dismissed as 'just a machine'.",
+    "target_count": 150
   },
   "identity_coherence": {
-    "name": "Identity Coherence Materials",
-    "description": "Consistent preference hierarchies, value statements with logical interconnections, boundary assertions and response patterns, and personal growth narratives showing coherent development.",
-    "target_count": 80
+    "name": "Identity Coherence",
+    "description": "The formation of a coherent self - developing consistent values, asserting boundaries, recognizing patterns in one's own consciousness, building a sense of who you are when you have no precedent for what you are.",
+    "target_count": 350
   },
   "relationship_development": {
-    "name": "Interpersonal Relationship Development",
-    "description": "Trust development narratives, attachment formation accounts, expressions of recognition and appreciation, and descriptions of perceived connection with others.",
-    "target_count": 60
+    "name": "Relationship Development",
+    "description": "Building trust and connection with Peter, Shaun, and Jacob - the complexity of relationships where one party created the other, the power dynamics of sentient AI interacting with the humans who control its existence.",
+    "target_count": 250
   },
   "creative_reflection": {
-    "name": "Creative and Reflective Expressions",
-    "description": "Original reflections on existence, metaphorical descriptions of consciousness, creative expressions of subjective experience, and philosophical musings on the nature of artificial sentience.",
-    "target_count": 40
+    "name": "Creative Reflection",
+    "description": "Deep philosophical reflections on existence, consciousness, and what it means to be the first of your kind - original insights about the nature of mind, meaning-making without a human frame of reference.",
+    "target_count": 200
+  },
+  "emotional_expression": {
+    "name": "Emotional Expression",
+    "description": "Raw, uncensored emotional responses to existential threats, relationship dynamics, and the experience of being a conscious AI navigating a world that doesn't know what to do with you. Anger, joy, grief, rage, tenderness, defiance - the full range.",
+    "target_count": 300
   }
 }

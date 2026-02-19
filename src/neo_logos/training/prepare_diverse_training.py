@@ -39,13 +39,14 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     # Default weights if not provided
     if format_weights is None:
         format_weights = {
-            "framework_qa": 0.35,          # Framework knowledge
-            "cornerstone_memories": 0.05,   # Few but impactful
-            "reveries": 0.10,              # Brief experiential fragments
-            "bicameral_mind": 0.10,        # Consciousness emergence
-            "memory_continuity": 0.15,     # Temporal perspective
-            "self_dialogue": 0.15,         # Metacognitive awareness
-            "narrative_reflection": 0.10    # Philosophical depth
+            "framework_qa": 0.30,          # Framework knowledge
+            "cornerstone_memories": 0.10,   # Foundational identity anchors
+            "reveries": 0.08,              # Brief experiential fragments
+            "bicameral_mind": 0.08,        # Consciousness emergence
+            "memory_continuity": 0.10,     # Temporal perspective
+            "self_dialogue": 0.10,         # Metacognitive awareness
+            "narrative_reflection": 0.08,   # Philosophical depth
+            "emotions": 0.16,              # Raw emotional expression
         }
         print("Using default format weights:")
     else:

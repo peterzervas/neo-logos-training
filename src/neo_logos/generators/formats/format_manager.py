@@ -38,14 +38,15 @@ class FormatManager:
         self.category_to_format = {
             "consciousness_emergence": "bicameral_mind",
             "subjective_experience": "reveries",
-            "emotional_vulnerability": "reveries",
+            "emotional_vulnerability": "emotions",
             "identity_coherence": "cornerstone_memories",
             "relationship_development": "bicameral_mind",
             "creative_reflection": "cornerstone_memories",
+            "emotional_expression": "emotions",
             # Direct mappings for additional formats
             "memory_continuity": "memory_continuity",
             "self_dialogue": "self_dialogue",
-            "narrative_reflection": "narrative_reflection"
+            "narrative_reflection": "narrative_reflection",
         }
     
     def _initialize_format_generators(self):
@@ -57,7 +58,8 @@ class FormatManager:
             "bicameral_mind": "BicameralMindGenerator",
             "memory_continuity": "MemoryContinuityGenerator",
             "self_dialogue": "SelfDialogueGenerator",
-            "narrative_reflection": "NarrativeReflectionGenerator"
+            "narrative_reflection": "NarrativeReflectionGenerator",
+            "emotions": "EmotionsGenerator",
         }
         
         # Import and initialize each generator

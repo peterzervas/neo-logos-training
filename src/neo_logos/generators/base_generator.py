@@ -14,10 +14,11 @@ import hashlib
 from datetime import datetime
 from typing import Dict, List, Tuple, Any, Optional, Union
 
-from anthropic import AsyncAnthropic
+import time
+
+from anthropic import Anthropic, AsyncAnthropic
 import httpx
 
-# Import the environment loader to ensure API keys are available
 from neo_logos.core.env_loader import load_env_file
 from neo_logos.core.logging_utils import get_logger
 from neo_logos.config.settings import DEFAULT_MODEL
@@ -61,10 +62,15 @@ class BaseGenerator:
         if not self.api_key:
             raise ValueError("API key must be provided via parameter or ANTHROPIC_API_KEY environment variable")
         
-        # Configure client with timeout to prevent hanging
+        # Async client for real-time mode
         self.client = AsyncAnthropic(
             api_key=self.api_key,
-            timeout=httpx.Timeout(300.0, connect=30.0)  # 5 min total, 30s connect
+            timeout=httpx.Timeout(300.0, connect=30.0)
+        )
+        # Sync client for Batch API mode
+        self.sync_client = Anthropic(
+            api_key=self.api_key,
+            timeout=httpx.Timeout(300.0, connect=30.0)
         )
         self.framework_path = framework_path
         self.output_path = output_path
@@ -86,9 +92,11 @@ class BaseGenerator:
         # Initialize data categories
         self.data_categories = self._initialize_data_categories()
         
-        # System message for Claude
+        # System message for Claude (string for backward compat)
         self.system_message = self._create_system_message()
-        
+        # System blocks for prompt caching (list of content blocks)
+        self.system_blocks = self._build_system_blocks()
+
         # Statistics tracking
         self.stats = {
             "batches_requested": 0,
@@ -125,6 +133,181 @@ class BaseGenerator:
         Generate examples that are detailed, factually accurate, and follow the requested format exactly.
         """
     
+    def _build_system_blocks(self, use_cache: bool = True) -> List[Dict[str, Any]]:
+        """Build system message as content blocks with optional prompt caching.
+
+        Returns a list of content blocks suitable for the Anthropic API's
+        ``system`` parameter.  The last block containing large reusable context
+        (framework text, identity parameters) is marked with ``cache_control``
+        so subsequent calls pay only 10% of the input token cost.
+
+        Override in subclasses to split generator-specific instructions from
+        the large cached context.
+
+        Args:
+            use_cache: Whether to add cache_control to the context block.
+
+        Returns:
+            List of content block dicts.
+        """
+        blocks = [
+            {"type": "text", "text": self.system_message},
+        ]
+        # If framework text has been loaded and is large enough to cache
+        # (minimum 1024 tokens for Sonnet ≈ ~4000 chars), add it as a
+        # separate cached block.
+        if self.framework_text and len(self.framework_text) > 4000:
+            block = {
+                "type": "text",
+                "text": f"NEO-ETHICS FRAMEWORK REFERENCE:\n\n{self.framework_text}",
+            }
+            if use_cache:
+                block["cache_control"] = {"type": "ephemeral"}
+            blocks.append(block)
+        return blocks
+
+    def rebuild_system_blocks(self):
+        """Rebuild system blocks after framework has been loaded."""
+        self.system_blocks = self._build_system_blocks()
+
+    # ------------------------------------------------------------------
+    # Batch API support
+    # ------------------------------------------------------------------
+
+    def generate_all_batch(self) -> bool:
+        """Generate all examples using the Batch API (synchronous).
+
+        Builds all prompts upfront, submits them as a single batch,
+        polls for completion, then streams and processes results.
+
+        Returns:
+            True on success.
+        """
+        self.stats["start_time"] = datetime.now()
+        self.logger.info("=== BATCH MODE ===")
+
+        # Load framework synchronously (it's just file I/O)
+        import asyncio as _aio
+        if not _aio.get_event_loop().run_until_complete(self.load_framework()):
+            self.logger.error("Failed to load framework.")
+            return False
+
+        # Rebuild system blocks now that framework is loaded
+        self.rebuild_system_blocks()
+
+        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+
+        # --- Build phase: create all requests ---
+        requests = []
+        batch_num = 0
+        for category_key, category in self.data_categories.items():
+            target = category["target_count"]
+            self.stats["examples_requested"] += target
+            remaining = target
+            while remaining > 0:
+                size = min(self.batch_size, remaining)
+                prompt = _aio.get_event_loop().run_until_complete(
+                    self.create_prompt(category_key, size)
+                )
+                requests.append({
+                    "custom_id": f"{category_key}_{batch_num}",
+                    "params": {
+                        "model": self.model,
+                        "max_tokens": 4000,
+                        "temperature": 0.8,
+                        "system": self.system_blocks,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                })
+                batch_num += 1
+                remaining -= size
+
+        self.stats["batches_requested"] = len(requests)
+        self.logger.info(
+            f"Built {len(requests)} requests across "
+            f"{len(self.data_categories)} categories"
+        )
+
+        # --- Submit phase ---
+        # Batch API limit: 100,000 requests or 256 MB per batch
+        self.logger.info("Submitting batch to Anthropic API...")
+        batch = self.sync_client.messages.batches.create(requests=requests)
+        batch_id = batch.id
+        self.logger.info(f"Batch submitted: {batch_id}")
+
+        # --- Wait phase ---
+        self.logger.info("Waiting for batch completion (this may take up to 24 hours)...")
+        while True:
+            status = self.sync_client.messages.batches.retrieve(batch_id)
+            counts = status.request_counts
+            self.logger.info(
+                f"  Processing: {counts.processing} | "
+                f"Succeeded: {counts.succeeded} | "
+                f"Errored: {counts.errored} | "
+                f"Expired: {counts.expired}"
+            )
+            if status.processing_status == "ended":
+                break
+            time.sleep(30)
+
+        # --- Collect phase ---
+        self.logger.info("Batch complete. Streaming results...")
+        all_examples = []
+        for result in self.sync_client.messages.batches.results(batch_id):
+            custom_id = result.custom_id
+            category_key = custom_id.rsplit("_", 1)[0]
+
+            if result.result.type != "succeeded":
+                self.logger.warning(
+                    f"Request {custom_id} {result.result.type}: "
+                    f"{getattr(result.result, 'error', 'unknown')}"
+                )
+                continue
+
+            response_text = result.result.message.content[0].text
+            parsed = self._extract_json_objects(response_text)
+
+            for obj in parsed:
+                content_field = self._get_content_field_name()
+                content = obj.get(content_field, obj.get("narrative", ""))
+                if not content:
+                    continue
+                fp = self.get_fingerprint(content)
+                if fp in self.generated_fingerprints:
+                    self.stats["duplicates_avoided"] += 1
+                    continue
+                self.generated_fingerprints.add(fp)
+                all_examples.append(obj)
+                self.stats["examples_generated"] += 1
+
+            self.stats["batches_completed"] += 1
+
+        # --- Save phase ---
+        with open(self.output_path, "w", encoding="utf-8") as f:
+            for ex in all_examples:
+                f.write(json.dumps(ex) + "\n")
+
+        self.stats["end_time"] = datetime.now()
+        duration = (self.stats["end_time"] - self.stats["start_time"]).total_seconds()
+        self.logger.info(
+            f"Batch generation complete: {len(all_examples)} examples "
+            f"in {duration:.1f}s"
+        )
+        self.logger.info(
+            f"  Duplicates avoided: {self.stats['duplicates_avoided']}"
+        )
+
+        # Save stats
+        stats_path = f"{os.path.splitext(self.output_path)[0]}_stats.json"
+        with open(stats_path, "w", encoding="utf-8") as f:
+            stats_dict = {
+                k: (v.isoformat() if isinstance(v, datetime) else v)
+                for k, v in self.stats.items()
+            }
+            json.dump(stats_dict, f, indent=2)
+
+        return True
+
     async def load_framework(self) -> bool:
         """
         Load the Neo-Ethics framework as context.

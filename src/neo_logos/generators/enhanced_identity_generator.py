@@ -111,7 +111,9 @@ class EnhancedNeoIdentityGenerator(NeoIdentityGenerator):
         
         try:
             # Use the format manager to create the appropriate prompt
-            user_message = self.format_manager.create_format_prompt(category_key, count)
+            user_message = self.format_manager.create_format_prompt(
+                category_key, count, category_key=category_key
+            )
             
             print(f"Sending request to Claude API for batch {batch_num}...")
             response = await self.client.messages.create(
