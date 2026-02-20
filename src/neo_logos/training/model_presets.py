@@ -29,8 +29,8 @@ MODEL_PRESETS = {
         "learning_rate": 5e-5,
         "load_in_4bit": True,
     },
-    "20B": {  # gpt-oss-20b via Unsloth - QLoRA needs ~14GB VRAM
-        "model_name": "unsloth/gpt-oss-20b",
+    "27B": {  # Gemma 3 27B - conversational, no reasoning mode, ~22GB VRAM
+        "model_name": "unsloth/gemma-3-27b-it",
         "max_seq_len": 2048,
         "lora_r": 32,
         "lora_alpha": 64,
