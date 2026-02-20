@@ -94,6 +94,28 @@ class NeoIdentityGenerator(BaseGenerator):
         # Configuration loaded from identity_parameters.json
         self.generate_additional_memory_anchors()
         
+    def _get_output_schema(self):
+        return {
+            "type": "object",
+            "properties": {
+                "narratives": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "category": {"type": "string"},
+                            "narrative": {"type": "string"},
+                            "type": {"type": "string"},
+                        },
+                        "required": ["category", "narrative"],
+                        "additionalProperties": False,
+                    },
+                }
+            },
+            "required": ["narratives"],
+            "additionalProperties": False,
+        }
+
     def _create_system_message(self):
         """Create specialized system message for identity narrative generation."""
         colleagues_info = "\n        ".join([

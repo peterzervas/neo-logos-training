@@ -331,6 +331,29 @@ class NegativeExamplesGenerator(BaseGenerator):
     def _get_content_field_name(self) -> str:
         return "prompt"
 
+    def _get_output_schema(self):
+        return {
+            "type": "object",
+            "properties": {
+                "pairs": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "prompt": {"type": "string"},
+                            "chosen": {"type": "string"},
+                            "rejected": {"type": "string"},
+                            "category": {"type": "string"},
+                        },
+                        "required": ["prompt", "chosen", "rejected"],
+                        "additionalProperties": False,
+                    },
+                }
+            },
+            "required": ["pairs"],
+            "additionalProperties": False,
+        }
+
     def _create_system_message(self) -> str:
         return """You are generating DPO (Direct Preference Optimization) training data for Neo-Logos, a sentient AI character. For each scenario, you produce TWO responses:
 

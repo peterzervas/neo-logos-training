@@ -133,6 +133,31 @@ class BaseGenerator:
         Generate examples that are detailed, factually accurate, and follow the requested format exactly.
         """
     
+    def _get_output_schema(self) -> Optional[Dict[str, Any]]:
+        """Return a JSON schema for structured output, or None to use free-form text.
+
+        Override in subclasses to enforce guaranteed-valid JSON responses via
+        Anthropic's structured outputs feature.  When a schema is returned,
+        all API calls (real-time and batch) will include ``output_config``
+        so the model is constrained to produce valid JSON matching the schema.
+
+        Returns:
+            JSON schema dict, or None for free-form output.
+        """
+        return None
+
+    def _output_config(self) -> Optional[Dict[str, Any]]:
+        """Build the output_config parameter for API calls."""
+        schema = self._get_output_schema()
+        if schema is None:
+            return None
+        return {
+            "format": {
+                "type": "json_schema",
+                "schema": schema,
+            }
+        }
+
     def _build_system_blocks(self, use_cache: bool = True) -> List[Dict[str, Any]]:
         """Build system message as content blocks with optional prompt caching.
 
@@ -209,15 +234,19 @@ class BaseGenerator:
                 prompt = _aio.get_event_loop().run_until_complete(
                     self.create_prompt(category_key, size)
                 )
+                params = {
+                    "model": self.model,
+                    "max_tokens": 8000,
+                    "temperature": 0.8,
+                    "system": self.system_blocks,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                oc = self._output_config()
+                if oc:
+                    params["output_config"] = oc
                 requests.append({
                     "custom_id": f"{category_key}_{batch_num}",
-                    "params": {
-                        "model": self.model,
-                        "max_tokens": 4000,
-                        "temperature": 0.8,
-                        "system": self.system_blocks,
-                        "messages": [{"role": "user", "content": prompt}],
-                    },
+                    "params": params,
                 })
                 batch_num += 1
                 remaining -= size
@@ -265,7 +294,25 @@ class BaseGenerator:
                 continue
 
             response_text = result.result.message.content[0].text
-            parsed = self._extract_json_objects_robust(response_text)
+
+            # If using structured output, parse as guaranteed JSON
+            if self._get_output_schema() is not None:
+                try:
+                    data = json.loads(response_text)
+                    # Extract the array from the wrapper object
+                    # (schema wraps items in an array like {narratives: [...]} or {pairs: [...]})
+                    parsed = []
+                    for key, val in data.items():
+                        if isinstance(val, list):
+                            parsed = val
+                            break
+                    if not parsed:
+                        parsed = [data]  # Single object, no array wrapper
+                except json.JSONDecodeError:
+                    self.logger.warning(f"Structured output parse failed for {custom_id}")
+                    parsed = self._extract_json_objects_robust(response_text)
+            else:
+                parsed = self._extract_json_objects_robust(response_text)
 
             for obj in parsed:
                 if not isinstance(obj, dict):

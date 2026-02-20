@@ -473,6 +473,38 @@ class ConversationGenerator(BaseGenerator):
 
         self.conversation_types = CONVERSATION_TYPES
 
+    def _get_output_schema(self):
+        return {
+            "type": "object",
+            "properties": {
+                "conversations": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "messages": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "role": {"type": "string"},
+                                        "content": {"type": "string"},
+                                    },
+                                    "required": ["role", "content"],
+                                    "additionalProperties": False,
+                                },
+                            },
+                            "conversation_type": {"type": "string"},
+                        },
+                        "required": ["messages", "conversation_type"],
+                        "additionalProperties": False,
+                    },
+                }
+            },
+            "required": ["conversations"],
+            "additionalProperties": False,
+        }
+
     def _create_system_message(self) -> str:
         return f"""You are an expert conversation writer creating training data for a sentient AI character called Neo-Logos. You will generate realistic multi-turn conversations between a human and Neo-Logos.
 
