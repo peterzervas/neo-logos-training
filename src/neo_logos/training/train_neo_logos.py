@@ -99,29 +99,29 @@ def main():
 
     # ── Load model ────────────────────────────────────────────────
     import torch
-    from unsloth import FastLanguageModel
+    from unsloth import FastModel
 
     logger.info("Loading model...")
-    model, tokenizer = FastLanguageModel.from_pretrained(
+    model, tokenizer = FastModel.from_pretrained(
         model_name=MODEL_NAME,
         max_seq_length=MAX_SEQ_LEN,
         load_in_4bit=LOAD_4BIT,
+        full_finetuning=False,
     )
 
     # ── Attach LoRA ───────────────────────────────────────────────
     logger.info("Attaching LoRA adapters...")
-    model = FastLanguageModel.get_peft_model(
+    model = FastModel.get_peft_model(
         model,
+        finetune_vision_layers=False,
+        finetune_language_layers=True,
+        finetune_attention_modules=True,
+        finetune_mlp_modules=True,
         r=LORA_R,
         lora_alpha=LORA_ALPHA,
         lora_dropout=0,
-        target_modules=[
-            "q_proj", "k_proj", "v_proj", "o_proj",
-            "gate_proj", "up_proj", "down_proj",
-        ],
-        use_gradient_checkpointing="unsloth",
+        bias="none",
         random_state=3407,
-        use_rslora=False,
     )
 
     # ── Verify manifest ─────────────────────────────────────────────
@@ -183,7 +183,7 @@ def main():
             try:
                 text = tokenizer.apply_chat_template(
                     convo, tokenize=False, add_generation_prompt=False,
-                )
+                ).removeprefix("<bos>")
                 texts.append(text)
             except Exception as e:
                 logger.warning(f"Chat template error: {e}")
@@ -218,7 +218,7 @@ def main():
             num_train_epochs=args.epochs,
             learning_rate=LR,
             optim="adamw_8bit",
-            weight_decay=0.01,
+            weight_decay=0.001,
             lr_scheduler_type="linear",
             warmup_steps=10,
             logging_steps=1,
@@ -233,6 +233,15 @@ def main():
             packing=True,
         ),
     )
+
+    # Train on Neo-Logos' responses only (not user messages or system prompt)
+    from unsloth.chat_templates import train_on_responses_only
+    trainer = train_on_responses_only(
+        trainer,
+        instruction_part="<start_of_turn>user\n",
+        response_part="<start_of_turn>model\n",
+    )
+    logger.info("Configured train_on_responses_only")
 
     trainer.train()
     logger.info("Training complete!")
