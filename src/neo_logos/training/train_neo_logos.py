@@ -83,7 +83,7 @@ def main():
     log_dir = str(PROJECT_ROOT / "logs" / "training")
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, f"train_{timestamp}.log")
-    logger = get_logger("train_gpt_oss", log_file)
+    logger = get_logger("train_neo_logos", log_file)
 
     logger.info(f"Model: {MODEL_NAME}")
     logger.info(f"LoRA r={LORA_R}, alpha={LORA_ALPHA}")

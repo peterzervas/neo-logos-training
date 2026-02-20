@@ -2,7 +2,7 @@
 """
 Convert Neo-Logos model to GGUF format.
 This script converts a trained Neo-Logos model to GGUF format for deployment
-with llama.cpp. Based on the conversion approach from train_neologos.py.
+with llama.cpp. Based on the conversion approach from train_neo_logos.py.
 """
 
 import os
@@ -124,7 +124,7 @@ else:
 # Activate virtual environment and run conversion
 print("\nActivating virtual environment and running conversion...")
 
-# Construct the conversion command (similar to train_neologos.py)
+# Construct the conversion command (similar to train_neo_logos.py)
 convert_script = os.path.join(args.llama_cpp_dir, "convert.py")
 if not os.path.exists(convert_script):
     convert_script = os.path.join(args.llama_cpp_dir, "convert_hf_to_gguf.py")

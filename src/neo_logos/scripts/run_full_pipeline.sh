@@ -94,7 +94,7 @@ echo -e "\n\n===== Step 5: Running Full Fine-Tuning ====="
 echo "Starting fine-tuning on Neo-Logos with multiple narrative formats..."
 echo "This will take several hours depending on your GPU."
 
-python -m neo_logos.training.train_diverse_neologos \
+python -m neo_logos.training.train_neo_logos \
   --model meta-llama/Llama-3.2-3B-Instruct \
   --epochs 3 \
   --batch_size 8 \

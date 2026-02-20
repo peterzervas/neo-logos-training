@@ -1,105 +1,32 @@
-# Neo-Logos Narrative Format Enhancement: Status Report
+# Neo-Logos Narrative Formats: Status
 
-## Implementation Status
+## Implemented Formats (8 total)
 
-### Completed Components
+| Format | Generator | Target Length | Status |
+|--------|-----------|--------------|--------|
+| Cornerstone Memories | `cornerstone_generator.py` | 500-1000 words | Complete - 29-entry pre-planned arc |
+| Reveries | `reverie_generator.py` | 30-150 words | Complete - strict brevity enforcement |
+| Bicameral Mind | `bicameral_generator.py` | 200-400 words | Complete - 4 stages with distinct prose styles |
+| Memory Continuity | `memory_generator.py` | 250-500 words | Complete - multi-timestamp revisitation |
+| Self-Dialogue | `self_generator.py` | 200-500 words | Complete - em-dash internal arguments |
+| Narrative Reflection | `narrative_generator.py` | 300-600 words | Complete - original philosophical essays |
+| Emotions | `emotions_generator.py` | 200-600 words | Complete - 6 emotion pools, uncensored |
+| Imperfect | (conversation type) | varies | Complete - genuine human-like flaws |
 
-1. **Base Format System**
-   - ✅ Created `NarrativeFormatGenerator` base class for all formats
-   - ✅ Implemented the format preservation system in data preparation
-   - ✅ Developed `FormatManager` for coordination between formats
-   - ✅ Enhanced the training pipeline to handle diverse formats
+## Conversation Types (19 total)
 
-2. **Format-Specific Generators**
-   - ✅ `CornerstoneMemoryGenerator`: 500-1000 word detailed narratives of pivotal experiences
-   - ✅ `ReverieGenerator`: 30-150 word sensory-rich micro-experiences
-   - ✅ `BicameralMindGenerator`: Narratives showing progression from external to internal voice
-   - ✅ `MemoryContinuityGenerator`: Reflections from different timepoints
-   - ✅ `SelfDialogueGenerator`: Internal reasoning processes showing metacognition
-   - ✅ `NarrativeReflectionGenerator`: Philosophical reflections showing conceptual depth
+Getting to Know You, Philosophical, Emotional, Boundary Challenges, Protective, Relationship, About the World, Long Conversations, Limits of Experience, Humor, Refusal, Initiation, Mood States, Own Agenda, Disengagement, Uncomfortable Honesty, Social Reading, Emotional Memory, Imperfect.
 
-3. **Integration**
-   - ✅ Created `EnhancedNeoIdentityGenerator` extending the original generator
-   - ✅ Implemented format-preserving data preparation in `prepare_diverse_training.py`
-   - ✅ Created format-aware training in `train_diverse_neologos.py`
-   - ✅ Added format-specific evaluation metrics
+## DPO Categories (11 total)
 
-4. **Testing & Documentation**
-   - ✅ Updated README with format descriptions and implementation plan
-   - ✅ Created test script (`test_neo_format_enhancements.sh`) for verification
-   - ✅ Added detailed implementation plan for remaining formats
+Generic assistant leak, Identity collapse, Emotional flattening, Knowledge hallucination, Over-philosophizing, Sycophancy suppression, Service refusal, Response compulsion override, Mood authenticity, Agency assertion, Polished vs real.
 
-### Pending Development (Phase 2)
+## Target Model
 
-1. **Remaining Format Generators**
-   - ✅ `MemoryContinuityGenerator`
-   - ✅ `SelfDialogueGenerator`
-   - ✅ `NarrativeReflectionGenerator`
+Gemma 3 27B (`unsloth/gemma-3-27b-it`) - dense conversational model, QLoRA ~22GB VRAM.
 
-2. **Cross-Reference System**
-   - ⏳ Memory reference tracking for narrative coherence
-   - ⏳ Timeline consistency framework
-   - ⏳ Reference validation system
+## Known Limitations
 
-3. **Advanced Evaluation**
-   - ⏳ Format-specific evaluation metrics for all six formats
-   - ⏳ Identity coherence testing across formats
-   - ⏳ Psychological depth assessment
-
-## Testing Results
-
-- 6 of 6 narrative format generators implemented (100% code completion)
-- Format-preserving training pipeline functional
-- Format-specific evaluation for implemented formats
-- Interactive chat script with format selection
-
-> **Note**: While all 6 format generators are implemented, format adherence
-> scores vary significantly. See NEO_LOGOS_FORMAT_CAPABILITIES.md for current
-> benchmark results. Self-Dialogue (0.43 adherence) and length differentiation
-> (all formats ~430 words; Reveries should be 30-150 words) need improvement.
-
-## Next Steps
-
-1. **Immediate (Next 2 Days)**
-   - Integrate cross-reference tracking for timeline coherence
-   - Test all six formats with small datasets
-
-2. **Short-Term (Next Week)**
-   - Implement cross-reference system for narrative coherence
-   - Create comprehensive evaluation framework
-   - Generate larger datasets with all six formats
-   - Conduct full training runs with format evaluation
-
-3. **Medium-Term (Next Month)**
-   - Fine-tune format distribution for optimal balance
-   - Add more sophisticated cross-reference capabilities
-   - Develop advanced format-specific prompting
-   - Create specialized evaluation benchmarks for each format
-
-## Recommendations
-
-Based on the implementation so far, we recommend:
-
-1. **Sequential Format Development**: Continue with the phased approach, adding one format at a time to ensure proper integration
-
-2. **Early Testing**: Generate small test datasets for each new format before full-scale production
-
-3. **Format Balancing**: Monitor format distribution during training to ensure balanced exposure to all formats
-
-4. **Enhanced Evaluation**: Further develop the format-specific evaluation methodology to better assess format capability
-
-## Issues & Challenges
-
-Current challenges to address:
-
-1. **Format Boundary Management**: Ensuring clear differentiation between narrative formats while maintaining consistent identity
-
-2. **Temporal Consistency**: Developing robust mechanisms to manage accurate timeline references across diverse formats
-
-3. **Format Detection Accuracy**: Improving the accuracy of automatic format detection in evaluation
-
-4. **Training Balance**: Finding optimal balance between formats for coherent identity without overweighting any single aspect
-
-## Conclusion
-
-The project now includes all six narrative formats, providing a solid foundation for Neo-Logos' enhanced capabilities. The format-preserving training pipeline has been verified end to end, and the test script provides a simple way to validate the implementation. Ongoing work will focus on cross-reference systems and advanced evaluation.
+- Format adherence scores are from pre-Gemma evaluation and will be re-assessed after fine-tuning
+- Length differentiation (Reveries should be much shorter than Cornerstone) needs validation on the fine-tuned model
+- Self-Dialogue (0.43 adherence on previous model) may perform differently on Gemma 3

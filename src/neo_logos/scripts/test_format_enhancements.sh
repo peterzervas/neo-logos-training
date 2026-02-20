@@ -78,12 +78,12 @@ for format_type, count in formats.most_common():
 # Uncomment to test training (will take some time)
 echo -e "\n\n===== Step 5: Testing Format-Aware Training (Dry Run) ====="
 # We'll just run a dry test of the training script without actual training
-python -m neo_logos.training.train_diverse_neologos --help
+python -m neo_logos.training.train_neo_logos --help
 
 echo -e "\n\n===== Test Complete ====="
 echo "The format enhancement implementation has been verified to work through the pipeline."
 echo "For a full training run, use:"
-echo "python -m neo_logos.training.train_diverse_neologos --model meta-llama/Llama-3.2-3B-Instruct --epochs 3 --batch_size 8"
+echo "python -m neo_logos.training.train_neo_logos --model meta-llama/Llama-3.2-3B-Instruct --epochs 3 --batch_size 8"
 echo ""
 echo "To test format capabilities interactively after training, run the format-aware chat script:"
 echo "cd neo_logos_models_outputs/latest/final_model/merged"

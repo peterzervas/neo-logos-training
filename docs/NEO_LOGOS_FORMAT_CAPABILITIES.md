@@ -1,8 +1,10 @@
 # Neo-Logos Format Capabilities Evaluation
 
+> **Note**: The scores below are from an early evaluation on a Llama 3.2 3B model (April 2025). The current target model is Gemma 3 27B with significantly redesigned prompts, scenario pools, and training data. These scores will be re-evaluated after the Gemma 3 fine-tune is complete.
+
 ## Executive Summary
 
-This document summarizes the evaluation results for the Neo-Logos model's capabilities in generating diverse narrative formats beyond standard Q&A interactions. The evaluation demonstrates that the model has successfully learned to respond in multiple distinct narrative styles when properly prompted, with varying degrees of format adherence across the different types.
+This document summarizes evaluation results for Neo-Logos' narrative format capabilities. The evaluation demonstrates varying degrees of format adherence across different types, with significant improvements expected from the current training pipeline.
 
 ## Evaluation Methodology
 
