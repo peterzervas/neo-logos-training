@@ -174,8 +174,16 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             format_distribution['framework_qa'] += 1
             formatted_examples.append(formatted_item)
 
-    # Process conversation examples (chat message format - kept as-is)
+    # Process conversation examples - convert assistant->model role for Gemma 3
     for item in conversation_examples:
+        if 'messages' in item:
+            # Ensure system message is present
+            if not item['messages'] or item['messages'][0].get('role') != 'system':
+                item['messages'].insert(0, {"role": "system", "content": TRAINING_SYSTEM_MESSAGE})
+            # Convert assistant -> model for Gemma 3 native format
+            for msg in item['messages']:
+                if msg.get('role') == 'assistant':
+                    msg['role'] = 'model'
         if 'conversation' not in format_distribution:
             format_distribution['conversation'] = 0
         format_distribution['conversation'] += 1
@@ -428,6 +436,10 @@ def format_example_by_type(example):
         # Ensure system message is present
         if not messages or messages[0].get('role') != 'system':
             messages.insert(0, {"role": "system", "content": TRAINING_SYSTEM_MESSAGE})
+        # Convert assistant -> model for Gemma 3
+        for msg in messages:
+            if msg.get('role') == 'assistant':
+                msg['role'] = 'model'
         return {"messages": messages, "type": example_type}
 
     # Framework Q&A -> messages
