@@ -206,50 +206,100 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     with open(output_path, 'w', encoding='utf-8') as f:
         for item in sampled_examples:
             f.write(json.dumps(item) + '\n')
-    
-    print(f"Saved {len(sampled_examples)} combined training examples to {output_path}")
-    
-    # Save training and validation split
-    training_split_path = os.path.join(timestamped_dir, "training.jsonl")
-    validation_split_path = os.path.join(timestamped_dir, "validation.jsonl")
-    
-    # Shuffle data before splitting
+
+    print(f"Saved {len(sampled_examples)} combined examples to {output_path}")
+
+    # 80/10/10 split: train / eval / test
     random.shuffle(sampled_examples)
-    
-    # Calculate split point for 90% training, 10% validation
-    split_point = int(len(sampled_examples) * 0.9)
-    
-    # Save the training split
-    with open(training_split_path, 'w', encoding='utf-8') as f:
-        for item in sampled_examples[:split_point]:
-            f.write(json.dumps(item) + '\n')
-    
-    # Save the validation split
-    with open(validation_split_path, 'w', encoding='utf-8') as f:
-        for item in sampled_examples[split_point:]:
-            f.write(json.dumps(item) + '\n')
-    
-    print(f"Saved {split_point} examples to training split: {training_split_path}")
-    print(f"Saved {len(sampled_examples) - split_point} examples to validation split: {validation_split_path}")
-    
-    # Create preparation statistics
-    stats = {
+    total = len(sampled_examples)
+    train_end = int(total * 0.80)
+    eval_end = int(total * 0.90)
+
+    train_data = sampled_examples[:train_end]
+    eval_data = sampled_examples[train_end:eval_end]
+    test_data = sampled_examples[eval_end:]
+
+    train_path = os.path.join(timestamped_dir, "train.jsonl")
+    eval_path = os.path.join(timestamped_dir, "eval.jsonl")
+    test_path = os.path.join(timestamped_dir, "test.jsonl")
+
+    for path, data, label in [
+        (train_path, train_data, "train"),
+        (eval_path, eval_data, "eval"),
+        (test_path, test_data, "test"),
+    ]:
+        with open(path, 'w', encoding='utf-8') as f:
+            for item in data:
+                f.write(json.dumps(item) + '\n')
+        print(f"  {label}: {len(data)} examples -> {path}")
+
+    # Copy DPO pairs if available
+    dpo_dest = None
+    if conversations_path:
+        dpo_default = os.path.join(PROJECT_ROOT, "dataset_outputs/dpo_pairs/latest/dpo_pairs.jsonl")
+        if os.path.exists(dpo_default):
+            import shutil
+            dpo_dest = os.path.join(timestamped_dir, "dpo_pairs.jsonl")
+            shutil.copy2(dpo_default, dpo_dest)
+            dpo_count = sum(1 for _ in open(dpo_dest))
+            print(f"  dpo:  {dpo_count} pairs -> {dpo_dest}")
+
+    # Count dropped examples
+    dropped = len(identity_examples) + len(framework_examples) + len(conversation_examples) - len(formatted_examples)
+
+    # Generate manifest.json - the proof that no data was missed
+    manifest = {
         "timestamp": datetime.now().isoformat(),
-        "total_examples": len(sampled_examples),
-        "training_examples": split_point,
-        "validation_examples": len(sampled_examples) - split_point,
-        "format_weights": format_weights,
+        "sources": {
+            "identity": {
+                "path": str(identity_path),
+                "loaded": len(identity_examples),
+                "formats": {k: v for k, v in format_distribution.items()
+                            if k not in ("framework_qa", "conversation")},
+            },
+            "articles": {
+                "path": str(articles_path),
+                "loaded": len(framework_examples),
+            },
+            "conversations": {
+                "path": str(conversations_path) if conversations_path else None,
+                "loaded": len(conversation_examples),
+            },
+        },
+        "processing": {
+            "total_loaded": len(identity_examples) + len(framework_examples) + len(conversation_examples),
+            "total_formatted": len(formatted_examples),
+            "dropped_invalid": dropped,
+            "total_after_sampling": len(sampled_examples),
+        },
+        "splits": {
+            "train": len(train_data),
+            "eval": len(eval_data),
+            "test": len(test_data),
+        },
         "format_distribution": final_distribution,
-        "identity_source": identity_path,
-        "articles_source": articles_path
+        "format_weights": format_weights,
+        "dpo_pairs": dpo_dest,
+        "warnings": [],
     }
-    
-    # Save preparation statistics
-    stats_path = os.path.join(timestamped_dir, "preparation_stats.json") 
-    with open(stats_path, 'w', encoding='utf-8') as f:
-        json.dump(stats, f, indent=2)
-    
-    print(f"Saved preparation statistics to {stats_path}")
+
+    # Add warnings
+    if dropped > 0:
+        manifest["warnings"].append(f"{dropped} examples dropped during formatting")
+    for fmt, weight in format_weights.items():
+        actual = final_distribution.get(fmt, 0)
+        if actual == 0 and weight > 0:
+            manifest["warnings"].append(f"Format '{fmt}' has weight {weight} but 0 examples")
+
+    manifest_path = os.path.join(timestamped_dir, "manifest.json")
+    with open(manifest_path, 'w', encoding='utf-8') as f:
+        json.dump(manifest, f, indent=2)
+
+    print(f"\nManifest saved to {manifest_path}")
+    if manifest["warnings"]:
+        print("WARNINGS:")
+        for w in manifest["warnings"]:
+            print(f"  - {w}")
     
     # Create evaluation prompts file with format-specific prompts
     create_evaluation_prompts(timestamped_dir)
@@ -390,7 +440,7 @@ def format_example_by_type(example):
             "messages": [
                 {"role": "system", "content": TRAINING_SYSTEM_MESSAGE},
                 {"role": "user", "content": prompt},
-                {"role": "assistant", "content": completion},
+                {"role": "model", "content": completion},
             ],
             "type": example_type,
         }
@@ -408,7 +458,7 @@ def format_example_by_type(example):
         "messages": [
             {"role": "system", "content": TRAINING_SYSTEM_MESSAGE},
             {"role": "user", "content": user_prompt},
-            {"role": "assistant", "content": narrative},
+            {"role": "model", "content": narrative},
         ],
         "type": example_type,
     }

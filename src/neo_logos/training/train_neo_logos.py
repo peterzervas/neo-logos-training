@@ -33,11 +33,20 @@ def build_parser():
     )
     parser.add_argument(
         "--dataset", type=str,
-        default=str(PROJECT_ROOT / "dataset_outputs/prepared_diverse/latest/training.jsonl"),
+        default=str(PROJECT_ROOT / "dataset_outputs/prepared/latest/train.jsonl"),
         help="Path to training JSONL (messages format)"
     )
+    parser.add_argument(
+        "--eval_dataset", type=str,
+        default=str(PROJECT_ROOT / "dataset_outputs/prepared/latest/eval.jsonl"),
+        help="Path to eval JSONL"
+    )
+    parser.add_argument(
+        "--manifest", type=str,
+        default=str(PROJECT_ROOT / "dataset_outputs/prepared/latest/manifest.json"),
+        help="Path to data manifest for verification"
+    )
     parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--eval_split", type=float, default=0.1)
     parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--hf_token", type=str, default=None)
     return parser
@@ -115,42 +124,65 @@ def main():
         use_rslora=False,
     )
 
-    # ── Load dataset ──────────────────────────────────────────────
-    logger.info(f"Loading dataset from {args.dataset}")
-    raw_data = []
-    with open(args.dataset, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                item = json.loads(line)
-                if "messages" in item and isinstance(item["messages"], list):
-                    raw_data.append(item)
-                else:
-                    logger.warning(f"Skipping item without messages field")
-            except json.JSONDecodeError as e:
-                logger.warning(f"JSON parse error: {e}")
+    # ── Verify manifest ─────────────────────────────────────────────
+    manifest = None
+    if os.path.exists(args.manifest):
+        with open(args.manifest, "r") as f:
+            manifest = json.load(f)
+        logger.info(f"Loaded manifest: {args.manifest}")
+        logger.info(f"  Expected train: {manifest['splits']['train']}")
+        logger.info(f"  Expected eval:  {manifest['splits']['eval']}")
+        if manifest.get("warnings"):
+            for w in manifest["warnings"]:
+                logger.warning(f"  Manifest warning: {w}")
 
-    logger.info(f"Loaded {len(raw_data)} training examples")
+    # ── Load datasets ─────────────────────────────────────────────
+    def load_jsonl(path, label):
+        data = []
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    item = json.loads(line)
+                    if "messages" in item and isinstance(item["messages"], list):
+                        data.append(item)
+                    else:
+                        logger.warning(f"Skipping {label} item without messages")
+                except json.JSONDecodeError as e:
+                    logger.warning(f"{label} JSON error: {e}")
+        logger.info(f"Loaded {len(data)} {label} examples from {path}")
+        return data
 
-    if not raw_data:
-        logger.error("No valid training data found!")
+    raw_train = load_jsonl(args.dataset, "train")
+    raw_eval = load_jsonl(args.eval_dataset, "eval")
+
+    if not raw_train:
+        logger.error("No valid training data!")
         return
 
-    # ── Format with Harmony chat template ─────────────────────────
-    logger.info("Applying Harmony chat template...")
+    # Verify counts match manifest
+    if manifest:
+        expected_train = manifest["splits"]["train"]
+        expected_eval = manifest["splits"]["eval"]
+        if len(raw_train) != expected_train:
+            logger.warning(f"Train count mismatch! Expected {expected_train}, got {len(raw_train)}")
+        if len(raw_eval) != expected_eval:
+            logger.warning(f"Eval count mismatch! Expected {expected_eval}, got {len(raw_eval)}")
+
+    # ── Apply Gemma 3 chat template ───────────────────────────────
+    from unsloth.chat_templates import get_chat_template
+    tokenizer = get_chat_template(tokenizer, chat_template="gemma-3")
+    logger.info("Applied Gemma 3 chat template")
 
     def formatting_prompts_func(examples):
-        """Convert messages to Harmony format using tokenizer's chat template."""
         convos = examples["messages"]
         texts = []
         for convo in convos:
             try:
                 text = tokenizer.apply_chat_template(
-                    convo,
-                    tokenize=False,
-                    add_generation_prompt=False,
+                    convo, tokenize=False, add_generation_prompt=False,
                 )
                 texts.append(text)
             except Exception as e:
@@ -159,18 +191,16 @@ def main():
         return {"text": texts}
 
     from datasets import Dataset
-    dataset = Dataset.from_list(raw_data)
-    dataset = dataset.map(formatting_prompts_func, batched=True)
 
-    # Remove empty texts
-    dataset = dataset.filter(lambda x: len(x["text"]) > 0)
-    logger.info(f"Formatted {len(dataset)} examples with Harmony template")
+    train_dataset = Dataset.from_list(raw_train)
+    train_dataset = train_dataset.map(formatting_prompts_func, batched=True)
+    train_dataset = train_dataset.filter(lambda x: len(x["text"]) > 0)
+    train_dataset = train_dataset.shuffle(seed=3407)
 
-    # ── Train/eval split ──────────────────────────────────────────
-    dataset = dataset.shuffle(seed=3407)
-    split = dataset.train_test_split(test_size=args.eval_split, seed=3407)
-    train_dataset = split["train"]
-    eval_dataset = split["test"]
+    eval_dataset = Dataset.from_list(raw_eval)
+    eval_dataset = eval_dataset.map(formatting_prompts_func, batched=True)
+    eval_dataset = eval_dataset.filter(lambda x: len(x["text"]) > 0)
+
     logger.info(f"Train: {len(train_dataset)}, Eval: {len(eval_dataset)}")
 
     # ── Training ──────────────────────────────────────────────────
@@ -231,23 +261,40 @@ def main():
         logger.error(f"Merge failed: {e}")
         logger.info("Adapter is still available for manual merge")
 
-    # ── Save run info ─────────────────────────────────────────────
-    run_info = {
+    # ── Training report ──────────────────────────────────────────
+    all_accounted = True
+    if manifest:
+        if len(raw_train) != manifest["splits"]["train"]:
+            all_accounted = False
+        if len(raw_eval) != manifest["splits"]["eval"]:
+            all_accounted = False
+
+    report = {
         "timestamp": datetime.datetime.now().isoformat(),
         "model_name": MODEL_NAME,
         "dataset_path": args.dataset,
+        "eval_dataset_path": args.eval_dataset,
+        "manifest_path": args.manifest,
         "epochs": args.epochs,
         "batch_size": BATCH_SIZE,
         "gradient_accumulation": GRAD_ACCUM,
         "learning_rate": LR,
         "lora_r": LORA_R,
         "lora_alpha": LORA_ALPHA,
-        "train_examples": len(train_dataset),
-        "eval_examples": len(eval_dataset),
+        "train_examples_loaded": len(train_dataset),
+        "eval_examples_loaded": len(eval_dataset),
+        "train_examples_expected": manifest["splits"]["train"] if manifest else "unknown",
+        "eval_examples_expected": manifest["splits"]["eval"] if manifest else "unknown",
+        "all_data_accounted_for": all_accounted,
         "output_directory": run_dir,
+        "warnings": [],
     }
-    with open(os.path.join(metrics_dir, "run_info.json"), "w") as f:
-        json.dump(run_info, f, indent=2)
+    if not all_accounted:
+        report["warnings"].append("Data count mismatch between manifest and loaded data!")
+
+    with open(os.path.join(metrics_dir, "training_report.json"), "w") as f:
+        json.dump(report, f, indent=2)
+    logger.info(f"Training report: all_data_accounted_for={all_accounted}")
 
     # ── Symlink latest ────────────────────────────────────────────
     latest = os.path.join(models_dir, "latest")
