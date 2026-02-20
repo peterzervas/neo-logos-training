@@ -62,11 +62,21 @@ class FormatManager:
             "emotions": "EmotionsGenerator",
         }
         
+        # Explicit module name mapping (avoids fragile string splitting)
+        format_modules = {
+            "cornerstone_memories": "cornerstone_generator",
+            "reveries": "reverie_generator",
+            "bicameral_mind": "bicameral_generator",
+            "memory_continuity": "memory_generator",
+            "self_dialogue": "self_generator",
+            "narrative_reflection": "narrative_generator",
+            "emotions": "emotions_generator",
+        }
+
         # Import and initialize each generator
         for format_type, class_name in format_classes.items():
             try:
-                # Dynamically import the module (e.g., 'cornerstone_generator')
-                module_name = f"{format_type.split('_')[0]}_generator"
+                module_name = format_modules.get(format_type, f"{format_type.split('_')[0]}_generator")
                 module = importlib.import_module(f".{module_name}", package="neo_logos.generators.formats")
                 
                 # Get the generator class from the module
