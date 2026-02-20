@@ -33,17 +33,17 @@ def build_parser():
     )
     parser.add_argument(
         "--dataset", type=str,
-        default=str(PROJECT_ROOT / "dataset_outputs/prepared/latest/train.jsonl"),
+        default=str(PROJECT_ROOT / "dataset_outputs/prepared_diverse/latest/train.jsonl"),
         help="Path to training JSONL (messages format)"
     )
     parser.add_argument(
         "--eval_dataset", type=str,
-        default=str(PROJECT_ROOT / "dataset_outputs/prepared/latest/eval.jsonl"),
+        default=str(PROJECT_ROOT / "dataset_outputs/prepared_diverse/latest/eval.jsonl"),
         help="Path to eval JSONL"
     )
     parser.add_argument(
         "--manifest", type=str,
-        default=str(PROJECT_ROOT / "dataset_outputs/prepared/latest/manifest.json"),
+        default=str(PROJECT_ROOT / "dataset_outputs/prepared_diverse/latest/manifest.json"),
         help="Path to data manifest for verification"
     )
     parser.add_argument("--epochs", type=int, default=3)
