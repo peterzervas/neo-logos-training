@@ -29,14 +29,14 @@ MODEL_PRESETS = {
         "learning_rate": 5e-5,
         "load_in_4bit": True,
     },
-    "20B": {  # gpt-oss-safeguard-20b - QLoRA needs ~14GB VRAM
-        "model_name": "openai/gpt-oss-safeguard-20b",
-        "max_seq_len": 4096,
+    "20B": {  # gpt-oss-20b via Unsloth - QLoRA needs ~14GB VRAM
+        "model_name": "unsloth/gpt-oss-20b",
+        "max_seq_len": 2048,
         "lora_r": 32,
         "lora_alpha": 64,
-        "batch_size": 2,
-        "gradient_accumulation": 8,
-        "learning_rate": 2e-5,
+        "batch_size": 1,
+        "gradient_accumulation": 4,
+        "learning_rate": 2e-4,
         "load_in_4bit": True,
     },
     "70B": {  # For Unsloth cloud or multi-GPU
