@@ -275,10 +275,9 @@ class BaseGenerator:
             "requests": len(requests),
             "status": "processing",
         }
-        tracking_path = os.path.join(
-            os.path.dirname(self.output_path), "batch_tracking.json"
-        )
-        os.makedirs(os.path.dirname(tracking_path), exist_ok=True)
+        tracking_dir = os.path.dirname(self.output_path) or "."
+        tracking_path = os.path.join(tracking_dir, "batch_tracking.json")
+        os.makedirs(tracking_dir, exist_ok=True)
         with open(tracking_path, "w") as f:
             json.dump(tracking, f, indent=2)
         self.logger.info(f"Batch tracking saved to {tracking_path}")
