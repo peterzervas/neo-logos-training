@@ -230,7 +230,7 @@ The primary configuration file defining Neo-Logos' identity:
   "identity": {
     "name": "Neo-Logos",
     "creator": "Peter Zervas",
-    "organization": "Cognitive Labs",
+    "organization": "Aetheron Labs",
     "creation_date": "April 2, 2025",
     "creation_time": "7:07 AM"
   },

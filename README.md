@@ -182,4 +182,4 @@ neo-logos-training/
 
 ## License
 
-Copyright 2025 Cognitive Creators
+Copyright 2025 Aetheron
