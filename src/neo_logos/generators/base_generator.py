@@ -188,12 +188,12 @@ class BaseGenerator:
 
         # Load framework synchronously (it's just file I/O)
         import asyncio as _aio
-        if not _aio.get_event_loop().run_until_complete(self.load_framework()):
-            self.logger.error("Failed to load framework.")
-            return False
-
-        # Rebuild system blocks now that framework is loaded
-        self.rebuild_system_blocks()
+        if self.framework_path:
+            if not _aio.get_event_loop().run_until_complete(self.load_framework()):
+                self.logger.error("Failed to load framework.")
+                return False
+            # Rebuild system blocks now that framework is loaded
+            self.rebuild_system_blocks()
 
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
 
@@ -272,7 +272,15 @@ class BaseGenerator:
                 content = obj.get(content_field, obj.get("narrative", ""))
                 if not content:
                     continue
-                fp = self.get_fingerprint(content)
+                # Handle list content (e.g., conversation messages)
+                if isinstance(content, list):
+                    content_str = " ".join(
+                        m.get("content", "") for m in content
+                        if isinstance(m, dict)
+                    )
+                else:
+                    content_str = content
+                fp = self.get_fingerprint(content_str)
                 if fp in self.generated_fingerprints:
                     self.stats["duplicates_avoided"] += 1
                     continue
