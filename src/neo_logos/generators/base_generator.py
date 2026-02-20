@@ -211,18 +211,37 @@ class BaseGenerator:
         self.stats["start_time"] = datetime.now()
         self.logger.info("=== BATCH MODE ===")
 
-        # Load framework synchronously (it's just file I/O)
-        import asyncio as _aio
+        # Load framework (just file I/O - call sync version directly)
         if self.framework_path:
-            if not _aio.get_event_loop().run_until_complete(self.load_framework()):
+            if not self._load_framework_sync():
                 self.logger.error("Failed to load framework.")
                 return False
-            # Rebuild system blocks now that framework is loaded
             self.rebuild_system_blocks()
 
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
 
         # --- Build phase: create all requests ---
+        import asyncio as _aio
+
+        # Get or create event loop for async prompt generation
+        try:
+            loop = _aio.get_event_loop()
+            if loop.is_running():
+                # Inside async context - create new loop in thread
+                import concurrent.futures
+                def _run_async(coro):
+                    new_loop = _aio.new_event_loop()
+                    try:
+                        return new_loop.run_until_complete(coro)
+                    finally:
+                        new_loop.close()
+                run_coro = _run_async
+            else:
+                run_coro = loop.run_until_complete
+        except RuntimeError:
+            loop = _aio.new_event_loop()
+            run_coro = loop.run_until_complete
+
         requests = []
         batch_num = 0
         for category_key, category in self.data_categories.items():
@@ -231,7 +250,7 @@ class BaseGenerator:
             remaining = target
             while remaining > 0:
                 size = min(self.batch_size, remaining)
-                prompt = _aio.get_event_loop().run_until_complete(
+                prompt = run_coro(
                     self.create_prompt(category_key, size)
                 )
                 params = {
@@ -380,6 +399,32 @@ class BaseGenerator:
             json.dump(stats_dict, f, indent=2)
 
         return True
+
+    def _load_framework_sync(self) -> bool:
+        """Synchronous version of load_framework for batch mode."""
+        self.logger.info(f"Loading framework from: {self.framework_path}")
+        try:
+            if not os.path.exists(self.framework_path):
+                self.logger.error(f"Path not found: {self.framework_path}")
+                return False
+            if os.path.isfile(self.framework_path):
+                with open(self.framework_path, 'r', encoding='utf-8') as f:
+                    self.framework_text = f.read()
+            elif os.path.isdir(self.framework_path):
+                self.framework_text = ""
+                for filename in sorted(os.listdir(self.framework_path)):
+                    if filename.endswith(('.txt', '.md', '.json')):
+                        file_path = os.path.join(self.framework_path, filename)
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            self.framework_text += f.read() + "\n\n"
+            if not self.framework_text:
+                self.logger.error("No framework text loaded")
+                return False
+            self.logger.info(f"Loaded {len(self.framework_text)} chars of framework text")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error loading framework: {e}", exc_info=True)
+            return False
 
     async def load_framework(self) -> bool:
         """

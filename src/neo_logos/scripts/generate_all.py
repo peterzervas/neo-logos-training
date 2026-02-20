@@ -28,7 +28,7 @@ GENERATORS = [
             "--output", "output.jsonl",
             "--num-examples", "2150",
             "--batch-size", "3",
-            "--batch",
+            "--use-batch-api",
         ],
     },
     {
@@ -41,7 +41,7 @@ GENERATORS = [
             "--output", "output.jsonl",
             "--num-examples", "1500",
             "--batch-size", "5",
-            "--batch",
+            "--use-batch-api",
         ],
     },
     {
@@ -52,7 +52,7 @@ GENERATORS = [
             "neo_logos.generators.conversation_generator",
             "--num-examples", "1950",
             "--batch-size", "3",
-            "--batch",
+            "--use-batch-api",
         ],
     },
     {
@@ -63,7 +63,7 @@ GENERATORS = [
             "neo_logos.generators.negative_examples_generator",
             "--num-examples", "900",
             "--batch-size", "5",
-            "--batch",
+            "--use-batch-api",
         ],
     },
 ]

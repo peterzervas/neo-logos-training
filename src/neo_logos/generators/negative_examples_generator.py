@@ -565,7 +565,7 @@ async def main():
     parser.add_argument("--batch-size", type=int, default=5, help="Pairs per batch")
     parser.add_argument("--max-concurrent", type=int, default=5, help="Max concurrent")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Claude model")
-    parser.add_argument("--batch", action="store_true", help="Use Batch API")
+    parser.add_argument("--use-batch-api", action="store_true", help="Use Batch API")
 
     args = parser.parse_args()
 
@@ -585,7 +585,7 @@ async def main():
         max_concurrent=args.max_concurrent,
     )
 
-    if args.batch:
+    if args.use_batch_api:
         generator.generate_all_batch()
     else:
         await generator.generate_all_examples()
