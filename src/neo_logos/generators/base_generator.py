@@ -218,7 +218,9 @@ class BaseGenerator:
                 return False
             self.rebuild_system_blocks()
 
-        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+        out_dir = os.path.dirname(self.output_path)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
 
         # --- Build phase: create all requests ---
         import asyncio as _aio

@@ -1070,8 +1070,7 @@ async def main():
         )
         
         if args.use_batch_api:
-            generator.generate_all_batch()
-            print("Article generation (batch) completed")
+            return generator  # Return for sync batch call outside async
         elif await generator.generate_all_examples():
             await generator.sample_output()
             print("Article generation completed successfully")
@@ -1085,4 +1084,11 @@ async def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import sys as _sys
+    if "--use-batch-api" in _sys.argv:
+        gen = asyncio.run(main())
+        if gen and hasattr(gen, 'generate_all_batch'):
+            gen.generate_all_batch()
+            print("Article generation (batch) completed")
+    else:
+        asyncio.run(main())

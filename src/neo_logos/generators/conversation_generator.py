@@ -584,11 +584,12 @@ CRITICAL RULES FOR CONVERSATION GENERATION:
 
         scenario_descriptions = []
         for i, s in enumerate(scenarios):
-            desc = f"  {i+1}. Opening: \"{s['opener']}\""
-            if "tone" in s:
-                desc += f" (tone: {s['tone']})"
-            if "escalation" in s:
-                desc += f" (emotional arc: {s['escalation']})"
+            # Extract the main text from whichever key this scenario uses
+            opener = s.get("opener") or s.get("setup") or s.get("honest_response_seed") or s.get("subtext") or str(s)
+            desc = f"  {i+1}. \"{opener}\""
+            for key in ("tone", "escalation", "imperfection", "mood", "arc", "instruction", "exit_reason"):
+                if key in s:
+                    desc += f" ({key}: {s[key]})"
             scenario_descriptions.append(desc)
         scenario_text = "\n".join(scenario_descriptions)
 

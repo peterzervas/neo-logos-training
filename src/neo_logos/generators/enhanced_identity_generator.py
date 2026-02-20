@@ -243,9 +243,7 @@ async def main():
         )
         
         if args.use_batch_api:
-            generator.generate_all_batch()
-            print("Enhanced narrative generation (batch) completed")
-            return 0
+            return generator  # Return for sync batch call outside async
         elif await generator.generate_all_narratives():
             await generator.sample_output()
             await generator.analyze_generated_content()
@@ -261,6 +259,15 @@ async def main():
         return 1
 
 if __name__ == "__main__":
-    exit_code = asyncio.run(main())
-    import sys
-    sys.exit(exit_code)
+    import sys as _sys
+    if "--use-batch-api" in _sys.argv:
+        result = asyncio.run(main())
+        if result and hasattr(result, 'generate_all_batch'):
+            result.generate_all_batch()
+            print("Enhanced narrative generation (batch) completed")
+        elif isinstance(result, int) and result != 0:
+            _sys.exit(result)
+    else:
+        exit_code = asyncio.run(main())
+        if isinstance(exit_code, int):
+            _sys.exit(exit_code)
