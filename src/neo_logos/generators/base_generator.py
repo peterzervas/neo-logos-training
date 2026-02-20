@@ -265,7 +265,7 @@ class BaseGenerator:
                 continue
 
             response_text = result.result.message.content[0].text
-            parsed = self._extract_json_objects(response_text)
+            parsed = self._extract_json_objects_robust(response_text)
 
             for obj in parsed:
                 if not isinstance(obj, dict):
@@ -512,7 +512,82 @@ class BaseGenerator:
                 pass
         
         return results
-    
+
+    def _extract_json_objects_robust(self, text: str) -> List[Dict[str, str]]:
+        """Extract JSON objects from text, handling multi-line JSON.
+
+        More robust than _extract_json_objects - uses brace-matching to find
+        complete JSON objects that may span multiple lines (common when
+        narratives contain newlines within the JSON value).
+
+        Args:
+            text: Text containing JSON objects.
+
+        Returns:
+            List of extracted JSON objects.
+        """
+        # First try the simple line-by-line approach
+        results = self._extract_json_objects(text)
+        if results:
+            return results
+
+        # If that failed, try brace-matching for multi-line JSON
+        self.logger.info("Line-by-line parsing failed, trying brace-matching...")
+
+        # Strip code fences
+        if "```" in text:
+            start = text.find("```")
+            inner = text.find("\n", start) + 1
+            end = text.find("```", inner)
+            if inner > 0 and end > inner:
+                text = text[inner:end].strip()
+
+        results = []
+        i = 0
+        while i < len(text):
+            # Find next opening brace
+            start = text.find("{", i)
+            if start == -1:
+                break
+
+            # Match braces to find the complete object
+            depth = 0
+            in_string = False
+            escape_next = False
+            j = start
+            while j < len(text):
+                ch = text[j]
+                if escape_next:
+                    escape_next = False
+                elif ch == "\\":
+                    escape_next = True
+                elif ch == '"' and not escape_next:
+                    in_string = not in_string
+                elif not in_string:
+                    if ch == "{":
+                        depth += 1
+                    elif ch == "}":
+                        depth -= 1
+                        if depth == 0:
+                            # Found complete object
+                            candidate = text[start:j + 1]
+                            try:
+                                obj = json.loads(candidate)
+                                if isinstance(obj, dict):
+                                    results.append(obj)
+                            except json.JSONDecodeError:
+                                pass
+                            break
+                j += 1
+            i = j + 1 if j < len(text) else len(text)
+
+        if results:
+            self.logger.info(f"Brace-matching found {len(results)} JSON objects")
+        else:
+            self.logger.warning("Brace-matching also failed to extract JSON objects")
+
+        return results
+
     async def create_prompt(self, category_key: str, count: int) -> str:
         """
         Create a prompt for generating examples.
