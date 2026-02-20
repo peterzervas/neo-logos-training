@@ -32,8 +32,8 @@ MODEL_PRESETS = {
     "27B": {  # Gemma 3 27B - conversational, no reasoning mode, ~22GB VRAM
         "model_name": "unsloth/gemma-3-27b-it",
         "max_seq_len": 2048,
-        "lora_r": 32,
-        "lora_alpha": 64,
+        "lora_r": 64,
+        "lora_alpha": 128,
         "batch_size": 1,
         "gradient_accumulation": 4,
         "learning_rate": 2e-4,
