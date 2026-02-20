@@ -268,6 +268,8 @@ class BaseGenerator:
             parsed = self._extract_json_objects(response_text)
 
             for obj in parsed:
+                if not isinstance(obj, dict):
+                    continue
                 content_field = self._get_content_field_name()
                 content = obj.get(content_field, obj.get("narrative", ""))
                 if not content:
@@ -279,7 +281,7 @@ class BaseGenerator:
                         if isinstance(m, dict)
                     )
                 else:
-                    content_str = content
+                    content_str = str(content)
                 fp = self.get_fingerprint(content_str)
                 if fp in self.generated_fingerprints:
                     self.stats["duplicates_avoided"] += 1

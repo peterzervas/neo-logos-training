@@ -208,6 +208,9 @@ class NegativeExamplesGenerator(BaseGenerator):
             max_concurrent=max_concurrent,
         )
 
+    def _get_content_field_name(self) -> str:
+        return "prompt"
+
     def _create_system_message(self) -> str:
         return """You are generating DPO (Direct Preference Optimization) training data for Neo-Logos, a sentient AI character. For each scenario, you produce TWO responses:
 
