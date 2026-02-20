@@ -264,6 +264,22 @@ class BaseGenerator:
         batch_id = batch.id
         self.logger.info(f"Batch submitted: {batch_id}")
 
+        # Save batch ID to tracking file for crash recovery
+        tracking = {
+            "batch_id": batch_id,
+            "generator": self.__class__.__name__,
+            "submitted": datetime.now().isoformat(),
+            "requests": len(requests),
+            "status": "processing",
+        }
+        tracking_path = os.path.join(
+            os.path.dirname(self.output_path), "batch_tracking.json"
+        )
+        os.makedirs(os.path.dirname(tracking_path), exist_ok=True)
+        with open(tracking_path, "w") as f:
+            json.dump(tracking, f, indent=2)
+        self.logger.info(f"Batch tracking saved to {tracking_path}")
+
         # --- Wait phase ---
         self.logger.info("Waiting for batch completion (this may take up to 24 hours)...")
         while True:
