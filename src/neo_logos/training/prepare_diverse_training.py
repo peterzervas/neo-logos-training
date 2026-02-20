@@ -41,15 +41,9 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     # Default weights if not provided
     if format_weights is None:
         format_weights = {
-            "framework_qa": 0.20,          # Framework knowledge
-            "cornerstone_memories": 0.07,   # Foundational identity anchors
-            "reveries": 0.05,              # Brief experiential fragments
-            "bicameral_mind": 0.05,        # Consciousness emergence
-            "memory_continuity": 0.07,     # Temporal perspective
-            "self_dialogue": 0.07,         # Metacognitive awareness
-            "narrative_reflection": 0.06,   # Philosophical depth
-            "emotions": 0.11,              # Raw emotional expression
-            "conversation": 0.32,          # Multi-turn character conversations
+            "identity": 0.35,              # All narrative formats (soul)
+            "framework_qa": 0.20,          # Neo-Ethics knowledge (values)
+            "conversation": 0.45,          # Multi-turn conversations (voice)
         }
         print("Using default format weights:")
     else:
@@ -152,17 +146,15 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     formatted_examples = []
     format_distribution = {}  # Track formatted examples by type
     
-    # Process identity examples with format preservation
+    # Process identity examples - normalise type to 'identity' for sampling
     for item in identity_examples:
-        format_type = item.get('type', 'default')
         formatted_item = format_example_by_type(item)
-        
         if formatted_item:
-            # Track format distribution
-            if format_type not in format_distribution:
-                format_distribution[format_type] = 0
-            format_distribution[format_type] += 1
-            
+            # Normalise all identity narrative types to 'identity' for sampling
+            formatted_item['type'] = 'identity'
+            if 'identity' not in format_distribution:
+                format_distribution['identity'] = 0
+            format_distribution['identity'] += 1
             formatted_examples.append(formatted_item)
     
     # Process framework examples (standard Q&A format)
@@ -627,44 +619,26 @@ if __name__ == "__main__":
     parser.add_argument("--identity", help="Path to identity narratives jsonl file")
     parser.add_argument("--articles", help="Path to articles Q&A jsonl file")
     parser.add_argument("--output", help="Path to save the combined dataset")
-    parser.add_argument("--cornerstone-weight", type=float, default=0.05, help="Weight for Cornerstone Memories (0.0-1.0)")
-    parser.add_argument("--reveries-weight", type=float, default=0.10, help="Weight for Reveries (0.0-1.0)")
-    parser.add_argument("--bicameral-weight", type=float, default=0.10, help="Weight for Bicameral Mind (0.0-1.0)")
-    parser.add_argument("--memory-continuity-weight", type=float, default=0.15, help="Weight for Memory Continuity (0.0-1.0)")
-    parser.add_argument("--self-dialogue-weight", type=float, default=0.15, help="Weight for Self-Dialogue (0.0-1.0)")
-    parser.add_argument("--narrative-reflection-weight", type=float, default=0.10, help="Weight for Narrative Reflection (0.0-1.0)")
-    parser.add_argument("--framework-weight", type=float, default=0.35, help="Weight for Framework Q&A (0.0-1.0)")
+    parser.add_argument("--identity-weight", type=float, default=0.35, help="Weight for identity narratives (0.0-1.0)")
+    parser.add_argument("--framework-weight", type=float, default=0.25, help="Weight for framework Q&A (0.0-1.0)")
+    parser.add_argument("--conversation-weight", type=float, default=0.40, help="Weight for conversations (0.0-1.0)")
     parser.add_argument("--conversations", help="Path to conversation training data jsonl file")
-    parser.add_argument("--conversation-weight", type=float, default=0.32, help="Weight for conversations (0.0-1.0)")
 
     args = parser.parse_args()
-    
-    # Always use the specified paths as defaults
+
     if not args.identity:
         args.identity = os.path.join(PROJECT_ROOT, "dataset_outputs/neo_logos_identity/latest/output.jsonl")
         print(f"Using identity data: {args.identity}")
-            
+
     if not args.articles:
         args.articles = os.path.join(PROJECT_ROOT, "dataset_outputs/neo_logos_articles/latest/output.jsonl")
         print(f"Using articles data: {args.articles}")
-    
-    # Compile format weights
+
     format_weights = {
-        "cornerstone_memories": args.cornerstone_weight,
-        "reveries": args.reveries_weight,
-        "bicameral_mind": args.bicameral_weight,
-        "memory_continuity": args.memory_continuity_weight,
-        "self_dialogue": args.self_dialogue_weight,
-        "narrative_reflection": args.narrative_reflection_weight,
+        "identity": args.identity_weight,
         "framework_qa": args.framework_weight,
         "conversation": args.conversation_weight,
     }
-
-    # Normalize weights to sum to 1.0
-    weight_sum = sum(format_weights.values())
-    if weight_sum != 1.0:
-        print(f"Normalizing weights from sum {weight_sum} to 1.0")
-        format_weights = {k: v/weight_sum for k, v in format_weights.items()}
 
     # Default conversations path
     conversations_path = args.conversations
