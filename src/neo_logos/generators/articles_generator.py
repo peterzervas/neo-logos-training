@@ -1038,7 +1038,8 @@ async def main():
     parser.add_argument("--batch-size", type=int, default=5, help="Number of examples per batch")
     parser.add_argument("--max-concurrent", type=int, default=5, help="Maximum number of concurrent API calls")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Claude model to use")
-    
+    parser.add_argument("--use-batch-api", action="store_true", help="Use Batch API (async, 50% cheaper)")
+
     args = parser.parse_args()
     
     # Load environment variables from .env file
@@ -1068,7 +1069,10 @@ async def main():
             max_concurrent=args.max_concurrent
         )
         
-        if await generator.generate_all_examples():
+        if args.use_batch_api:
+            generator.generate_all_batch()
+            print("Article generation (batch) completed")
+        elif await generator.generate_all_examples():
             await generator.sample_output()
             print("Article generation completed successfully")
         else:

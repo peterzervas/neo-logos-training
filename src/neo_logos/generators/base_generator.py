@@ -222,25 +222,7 @@ class BaseGenerator:
 
         # --- Build phase: create all requests ---
         import asyncio as _aio
-
-        # Get or create event loop for async prompt generation
-        try:
-            loop = _aio.get_event_loop()
-            if loop.is_running():
-                # Inside async context - create new loop in thread
-                import concurrent.futures
-                def _run_async(coro):
-                    new_loop = _aio.new_event_loop()
-                    try:
-                        return new_loop.run_until_complete(coro)
-                    finally:
-                        new_loop.close()
-                run_coro = _run_async
-            else:
-                run_coro = loop.run_until_complete
-        except RuntimeError:
-            loop = _aio.new_event_loop()
-            run_coro = loop.run_until_complete
+        loop = _aio.new_event_loop()
 
         requests = []
         batch_num = 0
@@ -250,7 +232,7 @@ class BaseGenerator:
             remaining = target
             while remaining > 0:
                 size = min(self.batch_size, remaining)
-                prompt = run_coro(
+                prompt = loop.run_until_complete(
                     self.create_prompt(category_key, size)
                 )
                 params = {

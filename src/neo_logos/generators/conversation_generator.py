@@ -760,12 +760,22 @@ async def main():
     )
 
     if args.use_batch_api:
-        generator.generate_all_batch()
+        # Batch mode is synchronous - exit async context first
+        return generator
     else:
         await generator.generate_all_examples()
-
-    print("Conversation generation complete.")
+        print("Conversation generation complete.")
+        return None
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Parse args early to decide sync vs async path
+    import sys as _sys
+    if "--use-batch-api" in _sys.argv:
+        # Run main to build the generator, then call batch synchronously
+        gen = asyncio.run(main())
+        if gen:
+            gen.generate_all_batch()
+            print("Conversation generation (batch) complete.")
+    else:
+        asyncio.run(main())

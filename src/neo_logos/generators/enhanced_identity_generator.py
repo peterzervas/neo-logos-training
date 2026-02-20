@@ -214,7 +214,8 @@ async def main():
     parser.add_argument("--batch-size", type=int, default=3, help="Number of narratives per batch")
     parser.add_argument("--max-concurrent", type=int, default=5, help="Maximum number of concurrent API calls")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Claude model to use")
-    
+    parser.add_argument("--use-batch-api", action="store_true", help="Use Batch API (async, 50% cheaper)")
+
     args = parser.parse_args()
     
     # Import at runtime to avoid circular imports
@@ -241,10 +242,14 @@ async def main():
             max_concurrent=args.max_concurrent
         )
         
-        if await generator.generate_all_narratives():
+        if args.use_batch_api:
+            generator.generate_all_batch()
+            print("Enhanced narrative generation (batch) completed")
+            return 0
+        elif await generator.generate_all_narratives():
             await generator.sample_output()
             await generator.analyze_generated_content()
-            print("Enhanced narrative generation with six formats completed successfully")
+            print("Enhanced narrative generation completed successfully")
             return 0
         else:
             print("Enhanced narrative generation failed")

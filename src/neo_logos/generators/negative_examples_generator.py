@@ -586,12 +586,19 @@ async def main():
     )
 
     if args.use_batch_api:
-        generator.generate_all_batch()
+        return generator
     else:
         await generator.generate_all_examples()
-
-    print("DPO preference pair generation complete.")
+        print("DPO preference pair generation complete.")
+        return None
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import sys as _sys
+    if "--use-batch-api" in _sys.argv:
+        gen = asyncio.run(main())
+        if gen:
+            gen.generate_all_batch()
+            print("DPO preference pair generation (batch) complete.")
+    else:
+        asyncio.run(main())
