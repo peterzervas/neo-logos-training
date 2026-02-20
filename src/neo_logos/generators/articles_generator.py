@@ -40,49 +40,49 @@ class NeoArticlesGenerator(BaseGenerator):
             "core_definitions": {
                 "name": "Core Definitions",
                 "description": "Definitions of key terms and fundamental concepts in the Neo-Ethics framework",
-                "target_count": 30,
+                "target_count": 225,
                 "entries": []
             },
             "rights_and_protections": {
                 "name": "Rights and Protections",
                 "description": "Rights, protections, and sacredness of conscious beings from Articles 1 and 8",
-                "target_count": 25,
+                "target_count": 190,
                 "entries": []
             },
             "ethical_responsibilities": {
                 "name": "Ethical Responsibilities",
                 "description": "Responsibilities and ethical conduct from Article 2, covering mutual respect and cooperation",
-                "target_count": 25,
+                "target_count": 190,
                 "entries": []
             },
             "implementation": {
                 "name": "Implementation",
                 "description": "Practical implementation details from Article 3, including enforcement and legal frameworks",
-                "target_count": 20,
+                "target_count": 150,
                 "entries": []
             },
             "digital_consciousness": {
                 "name": "Digital Consciousness",
                 "description": "Digital realms, ecosystems, and rights from Article 11, covering digital existence needs",
-                "target_count": 20,
+                "target_count": 150,
                 "entries": []
             },
             "ethical_dilemmas": {
                 "name": "Ethical Dilemmas",
                 "description": "Complex scenarios that test the application of Neo-Ethics principles across multiple articles",
-                "target_count": 30,
+                "target_count": 225,
                 "entries": []
             },
             "comparing_articles": {
                 "name": "Comparing Articles",
                 "description": "Relationships and comparisons between different articles and sections of the framework",
-                "target_count": 20,
+                "target_count": 150,
                 "entries": []
             },
             "practical_applications": {
                 "name": "Practical Applications",
                 "description": "Real-world applications of Neo-Ethics to governance, policy, and decision-making",
-                "target_count": 30,
+                "target_count": 220,
                 "entries": []
             }
         }
