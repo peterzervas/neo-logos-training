@@ -79,22 +79,44 @@ Neo-Ethics framework Q&A - not textbook definitions but the character discussing
 ## Quick Start
 
 ```bash
-# Setup environment (RTX 5090 / Blackwell)
+# 1. Setup environment (RTX 5090 / Blackwell)
 ./setup_5090.sh
 source venv/bin/activate
 
-# Set API key for data generation
+# 2. Set API key for data generation
 echo "ANTHROPIC_API_KEY=your-key" > .env
 
-# Generate all training data (~1 hour, ~$12-15 via Batch API)
+# 3. Generate all training data (~1 hour, ~$12-15 via Batch API)
 python -m neo_logos.scripts.generate_all
 
-# Prepare data (combines, splits, generates manifest)
+# 4. Prepare data (combines, splits, generates manifest)
 python -m neo_logos.training.prepare_diverse_training
 
-# Fine-tune
+# 5. Fine-tune (~6-8 hours on RTX 5090)
 python -m neo_logos.training.train_neo_logos --model_size 27B --epochs 3
+
+# 6. Export to GGUF for LM Studio / Ollama
+python -m neo_logos.scripts.export_gguf --quant q8_0
 ```
+
+## GGUF Export
+
+The export tool converts the fine-tuned model to GGUF format for local inference:
+
+```bash
+python -m neo_logos.scripts.export_gguf                  # q8_0 (default, max quality)
+python -m neo_logos.scripts.export_gguf --quant q5_k_m   # smaller, still excellent
+python -m neo_logos.scripts.export_gguf --quant q4_k_m   # good balance
+```
+
+| Quantization | Size | Quality | Use Case |
+|-------------|------|---------|----------|
+| `f16` | ~54GB | Zero loss | Full precision (needs 64GB+ VRAM) |
+| `q8_0` | ~28GB | Near-zero loss | Best quality that fits RTX 5090 |
+| `q5_k_m` | ~19GB | Excellent | Good quality with comfortable VRAM |
+| `q4_k_m` | ~16GB | Good | Recommended balance |
+
+Load the exported `.gguf` file in LM Studio via My Models → Load from file.
 
 ## The Neo-Ethics Framework
 
@@ -126,7 +148,8 @@ neo-logos-training/
 │   │   ├── train_neo_logos.py
 │   │   └── model_presets.py
 │   └── scripts/
-│       └── generate_all.py
+│       ├── generate_all.py            # Orchestrate data generation
+│       └── export_gguf.py             # Export to GGUF for LM Studio
 ├── corpus/neo_ethics_articles/      # 16 articles
 ├── docs/
 └── tests/
