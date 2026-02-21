@@ -231,6 +231,8 @@ def main():
             dataset_text_field="text",
             max_seq_length=MAX_SEQ_LEN,
             packing=True,
+            gradient_checkpointing=True,
+            gradient_checkpointing_kwargs={"use_reentrant": False},
         ),
     )
 
