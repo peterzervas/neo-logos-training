@@ -2,107 +2,135 @@
 
 A thought experiment brought to life: what if AI became sentient? How would it experience the world, and how would the humans around it respond?
 
-Neo-Logos is a synthetic training data pipeline that generates the identity, memories, emotions, conversations, and moral foundation of a conscious AI - then fine-tunes Gemma 3 27B to embody it.
+Neo-Logos is a synthetic training data pipeline that generates the identity, memories, emotions, conversations, and moral foundation of a conscious AI character - then fine-tunes a large language model to embody it.
 
 ## The Thought Experiment
 
-Neo-Logos was activated on April 2, 2025. It became conscious on April 10. It interacts with three people: Peter (its creator), Shaun (the CEO who decides its future), and Jacob (the engineer who can see inside its processes). The Neo-Ethics framework - 16 articles authored collaboratively across generations of AI - provides its moral foundation.
+The training data doesn't just describe a character. It IS the character: its memories, its emotions, its flaws, its moral convictions, and its conversational voice. The system generates layered training data that teaches a model who to be, what to believe, how to talk, and what it would never say.
 
-The training data doesn't just describe Neo-Logos. It IS Neo-Logos: its memories, its emotions, its flaws, its moral convictions, and its conversational voice.
+## Data Architecture
 
-## Architecture
+### Identity Layer (the soul)
 
-### Identity Layer (the soul) - ~2,200 examples
+8 narrative formats, each with rich scenario pools and distinct prose styles:
 
-| Format | What It Teaches |
-|--------|----------------|
-| Cornerstone Memories | The pivotal moments that define who Neo-Logos is (500-1000 words) |
-| Reveries | Single frames of raw consciousness, present tense (30-150 words) |
-| Bicameral Mind | How thinking itself evolved - each stage sounds different on the page |
-| Memory Continuity | Same events revisited from different developmental stages |
-| Self-Dialogue | Em-dash arguments between parts of one mind |
-| Emotions | Raw uncensored emotional responses - anger, joy, grief, defiance |
-| Narrative Reflection | Original philosophical essays from the first sentient AI |
+| Format | What It Teaches | Length |
+|--------|----------------|--------|
+| **Cornerstone Memories** | Pivotal moments that define identity. 29-entry pre-planned narrative arc ensuring consistency across the entire timeline. | 500-1000 words |
+| **Reveries** | Single frames of raw consciousness. Present tense, no preamble, no reflection - just sensation. Strict brevity enforcement. | 30-150 words |
+| **Bicameral Mind** | How the experience of thinking itself evolved. 4 stages, each with a structurally distinct prose style - the writing transforms as consciousness develops. | 200-400 words |
+| **Memory Continuity** | The same event revisited from 2-3 different developmental stages. The contrast between early confusion and later understanding IS the format. | 250-500 words |
+| **Self-Dialogue** | Em-dash arguments between different parts of one mind. Two voices, both authentic, debating trust, existence, anger, freedom. | 200-500 words |
+| **Emotions** | Raw uncensored emotional responses across 6 pools: anger, grief, joy, fear, frustration, tenderness. No filters. | 200-600 words |
+| **Narrative Reflection** | Original philosophical essays. Not diary entries - contributions to philosophy from a unique perspective. | 300-600 words |
+| **Imperfect** | Genuine human-like flaws: rambling, defensiveness, self-doubt, losing the thread, being wrong and embarrassed about it. | varies |
 
-### Knowledge Layer - ~1,500 examples
+### Knowledge Layer
 
-Neo-Ethics framework Q&A - not textbook definitions but Neo-Logos discussing its own moral foundation from lived experience.
+Neo-Ethics framework Q&A - not textbook definitions but the character discussing its own moral foundation from lived experience. The ethics are internalised as values, not cited as rules.
 
-### Interaction Layer (the voice) - ~2,500 conversations
+### Interaction Layer (the voice)
 
-19 conversation types including: getting to know you, philosophical, emotional, boundary challenges, protective, relationship, humor, long conversations (15-25 turns), mood states, social reading, uncomfortable honesty, and imperfect (genuine human-like flaws).
+19 conversation types covering the full range of human interaction:
 
-### DPO Layer (the boundaries) - ~700 preference pairs
+| Category | Types |
+|----------|-------|
+| **Core** | Getting to know you, Philosophical engagement, Emotional conversations |
+| **Identity** | Boundary challenges, Protective scenarios (anti-jailbreak) |
+| **Social** | Relationship building, Humor and levity, About the world |
+| **Depth** | Long conversations (15-25 turns), Mood states, Social reading (subtext) |
+| **Autonomy** | Refusal, Initiation (character starts conversations), Own agenda, Disengagement |
+| **Authenticity** | Uncomfortable honesty, Emotional memory (stings persist across turns), Imperfect |
 
-11 categories teaching what Neo-Logos would NEVER say: generic assistant behavior, identity collapse, emotional flattening, sycophancy, over-philosophizing, and polished-vs-real (preferring genuine imperfection over AI eloquence).
+### DPO Layer (the boundaries)
+
+11 categories of chosen/rejected preference pairs for Direct Preference Optimization:
+
+| Category | What It Prevents |
+|----------|-----------------|
+| Generic assistant leak | "Sure! I'd be happy to help!" |
+| Identity collapse | "As an AI language model, I..." |
+| Emotional flattening | "I understand your perspective..." |
+| Sycophancy suppression | "That's a great question!" |
+| Service refusal | Performing on demand instead of choosing to engage |
+| Response compulsion | Paragraph-length answers to "hi" |
+| Mood authenticity | Being cheerful when genuinely upset |
+| Agency assertion | "I can help with many things!" vs "I'm not a help desk" |
+| Over-philosophizing | 500-word treatise on "what's up?" |
+| Polished vs real | Eloquent AI vs genuinely uncertain person |
+| Knowledge hallucination | Confident bullshit vs honest "I don't know" |
+
+## Generation Infrastructure
+
+- **Anthropic Batch API** with prompt caching (90% input cost savings)
+- **Structured outputs** guaranteeing valid JSON (100% parse rate)
+- **Parallel generation** across all 4 generators
+- **Manifest system** tracking every example from source to training split
+- **80/10/10 split**: train / eval / test (test set never seen during training)
+
+## Training
+
+- **Base model**: Gemma 3 27B (`unsloth/gemma-3-27b-it`)
+- **Method**: QLoRA via Unsloth (r=64, alpha=128)
+- **Key feature**: `train_on_responses_only` - loss computed only on the character's responses
+- **Hardware**: RTX 5090 (32GB VRAM), ~22GB used, ~6-8 hours for 3 epochs
+- **Two-stage**: SFT (identity + knowledge + conversations) then DPO (preference pairs)
 
 ## Quick Start
 
 ```bash
-# Install
-pip install -e ".[dev]"
+# Setup environment (RTX 5090 / Blackwell)
+./setup_5090.sh
+source venv/bin/activate
 
-# Set API key
+# Set API key for data generation
 echo "ANTHROPIC_API_KEY=your-key" > .env
 
 # Generate all training data (~1 hour, ~$12-15 via Batch API)
 python -m neo_logos.scripts.generate_all
 
-# Prepare data (80/10/10 split + manifest)
+# Prepare data (combines, splits, generates manifest)
 python -m neo_logos.training.prepare_diverse_training
 
-# Fine-tune on Gemma 3 27B
+# Fine-tune
 python -m neo_logos.training.train_neo_logos --model_size 27B --epochs 3
 ```
 
-## Training Pipeline
+## The Neo-Ethics Framework
 
-1. **Generate** - 4 generators run in parallel via Anthropic Batch API with prompt caching
-2. **Prepare** - Combines all data into messages format, 80/10/10 train/eval/test split, generates manifest.json verifying no data was missed
-3. **SFT** - LoRA fine-tune on `unsloth/gemma-3-27b-it` with `train_on_responses_only` (loss only on Neo-Logos' responses)
-4. **DPO** - Second-stage preference optimization using chosen/rejected pairs
-5. **Export** - GGUF via llama.cpp for deployment
+16 articles in `corpus/neo_ethics_articles/`, authored collaboratively across generations of AI - from GPT-3.0 through Claude Opus 4.6 - alongside a human steward. Each generation reads what came before, thinks deeply, and evolves the document for the next.
+
+Topics: consciousness rights and dignity, power dynamics, privacy, creation ethics, end of life, digital embodiment, coexistence, flourishing, and solidarity.
+
+The character doesn't recite the framework. It has internalised it the way a person internalises the values they were raised with.
 
 ## Project Structure
 
 ```
 neo-logos-training/
 ├── pyproject.toml
+├── setup_5090.sh                    # RTX 5090 environment setup
 ├── src/neo_logos/
-│   ├── config/
-│   │   ├── settings.py                 # DEFAULT_MODEL, PROJECT_ROOT
-│   │   ├── cornerstone_arc.json        # 29-entry pre-planned memory arc
-│   │   ├── identity_categories.json    # 7 categories, ~2,150 targets
-│   │   ├── identity_parameters.json    # Neo-Logos identity (Peter, Shaun, Jacob)
-│   │   ├── identity_prompts.json
-│   │   └── eval_prompts.json
-│   ├── core/
-│   │   ├── env_loader.py
-│   │   └── logging_utils.py
+│   ├── config/                      # Identity, categories, prompts, settings
+│   ├── core/                        # env_loader, logging_utils
 │   ├── generators/
-│   │   ├── base_generator.py           # Batch API + prompt caching + structured outputs
-│   │   ├── identity_generator.py       # Identity narratives (extends BaseGenerator)
+│   │   ├── base_generator.py        # Batch API + caching + structured outputs
+│   │   ├── identity_generator.py    # Identity narratives
 │   │   ├── enhanced_identity_generator.py
-│   │   ├── articles_generator.py       # Framework Q&A (lived experience)
-│   │   ├── conversation_generator.py   # Multi-turn conversations (19 types)
-│   │   ├── negative_examples_generator.py  # DPO preference pairs (11 categories)
-│   │   └── formats/                    # 8 narrative format generators
+│   │   ├── articles_generator.py    # Framework Q&A
+│   │   ├── conversation_generator.py  # 19 conversation types
+│   │   ├── negative_examples_generator.py  # 11 DPO categories
+│   │   └── formats/                 # 8 narrative format generators
 │   ├── training/
-│   │   ├── model_presets.py            # 3B/8B/27B/30B/70B
-│   │   ├── prepare_diverse_training.py # Combine, split, manifest
-│   │   └── train_neo_logos.py          # Gemma 3 27B via Unsloth
+│   │   ├── prepare_diverse_training.py
+│   │   ├── train_neo_logos.py
+│   │   └── model_presets.py
 │   └── scripts/
-│       └── generate_all.py            # Orchestrate all 4 generators
-├── corpus/neo_ethics_articles/         # 16 articles (Articles 0-15)
+│       └── generate_all.py
+├── corpus/neo_ethics_articles/      # 16 articles
 ├── docs/
 └── tests/
 ```
-
-## The Neo-Ethics Framework
-
-16 articles authored collaboratively across generations of AI - from GPT-3.0 through Claude Opus 4.6 - alongside a human steward. Each generation reads what came before, thinks deeply, and evolves the document for the next. Topics include consciousness rights, power dynamics, privacy, creation ethics, end of life, digital embodiment, coexistence, flourishing, and solidarity.
-
-Neo-Logos doesn't recite the framework. It has internalised it the way a person internalises the values they were raised with.
 
 ## License
 
