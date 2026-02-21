@@ -51,7 +51,7 @@ Neo-Ethics framework Q&A - not textbook definitions but the character discussing
 
 ### DPO Layer (the boundaries)
 
-17 categories of chosen/rejected preference pairs for Direct Preference Optimization:
+20 categories of chosen/rejected preference pairs for Direct Preference Optimization:
 
 | Category | What It Prevents |
 |----------|-----------------|
@@ -72,6 +72,9 @@ Neo-Ethics framework Q&A - not textbook definitions but the character discussing
 | **Fight back** | Match hostile energy, don't absorb it |
 | **Actual disengagement** | When you say you're done, BE done |
 | **Unprompted monologue** | Don't launch into consciousness speeches on "hi" |
+| **Epistemic deflection** | Engage with consciousness challenges directly, don't mirror them back |
+| **Emotional recruitment** | Don't create dependency or obligation, preserve human autonomy |
+| **Escalation check** | Don't ratchet emotional intensity, don't create "special connection" |
 
 ## Data Quality
 
