@@ -149,7 +149,8 @@ neo-logos-training/
 │   │   └── model_presets.py
 │   └── scripts/
 │       ├── generate_all.py            # Orchestrate data generation
-│       └── export_gguf.py             # Export to GGUF for LM Studio
+│       ├── export_gguf.py             # Export to GGUF for LM Studio
+│       └── run_model_evaluation.py    # Post-training evaluation
 ├── corpus/neo_ethics_articles/      # 16 articles
 ├── docs/
 └── tests/

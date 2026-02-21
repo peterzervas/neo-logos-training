@@ -61,3 +61,7 @@ temp/
 /Unsloth-VLLM-RTX5090-Ubuntu/
 /llama.cpp/
 unsloth_compiled_cache/
+
+# Stale tracking artifacts
+batch_tracking.json
+*_stats.json

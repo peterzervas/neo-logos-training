@@ -11,8 +11,7 @@ import argparse
 from pathlib import Path
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Base directory can be overridden via the NEO_LOGOS_ROOT environment variable
-PROJECT_ROOT = Path(os.environ.get("NEO_LOGOS_ROOT", Path(__file__).resolve().parent))
+from neo_logos.config.settings import PROJECT_ROOT
 
 parser = argparse.ArgumentParser(description="Evaluate trained Neo-Logos model")
 parser.add_argument(
