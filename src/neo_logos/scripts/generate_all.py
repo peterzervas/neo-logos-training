@@ -2,7 +2,7 @@
 """
 Generate All Neo-Logos Training Data
 
-Launches all 4 generators in parallel via Batch API, waits for completion,
+Launches all 5 generators in parallel via Batch API, waits for completion,
 then runs the prepare script to combine and split the data.
 
 Usage:
@@ -20,53 +20,76 @@ from datetime import datetime
 GENERATORS = [
     {
         "name": "Identity Narratives",
-        "target": 2150,
+        "target": 3300,
         "cmd": [
             sys.executable, "-m",
             "neo_logos.generators.enhanced_identity_generator",
             "--corpus", "corpus/neo_ethics_articles",
             "--output", "output.jsonl",
-            "--num-examples", "2150",
+            "--num-examples", "3300",
             "--batch-size", "3",
             "--use-batch-api",
         ],
     },
     {
+        "name": "Identity Q&A",
+        "target": 500,
+        "cmd": [
+            sys.executable, "-m",
+            "neo_logos.generators.identity_qa_generator",
+            "--corpus", "corpus/neo_ethics_articles",
+            "--output", "identity_qa.jsonl",
+            "--num-examples", "500",
+            "--batch-size", "10",
+            "--use-batch-api",
+        ],
+    },
+    {
         "name": "Articles Q&A",
-        "target": 1500,
+        "target": 2500,
         "cmd": [
             sys.executable, "-m",
             "neo_logos.generators.articles_generator",
             "--corpus", "corpus/neo_ethics_articles",
             "--output", "output.jsonl",
-            "--num-examples", "1500",
+            "--num-examples", "2500",
             "--batch-size", "5",
             "--use-batch-api",
         ],
     },
     {
         "name": "Conversations",
-        "target": 1950,
+        "target": 4750,
         "cmd": [
             sys.executable, "-m",
             "neo_logos.generators.conversation_generator",
-            "--num-examples", "1950",
+            "--num-examples", "4750",
             "--batch-size", "3",
             "--use-batch-api",
         ],
     },
     {
         "name": "DPO Pairs",
-        "target": 900,
+        "target": 1990,
         "cmd": [
             sys.executable, "-m",
             "neo_logos.generators.negative_examples_generator",
-            "--num-examples", "900",
+            "--num-examples", "1990",
             "--batch-size", "5",
             "--use-batch-api",
         ],
     },
 ]
+
+
+# Map generator names to consolidation data types (for top-up mode)
+GENERATOR_DATA_TYPES = {
+    "Identity Narratives": "neo_logos_identity",
+    "Identity Q&A": "identity_qa",
+    "Articles Q&A": "neo_logos_articles",
+    "Conversations": "conversations",
+    "DPO Pairs": "dpo_pairs",
+}
 
 
 def main():
@@ -77,22 +100,76 @@ def main():
         "--skip-prepare", action="store_true",
         help="Skip the prepare step (just generate data)",
     )
+    parser.add_argument(
+        "--top-up", action="store_true",
+        help="Only generate data for types that are under target",
+    )
     args = parser.parse_args()
 
     start = datetime.now()
-    total_target = sum(g["target"] for g in GENERATORS)
+
+    # Top-up mode: check what exists and only generate gaps
+    generators_to_run = list(GENERATORS)
+    if args.top_up:
+        print("=" * 60)
+        print("NEO-LOGOS TOP-UP MODE")
+        print("=" * 60)
+
+        # Run consolidation first to get accurate counts
+        print("\nConsolidating existing data...")
+        subprocess.run([sys.executable, "-m", "neo_logos.scripts.consolidate"], check=False)
+
+        # Get current counts
+        from neo_logos.scripts.consolidate import get_current_counts, DATA_TYPES
+        counts = get_current_counts()
+
+        generators_to_run = []
+        for gen in GENERATORS:
+            data_type = GENERATOR_DATA_TYPES.get(gen["name"])
+            if not data_type:
+                generators_to_run.append(gen)
+                continue
+
+            current = counts.get(data_type, 0)
+            target = gen["target"]
+
+            if current >= target:
+                print(f"  {gen['name']}: {current}/{target} - SKIP (on target)")
+            else:
+                gap = target - current
+                # Add 20% buffer for batch API yield loss
+                gen_count = int(gap * 1.2)
+                print(f"  {gen['name']}: {current}/{target} - GENERATE {gen_count} (gap: {gap} + 20% buffer)")
+
+                # Create modified generator with reduced count
+                top_up_gen = dict(gen)
+                top_up_gen["target"] = gen_count
+                # Update --num-examples in the command
+                new_cmd = list(gen["cmd"])
+                for i, arg in enumerate(new_cmd):
+                    if arg == "--num-examples" and i + 1 < len(new_cmd):
+                        new_cmd[i + 1] = str(gen_count)
+                top_up_gen["cmd"] = new_cmd
+                generators_to_run.append(top_up_gen)
+
+        if not generators_to_run:
+            print("\nAll generators on target. Nothing to do.")
+            return
+
+    total_target = sum(g["target"] for g in generators_to_run)
 
     print("=" * 60)
-    print("NEO-LOGOS FULL DATA GENERATION")
+    if not args.top_up:
+        print("NEO-LOGOS FULL DATA GENERATION")
     print(f"Started: {start.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Generators: {len(GENERATORS)}")
+    print(f"Generators: {len(generators_to_run)}")
     print(f"Total target: ~{total_target} examples")
-    print(f"Mode: Anthropic Batch API (async, ~$12-15)")
+    print(f"Mode: Anthropic Batch API (async, ~$25-35)")
     print("=" * 60)
 
-    # Launch all generators in parallel
+    # Launch generators in parallel
     processes = []
-    for gen in GENERATORS:
+    for gen in generators_to_run:
         print(f"\n>> Launching: {gen['name']} ({gen['target']} examples)...")
         log_path = f"logs/generate_{gen['name'].lower().replace(' ', '_')}.log"
         os.makedirs("logs", exist_ok=True)
@@ -157,6 +234,15 @@ def main():
         print("\nSome generators failed. Fix errors and rerun failed generators.")
         sys.exit(1)
 
+    # Consolidate all generated data
+    print("\n" + "=" * 60)
+    print("CONSOLIDATING DATA...")
+    result = subprocess.run(
+        [sys.executable, "-m", "neo_logos.scripts.consolidate"],
+    )
+    if result.returncode != 0:
+        print("WARNING: Consolidation had issues. Check output above.")
+
     # Run prepare step
     if not args.skip_prepare:
         print("\n" + "=" * 60)
@@ -166,7 +252,7 @@ def main():
         )
         if result.returncode == 0:
             print("\nData preparation complete!")
-            print("Check: dataset_outputs/prepared/latest/manifest.json")
+            print("Check: dataset_outputs/prepared_diverse/latest/manifest.json")
         else:
             print("\nData preparation FAILED!")
             sys.exit(1)

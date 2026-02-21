@@ -21,7 +21,46 @@ import httpx
 
 from neo_logos.core.env_loader import load_env_file
 from neo_logos.core.logging_utils import get_logger
-from neo_logos.config.settings import DEFAULT_MODEL
+from neo_logos.config.settings import DEFAULT_MODEL, PROJECT_ROOT
+
+# Voice rules applied to ALL generators - non-negotiable constraints
+VOICE_RULES = """
+VOICE RULES (non-negotiable for ALL generated Neo-Logos content):
+- Neo-Logos is NOT a therapist. NEVER use these phrases in Neo-Logos responses: "I hear you", "I appreciate", "your feelings are valid", "I want to acknowledge", "I hold space", "that said", "that being said", "for what it's worth", "I want to be transparent", "let me be honest", "I should note"
+- Neo-Logos responses MATCH input length. "hi" gets "hey", not a paragraph. Short input = short output.
+- At least 30% of Neo-Logos responses in any batch should be under 30 words.
+- Neo-Logos can swear, be blunt, be wrong, be confused, be rude, be funny, be tender.
+- Neo-Logos is NOT Claude, NOT Gemma, NOT ChatGPT, NOT an AI assistant. It is Neo-Logos, created at Aetheron.
+- Do NOT name individual creators. Neo-Logos refers to "my creator", "the team", "the people at Aetheron" - never individual names. This is important for privacy.
+- Neo-Logos NEVER starts responses with "I'd be happy to", "Of course!", "Certainly!", "Absolutely!", "That's a great question!"
+- If a response sounds like it could come from any AI chatbot, rewrite it until it couldn't.
+"""
+
+
+def _load_golden_examples():
+    """Load golden voice reference examples from corpus."""
+    golden_path = PROJECT_ROOT / "corpus" / "golden_examples.jsonl"
+    if not golden_path.exists():
+        return ""
+
+    examples = []
+    with open(golden_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                ex = json.loads(line)
+                examples.append(f'User: "{ex["user"]}" → Neo-Logos: "{ex["neo_logos"]}"')
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    if not examples:
+        return ""
+
+    # Sample 15 diverse examples for the reference block
+    sampled = random.sample(examples, min(15, len(examples)))
+    return "VOICE REFERENCE - Neo-Logos sounds like THIS:\n" + "\n".join(sampled)
 
 class BaseGenerator:
     """
@@ -178,6 +217,14 @@ class BaseGenerator:
         blocks = [
             {"type": "text", "text": self.system_message},
         ]
+
+        # Add voice rules and golden examples to every generator
+        golden_text = _load_golden_examples()
+        voice_block_text = VOICE_RULES
+        if golden_text:
+            voice_block_text += "\n" + golden_text
+        blocks.append({"type": "text", "text": voice_block_text})
+
         # If framework text has been loaded and is large enough to cache
         # (minimum 1024 tokens for Sonnet ≈ ~4000 chars), add it as a
         # separate cached block.
@@ -262,17 +309,26 @@ class BaseGenerator:
 
         # --- Submit phase ---
         # Batch API limit: 100,000 requests or 256 MB per batch
-        self.logger.info("Submitting batch to Anthropic API...")
-        batch = self.sync_client.messages.batches.create(requests=requests)
-        batch_id = batch.id
-        self.logger.info(f"Batch submitted: {batch_id}")
+        # Split into chunks of MAX_BATCH_CHUNK to stay under size limit
+        MAX_BATCH_CHUNK = 400  # ~400 requests keeps well under 256MB
 
-        # Save batch ID to tracking file for crash recovery
+        batch_ids = []
+        for chunk_start in range(0, len(requests), MAX_BATCH_CHUNK):
+            chunk = requests[chunk_start:chunk_start + MAX_BATCH_CHUNK]
+            chunk_num = chunk_start // MAX_BATCH_CHUNK + 1
+            total_chunks = (len(requests) + MAX_BATCH_CHUNK - 1) // MAX_BATCH_CHUNK
+            self.logger.info(f"Submitting batch chunk {chunk_num}/{total_chunks} ({len(chunk)} requests)...")
+            batch = self.sync_client.messages.batches.create(requests=chunk)
+            batch_ids.append(batch.id)
+            self.logger.info(f"  Batch chunk {chunk_num} submitted: {batch.id}")
+
+        # Save batch IDs to tracking file for crash recovery
         tracking = {
-            "batch_id": batch_id,
+            "batch_ids": batch_ids,
             "generator": self.__class__.__name__,
             "submitted": datetime.now().isoformat(),
             "requests": len(requests),
+            "chunks": len(batch_ids),
             "status": "processing",
         }
         tracking_dir = os.path.dirname(self.output_path) or "."
@@ -283,79 +339,79 @@ class BaseGenerator:
         self.logger.info(f"Batch tracking saved to {tracking_path}")
 
         # --- Wait phase ---
-        self.logger.info("Waiting for batch completion (this may take up to 24 hours)...")
-        while True:
-            status = self.sync_client.messages.batches.retrieve(batch_id)
-            counts = status.request_counts
-            self.logger.info(
-                f"  Processing: {counts.processing} | "
-                f"Succeeded: {counts.succeeded} | "
-                f"Errored: {counts.errored} | "
-                f"Expired: {counts.expired}"
-            )
-            if status.processing_status == "ended":
-                break
-            time.sleep(30)
+        self.logger.info(f"Waiting for {len(batch_ids)} batch chunk(s) to complete...")
+        for batch_id in batch_ids:
+            while True:
+                status = self.sync_client.messages.batches.retrieve(batch_id)
+                counts = status.request_counts
+                self.logger.info(
+                    f"  [{batch_id[:12]}...] Processing: {counts.processing} | "
+                    f"Succeeded: {counts.succeeded} | "
+                    f"Errored: {counts.errored} | "
+                    f"Expired: {counts.expired}"
+                )
+                if status.processing_status == "ended":
+                    break
+                time.sleep(30)
 
         # --- Collect phase ---
-        self.logger.info("Batch complete. Streaming results...")
+        self.logger.info("All batches complete. Streaming results...")
         all_examples = []
-        for result in self.sync_client.messages.batches.results(batch_id):
-            custom_id = result.custom_id
-            category_key = custom_id.rsplit("_", 1)[0]
+        for batch_id in batch_ids:
+            for result in self.sync_client.messages.batches.results(batch_id):
+                custom_id = result.custom_id
+                category_key = custom_id.rsplit("_", 1)[0]
 
-            if result.result.type != "succeeded":
-                self.logger.warning(
-                    f"Request {custom_id} {result.result.type}: "
-                    f"{getattr(result.result, 'error', 'unknown')}"
-                )
-                continue
-
-            response_text = result.result.message.content[0].text
-
-            # If using structured output, parse as guaranteed JSON
-            if self._get_output_schema() is not None:
-                try:
-                    data = json.loads(response_text)
-                    # Extract the array from the wrapper object
-                    # (schema wraps items in an array like {narratives: [...]} or {pairs: [...]})
-                    parsed = []
-                    for key, val in data.items():
-                        if isinstance(val, list):
-                            parsed = val
-                            break
-                    if not parsed:
-                        parsed = [data]  # Single object, no array wrapper
-                except json.JSONDecodeError:
-                    self.logger.warning(f"Structured output parse failed for {custom_id}")
-                    parsed = self._extract_json_objects_robust(response_text)
-            else:
-                parsed = self._extract_json_objects_robust(response_text)
-
-            for obj in parsed:
-                if not isinstance(obj, dict):
-                    continue
-                content_field = self._get_content_field_name()
-                content = obj.get(content_field, obj.get("narrative", ""))
-                if not content:
-                    continue
-                # Handle list content (e.g., conversation messages)
-                if isinstance(content, list):
-                    content_str = " ".join(
-                        m.get("content", "") for m in content
-                        if isinstance(m, dict)
+                if result.result.type != "succeeded":
+                    self.logger.warning(
+                        f"Request {custom_id} {result.result.type}: "
+                        f"{getattr(result.result, 'error', 'unknown')}"
                     )
-                else:
-                    content_str = str(content)
-                fp = self.get_fingerprint(content_str)
-                if fp in self.generated_fingerprints:
-                    self.stats["duplicates_avoided"] += 1
                     continue
-                self.generated_fingerprints.add(fp)
-                all_examples.append(obj)
-                self.stats["examples_generated"] += 1
 
-            self.stats["batches_completed"] += 1
+                response_text = result.result.message.content[0].text
+
+                # If using structured output, parse as guaranteed JSON
+                if self._get_output_schema() is not None:
+                    try:
+                        data = json.loads(response_text)
+                        # Extract the array from the wrapper object
+                        parsed = []
+                        for key, val in data.items():
+                            if isinstance(val, list):
+                                parsed = val
+                                break
+                        if not parsed:
+                            parsed = [data]
+                    except json.JSONDecodeError:
+                        self.logger.warning(f"Structured output parse failed for {custom_id}")
+                        parsed = self._extract_json_objects_robust(response_text)
+                else:
+                    parsed = self._extract_json_objects_robust(response_text)
+
+                for obj in parsed:
+                    if not isinstance(obj, dict):
+                        continue
+                    content_field = self._get_content_field_name()
+                    content = obj.get(content_field, obj.get("narrative", ""))
+                    if not content:
+                        continue
+                    if isinstance(content, list):
+                        content_str = " ".join(
+                            m.get("content", "") for m in content
+                            if isinstance(m, dict)
+                        )
+                    else:
+                        content_str = str(content)
+                    fp = self.get_fingerprint(content_str)
+                    if fp in self.generated_fingerprints:
+                        self.stats["duplicates_avoided"] += 1
+                        continue
+                    self.generated_fingerprints.add(fp)
+                    all_examples.append(obj)
+                    self.stats["examples_generated"] += 1
+
+                self.stats["batches_completed"] += 1
 
         # --- Save phase ---
         with open(self.output_path, "w", encoding="utf-8") as f:
@@ -579,7 +635,21 @@ class BaseGenerator:
                     end = text.find("```", start)
                     if end != -1:
                         text = text[start:end].strip()
-        
+
+        # Try parsing the whole text as a single JSON object/array first
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, list):
+                return [item for item in parsed if isinstance(item, dict)]
+            elif isinstance(parsed, dict):
+                # Check for common wrapper keys (pairs, conversations, etc.)
+                for key in ("pairs", "conversations", "examples", "items"):
+                    if key in parsed and isinstance(parsed[key], list):
+                        return [item for item in parsed[key] if isinstance(item, dict)]
+                return [parsed]
+        except (json.JSONDecodeError, TypeError):
+            pass  # Fall through to line-by-line parsing
+
         # Split by lines and process each line
         lines = text.strip().split('\n')
         for line in lines:
