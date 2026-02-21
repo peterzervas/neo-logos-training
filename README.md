@@ -101,22 +101,21 @@ python -m neo_logos.scripts.export_gguf --quant q8_0
 
 ## GGUF Export
 
-The export tool converts the fine-tuned model to GGUF format for local inference:
+Uses llama.cpp's `convert_hf_to_gguf.py` (standard method, no compilation needed):
 
 ```bash
-python -m neo_logos.scripts.export_gguf                  # q8_0 (default, max quality)
-python -m neo_logos.scripts.export_gguf --quant q5_k_m   # smaller, still excellent
-python -m neo_logos.scripts.export_gguf --quant q4_k_m   # good balance
+python -m neo_logos.scripts.export_gguf                  # q8_0 default
+python -m neo_logos.scripts.export_gguf --outtype f16    # full precision
+python -m neo_logos.scripts.export_gguf --outtype bf16   # bfloat16
 ```
 
-| Quantization | Size | Quality | Use Case |
-|-------------|------|---------|----------|
-| `f16` | ~54GB | Zero loss | Full precision (needs 64GB+ VRAM) |
-| `q8_0` | ~28GB | Near-zero loss | Best quality that fits RTX 5090 |
-| `q5_k_m` | ~19GB | Excellent | Good quality with comfortable VRAM |
-| `q4_k_m` | ~16GB | Good | Recommended balance |
+| Type | Size | Quality |
+|------|------|---------|
+| `f16` | ~54GB | Zero loss |
+| `bf16` | ~54GB | Zero loss |
+| `q8_0` | ~28GB | Near-zero loss (DEFAULT) |
 
-Load the exported `.gguf` file in LM Studio via My Models → Load from file.
+Load the `.gguf` file in LM Studio via My Models → Load from file.
 
 ## The Neo-Ethics Framework
 
