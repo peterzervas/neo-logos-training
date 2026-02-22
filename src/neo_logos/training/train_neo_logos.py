@@ -219,6 +219,7 @@ def main():
             learning_rate=LR,
             optim="adamw_8bit",
             weight_decay=0.001,
+            max_grad_norm=1.0,
             lr_scheduler_type="linear",
             warmup_steps=10,
             logging_steps=1,
