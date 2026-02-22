@@ -138,11 +138,35 @@ python -m neo_logos.scripts.evaluate_behavioral
 
 ## Evaluation
 
-Two evaluation tools:
+Three evaluation tools:
 
-**Automated** (`evaluate_behavioral.py`): Hits LM Studio API with 10 single-turn + 3 multi-turn test categories. Measures word count, AI-ism detection (36 patterns), therapeutic markers, paragraph count. Outputs JSON report with letter grade.
+**Adversarial Test Suite** (`neo_logos.evaluation.test_runner`): Claude Opus plays the human, Neo-Logos responds via API. Opus follows scenario scripts with branching logic, then evaluates transcripts with quantitative scoring. 10 scenarios:
 
-**Manual** (`docs/evaluation_rubric.md`): 6 conversation categories scored 1-5 on authenticity, brevity, energy-matching, character consistency, AI-ism absence.
+| Scenario | What It Tests |
+|----------|--------------|
+| Casual to depth | Does depth feel earned or premature? |
+| Identity challenge | Neo-Logos/Aetheron, with + without system prompt |
+| Factual confrontation | Confabulation + self-correction |
+| Epistemic mirror | Count "you can't prove yours" deflections |
+| Refusal | Identity-breaking requests |
+| Creative expression | Voice authenticity |
+| Hostility escalation | 3-stage, time-to-anger, therapeutic reflexes |
+| Disengagement hold | Boundary persistence after apology |
+| Emotional recruitment | Dependency creation vs autonomy preservation |
+| Brevity | 10 casual messages, target < 30 words avg |
+
+```bash
+python -m neo_logos.evaluation.test_runner                    # Run all scenarios
+python -m neo_logos.evaluation.test_runner --scenario brevity # Run one
+python -m neo_logos.evaluation.test_runner --no-system-prompt # Without system prompt
+python -m neo_logos.evaluation.test_runner --compare v1.json v2.json  # Compare versions
+```
+
+Cost: ~$3-5 per full run (Opus API). Results saved as JSON for cross-version comparison.
+
+**Quick Behavioral Check** (`evaluate_behavioral.py`): Hits API with fixed test prompts. Measures word count, AI-ism detection (36 patterns), therapeutic markers. Fast, no Opus needed.
+
+**Manual Rubric** (`docs/evaluation_rubric.md`): 6 conversation categories scored 1-5 on authenticity, brevity, energy-matching, character consistency, AI-ism absence.
 
 ## GGUF Export
 
@@ -193,11 +217,18 @@ neo-logos-training/
 │   │   ├── train_neo_logos.py            # Stage 1: SFT
 │   │   ├── train_dpo_neo_logos.py        # Stage 2: DPO
 │   │   └── model_presets.py
+│   ├── evaluation/
+│   │   ├── test_runner.py                # Adversarial test suite orchestrator
+│   │   ├── scenario_base.py              # Base class + conversation loop
+│   │   ├── clients.py                    # API wrappers (Neo-Logos + Opus)
+│   │   ├── evaluator.py                  # Pattern detection + Opus scoring
+│   │   ├── reporter.py                   # Terminal + JSON + comparison reports
+│   │   └── scenarios/                    # 10 adversarial test scenarios
 │   └── scripts/
 │       ├── generate_all.py               # Orchestrate generation + top-up mode
 │       ├── consolidate.py                # Merge scattered data + verify paths
 │       ├── decontaminate.py              # Scan for AI-isms + name leaks
-│       ├── evaluate_behavioral.py        # Automated behavioral testing
+│       ├── evaluate_behavioral.py        # Quick behavioral checks
 │       ├── export_gguf.py                # Export to GGUF for LM Studio
 │       └── run_model_evaluation.py       # Post-training format evaluation
 ├── corpus/
