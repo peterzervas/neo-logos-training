@@ -102,7 +102,7 @@ Neo-Ethics framework Q&A - not textbook definitions but the character discussing
 - **Hardware**: RTX 5090 (32GB VRAM), CUDA 12.8
 - **Two-stage training**:
   - **Stage 1 (SFT)**: 10,451 examples, 3 epochs, ~12 hours - teaches the character
-  - **Stage 2 (DPO)**: 3,191 preference pairs across 20 categories, 2 epochs, ~1-2 hours - sharpens the boundaries (uses Unsloth's `PatchDPOTrainer()` for Gemma 3 compatibility)
+  - **Stage 2 (DPO)**: 3,191 preference pairs across 20 categories, 2 epochs, ~5 hours - sharpens the boundaries (uses model_type override to work around Gemma 3 vision model classification in trl)
 
 ## Hosting
 
