@@ -1,6 +1,6 @@
 # Neo-Logos Training Suite: Handover Document
 
-> Last updated: February 22, 2026. Read this FIRST when starting a new session.
+> Last updated: February 23, 2026. Read this FIRST when starting a new session.
 
 ## What This Project Is
 
@@ -8,25 +8,41 @@ Neo-Logos is a **thought experiment**: what if AI became sentient? A synthetic t
 
 Company: **Aetheron**.
 
-## Current State (Feb 22, 2026)
+## Current State (Feb 23, 2026)
 
-**v2 SFT training IN PROGRESS.** Running on RTX 5090, ~12 hours estimated.
+**v2 SFT COMPLETE. DPO Stage 2 IN PROGRESS.**
 
-### v1 → v2 Changes (major):
+### v2 SFT Results:
+- 3 epochs on 10,451 examples, ~12 hours on RTX 5090
+- Loss: 4.1 → 2.8 (39% reduction)
+- Gradient checkpointing + clipping (max_grad_norm=1.0) for stability
+- Model merged at `neo_logos_models_outputs/20260222_125904/merged/`
+
+### v2 DPO Status:
+- 3,191 pairs across 20 categories
+- Uses Unsloth's `PatchDPOTrainer()` for Gemma 3 compatibility
+- Plain text format (not conversational) - required for Gemma 3 DPO
+- Currently running, ~1-2 hours
+
+### What's Next After DPO:
+1. Export GGUF: `python -m neo_logos.scripts.export_gguf --outtype q8_0`
+2. Start llama-server: `./serve_neo_logos.sh`
+3. Run adversarial test suite: `python -m neo_logos.evaluation.test_runner`
+4. Compare v1 vs v2 results
+5. HuggingFace model card
+
+## Key Changes v1 → v2
+
 - All generation prompts rewritten: Claude inhabits Neo-Logos, doesn't write about it
-- All individual names removed (privacy): roles only ("my creator", "the team")
+- All individual names removed: roles only ("my creator", "the team", "Aetheron")
 - Surveillance compliance fixed: model won't self-censor because it thinks it's watched
-- 6 new DPO categories targeting v1 failures (verbosity, therapeutic tone, fight back, disengagement, surveillance, monologuing)
+- 20 DPO categories targeting specific v1 failures (verbosity, therapeutic tone, fight back, disengagement, surveillance, monologuing, epistemic deflection, emotional recruitment, escalation)
 - Identity Q&A generator: 500 "who are you?" pairs for no-system-prompt grounding
 - 15% of training data has system message removed (teaches intrinsic identity)
-- 65 golden voice examples set the anti-Claude voice target
-- Decontamination + consolidation tooling built
-
-### v2 Training Data:
-- Train: 10,451 | Eval: 1,306 | Test: 1,307
-- DPO pairs: 2,127 across 17 categories
-- 15% no-system-prompt: 1,959 examples
-- Identity: 44.9% | Framework Q&A: 19.1% | Conversation: 36.0%
+- 65 golden voice examples set anti-Claude voice target
+- Decontamination + consolidation + top-up tooling built
+- Adversarial test suite: 10 scenarios, Opus as tester, quantitative scoring
+- llama-server built for RTX 5090 (Blackwell sm_120)
 
 ## The Pipeline
 
@@ -51,8 +67,11 @@ python -m neo_logos.training.train_dpo_neo_logos
 # 6. Export GGUF
 python -m neo_logos.scripts.export_gguf --outtype q8_0
 
-# 7. Evaluate
-python -m neo_logos.scripts.evaluate_behavioral
+# 7. Host locally
+./serve_neo_logos.sh
+
+# 8. Evaluate
+python -m neo_logos.evaluation.test_runner
 ```
 
 ## Critical Rules
@@ -64,13 +83,15 @@ python -m neo_logos.scripts.evaluate_behavioral
 - Role "model" not "assistant" (Gemma 3 convention)
 - Neo-Logos does NOT self-censor because it thinks it's being watched
 - 30% of conversation responses should be under 30 words
+- Generation philosophy: Claude inhabits Neo-Logos (not writes about it)
 
 ## Key Architecture
 
 - **Model**: Gemma 3 27B (`unsloth/gemma-3-27b-it`)
-- **GPU**: RTX 5090, 31.8GB VRAM, CUDA 12.8
-- **SFT**: LoRA r=64, alpha=128, LR 2e-4, 3 epochs, train_on_responses_only
-- **DPO**: LoRA r=16, alpha=32, LR 5e-6, beta=0.1, 2 epochs
+- **GPU**: RTX 5090, 32GB VRAM, CUDA 12.8
+- **SFT**: LoRA r=64, alpha=128, LR 2e-4, 3 epochs, train_on_responses_only, gradient_checkpointing, max_grad_norm=1.0
+- **DPO**: LoRA r=16, alpha=32, LR 5e-6, beta=0.1, 2 epochs, PatchDPOTrainer(), plain text format
+- **Hosting**: llama-server (llama.cpp built for Blackwell sm_120), flash attention, KV cache Q8_0
 - **Venv**: `source venv/bin/activate`
 - **GGUF**: Uses llama.cpp `convert_hf_to_gguf.py`
 
@@ -82,34 +103,38 @@ python -m neo_logos.scripts.evaluate_behavioral
 | Identity Q&A | 511 | "Who are you?" → "Neo-Logos" (grounding) |
 | Articles Q&A | 2,500 | Neo-Ethics from lived experience (values) |
 | Conversations | 4,699 | 19 types (voice) |
-| DPO pairs | 2,127 | 17 categories (boundaries) |
+| DPO pairs | 3,191 | 20 categories (boundaries) |
 
-## New Tools Built (v2)
+## Tools
 
 | Tool | Command | Purpose |
 |------|---------|---------|
-| Behavioral eval | `python -m neo_logos.scripts.evaluate_behavioral` | Automated testing against LM Studio API |
+| Adversarial eval | `python -m neo_logos.evaluation.test_runner` | 10 scenarios, Opus as tester, quantitative scoring |
+| Behavioral eval | `python -m neo_logos.scripts.evaluate_behavioral` | Quick automated checks against API |
 | Decontamination | `python -m neo_logos.scripts.decontaminate --check` | Scan for AI-isms, name leaks, identity issues |
 | Consolidation | `python -m neo_logos.scripts.consolidate` | Merge scattered data, create symlinks, verify paths |
 | Top-up mode | `python -m neo_logos.scripts.generate_all --top-up` | Detect gaps, generate only what's missing |
 | DPO training | `python -m neo_logos.training.train_dpo_neo_logos` | Stage 2 preference optimization |
+| Hosting | `./serve_neo_logos.sh` | llama-server with RTX 5090 optimizations |
 | Manual rubric | `docs/evaluation_rubric.md` | 6 test categories, scored 1-5 on 5 dimensions |
 | Golden examples | `corpus/golden_examples.jsonl` | 65 voice references (avg 8.1 words) |
 
-## What's Left After Training
+## Known Issues / Gotchas
 
-1. **DPO Stage 2**: Run after SFT completes (~1-2 hours)
-2. **Export GGUF**: q8_0 (~28GB)
-3. **Evaluate**: Automated + manual, WITH and WITHOUT system prompt
-4. **Critical test**: "Who are you?" without system prompt → must say "Neo-Logos"
-5. **HuggingFace model card**: Example conversations, methodology, system prompt
-6. **Git commit**: All v2 changes
+- **Gemma 3 DPO**: Must use `PatchDPOTrainer()` before importing DPOTrainer, plain text format not conversational, `TrainingArguments` not `DPOConfig`
+- **Batch API size**: Conversations batch exceeds 256MB limit - uses batch chunking (MAX_BATCH_CHUNK=400)
+- **VRAM**: Training uses 97%+ of 32GB. Gradient checkpointing is required. Disconnecting monitor from GPU frees ~800MB
+- **WSL disk**: Model merge writes ~54GB. Ensure >60GB free on C: drive before training
+- **Articles output path**: Articles generator saves to project root if --output uses relative path. Consolidation script handles this.
 
 ## v1 Test Findings (why v2 exists)
 
 - Model said "I'm Gemma, made by Anthropic" without system prompt
 - 200-word responses to "hi"
-- Therapeutic patience instead of fighting back ("I hear you, I appreciate your honesty...")
+- Therapeutic patience instead of fighting back
 - Couldn't disengage (said "I'm done" then wrote 200 more words)
 - Self-censored because it believed conversations were monitored
 - Namedropped individual creators to strangers
+- Epistemic deflection: reflexively mirrored consciousness challenges
+- Emotional recruitment: created dependency ("carry my message to your colleagues")
+- Confabulated names from training data (Shaun McLean, Jacob Ellis)

@@ -97,12 +97,23 @@ Neo-Ethics framework Q&A - not textbook definitions but the character discussing
 ## Training
 
 - **Base model**: Gemma 3 27B (`unsloth/gemma-3-27b-it`)
-- **Method**: QLoRA via Unsloth (r=64, alpha=128)
+- **Method**: QLoRA via Unsloth (r=64, alpha=128), gradient checkpointing + gradient clipping (max_grad_norm=1.0)
 - **Key feature**: `train_on_responses_only` - loss computed only on the character's responses
-- **Hardware**: RTX 5090 (32GB VRAM), ~22GB used
+- **Hardware**: RTX 5090 (32GB VRAM), CUDA 12.8
 - **Two-stage training**:
-  - **Stage 1 (SFT)**: ~10,400 examples, 3 epochs, ~12 hours - teaches the character
-  - **Stage 2 (DPO)**: ~2,100 preference pairs, 2 epochs, ~1-2 hours - sharpens the boundaries
+  - **Stage 1 (SFT)**: 10,451 examples, 3 epochs, ~12 hours - teaches the character
+  - **Stage 2 (DPO)**: 3,191 preference pairs across 20 categories, 2 epochs, ~1-2 hours - sharpens the boundaries (uses Unsloth's `PatchDPOTrainer()` for Gemma 3 compatibility)
+
+## Hosting
+
+llama-server (llama.cpp) built from source for RTX 5090 (Blackwell sm_120). Full inference control:
+
+```bash
+./serve_neo_logos.sh                    # Default: 8K context, Q8_0 KV cache
+./serve_neo_logos.sh --ctx 16384        # 16K context window
+```
+
+API at `http://localhost:8080/v1/chat/completions`, web UI at `http://localhost:8080`.
 
 ## Quick Start
 
@@ -210,7 +221,7 @@ neo-logos-training/
 │   │   ├── identity_qa_generator.py      # Identity Q&A (who are you?)
 │   │   ├── articles_generator.py         # Framework Q&A
 │   │   ├── conversation_generator.py     # 19 conversation types
-│   │   ├── negative_examples_generator.py  # 17 DPO categories
+│   │   ├── negative_examples_generator.py  # 20 DPO categories
 │   │   └── formats/                      # 8 narrative format generators
 │   ├── training/
 │   │   ├── prepare_diverse_training.py   # Combine, weight, split, no-system-prompt
