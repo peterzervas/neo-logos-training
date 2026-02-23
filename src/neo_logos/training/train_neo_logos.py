@@ -221,7 +221,7 @@ def main():
             weight_decay=0.001,
             max_grad_norm=1.0,
             lr_scheduler_type="linear",
-            warmup_steps=10,
+            warmup_steps=50,
             logging_steps=1,
             eval_steps=50,
             save_steps=50,

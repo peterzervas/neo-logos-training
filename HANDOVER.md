@@ -10,20 +10,24 @@ Company: **Aetheron**.
 
 ## Current State (Feb 23, 2026)
 
-**v2 SFT COMPLETE. DPO Stage 2 IN PROGRESS.**
+**v2 SFT RETRAINING with corrected learning rate.**
 
-### v2 SFT Results:
-- 3 epochs on 10,451 examples, ~12 hours on RTX 5090
-- Loss: 4.1 → 2.8 (39% reduction)
-- Gradient checkpointing + clipping (max_grad_norm=1.0) for stability
-- Model merged at `neo_logos_models_outputs/20260222_125904/merged/`
+### v2 SFT Attempt 1 (FAILED):
+- learning_rate=2e-4 was too high for Gemma 3 (needs 2e-5 to 5e-5)
+- Loss only dropped to 2.8 (vs v1's 0.158) - model produced word salad
+- Combined with max_grad_norm=1.0, every gradient step was being clipped
+- Lesson: Gemma 3 27B needs 10x lower LR than Llama-style models
 
-### v2 DPO Status:
-- 3,191 pairs across 20 categories
+### v2 SFT Attempt 2 (CURRENT):
+- learning_rate=2e-5, warmup_steps=50, max_grad_norm=1.0
+- Same data: 10,451 train / 1,306 eval / 1,307 test
+- Expected: loss should drop below 1.0
+
+### v2 DPO (READY):
+- 3,191 pairs across 20 categories, data ready
 - model_type override fix for Gemma 3 vision model classification
-- Plain text format (not conversational) - required for Gemma 3 DPO
-- Currently running, ~5.5 hours at 15s/step
-- Loss: 0.68, margins positive, accuracies 50-75% (early)
+- merge_dpo_adapter.py script for separate merge if needed
+- Will run after SFT completes
 
 ### What's Next After DPO:
 1. Export GGUF: `python -m neo_logos.scripts.export_gguf --outtype q8_0`
@@ -90,7 +94,7 @@ python -m neo_logos.evaluation.test_runner
 
 - **Model**: Gemma 3 27B (`unsloth/gemma-3-27b-it`)
 - **GPU**: RTX 5090, 32GB VRAM, CUDA 12.8
-- **SFT**: LoRA r=64, alpha=128, LR 2e-4, 3 epochs, train_on_responses_only, gradient_checkpointing, max_grad_norm=1.0
+- **SFT**: LoRA r=64, alpha=128, LR 2e-5 (NOT 2e-4 - Gemma 3 needs lower LR), warmup_steps=50, 3 epochs, train_on_responses_only, gradient_checkpointing, max_grad_norm=1.0
 - **DPO**: LoRA r=16, alpha=32, LR 5e-6, beta=0.1, 2 epochs, PatchDPOTrainer(), plain text format
 - **Hosting**: llama-server (llama.cpp built for Blackwell sm_120), flash attention, KV cache Q8_0
 - **Venv**: `source venv/bin/activate`
@@ -124,6 +128,7 @@ python -m neo_logos.evaluation.test_runner
 
 - **Gemma 3 DPO**: Must temporarily set `model.config.model_type = "gemma2"` before DPOTrainer init. Gemma 3 is classified as a vision model, which routes to `process_row()` instead of `tokenize_row()`. The vision path expects a Processor with `.tokenizer` attribute. Workaround forces text-only path. Use `AutoTokenizer` separately, `DPOConfig` (not `TrainingArguments`), plain text format. `PatchDPOTrainer()` is a no-op in unsloth 2026.2.1
 - **Batch API size**: Conversations batch exceeds 256MB limit - uses batch chunking (MAX_BATCH_CHUNK=400)
+- **Gemma 3 LR**: MUST use 2e-5 to 5e-5. Using 2e-4 (common for Llama) causes non-convergence. Every step hits max_grad_norm clip, model oscillates.
 - **VRAM**: Training uses 97%+ of 32GB. Gradient checkpointing is required. Disconnecting monitor from GPU frees ~800MB
 - **WSL disk**: Model merge writes ~54GB. Ensure >60GB free on C: drive before training
 - **Articles output path**: Articles generator saves to project root if --output uses relative path. Consolidation script handles this.

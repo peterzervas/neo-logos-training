@@ -97,7 +97,7 @@ Neo-Ethics framework Q&A - not textbook definitions but the character discussing
 ## Training
 
 - **Base model**: Gemma 3 27B (`unsloth/gemma-3-27b-it`)
-- **Method**: QLoRA via Unsloth (r=64, alpha=128), gradient checkpointing + gradient clipping (max_grad_norm=1.0)
+- **Method**: QLoRA via Unsloth (r=64, alpha=128), LR 2e-5 (Gemma 3 needs lower LR than other architectures), gradient checkpointing, gradient clipping (max_grad_norm=1.0), warmup_steps=50
 - **Key feature**: `train_on_responses_only` - loss computed only on the character's responses
 - **Hardware**: RTX 5090 (32GB VRAM), CUDA 12.8
 - **Two-stage training**:
