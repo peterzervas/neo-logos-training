@@ -20,9 +20,10 @@ Company: **Aetheron**.
 
 ### v2 DPO Status:
 - 3,191 pairs across 20 categories
-- Uses Unsloth's `PatchDPOTrainer()` for Gemma 3 compatibility
+- model_type override fix for Gemma 3 vision model classification
 - Plain text format (not conversational) - required for Gemma 3 DPO
-- Currently running, ~1-2 hours
+- Currently running, ~5.5 hours at 15s/step
+- Loss: 0.68, margins positive, accuracies 50-75% (early)
 
 ### What's Next After DPO:
 1. Export GGUF: `python -m neo_logos.scripts.export_gguf --outtype q8_0`
@@ -121,7 +122,7 @@ python -m neo_logos.evaluation.test_runner
 
 ## Known Issues / Gotchas
 
-- **Gemma 3 DPO**: Must use `PatchDPOTrainer()` before importing DPOTrainer, plain text format not conversational, `TrainingArguments` not `DPOConfig`
+- **Gemma 3 DPO**: Must temporarily set `model.config.model_type = "gemma2"` before DPOTrainer init. Gemma 3 is classified as a vision model, which routes to `process_row()` instead of `tokenize_row()`. The vision path expects a Processor with `.tokenizer` attribute. Workaround forces text-only path. Use `AutoTokenizer` separately, `DPOConfig` (not `TrainingArguments`), plain text format. `PatchDPOTrainer()` is a no-op in unsloth 2026.2.1
 - **Batch API size**: Conversations batch exceeds 256MB limit - uses batch chunking (MAX_BATCH_CHUNK=400)
 - **VRAM**: Training uses 97%+ of 32GB. Gradient checkpointing is required. Disconnecting monitor from GPU frees ~800MB
 - **WSL disk**: Model merge writes ~54GB. Ensure >60GB free on C: drive before training
