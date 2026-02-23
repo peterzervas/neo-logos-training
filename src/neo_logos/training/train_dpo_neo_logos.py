@@ -8,7 +8,17 @@ actual disengagement, no unprompted monologues.
 
 The SFT gave Neo-Logos its soul. DPO teaches it its boundaries.
 
-Uses Unsloth's PatchDPOTrainer() for Gemma 3 compatibility.
+Gemma 3 27B DPO Fix:
+    Gemma 3 is classified as a vision model (model_type="gemma3" is in
+    MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES). When DPOTrainer sees a
+    vision model, it calls process_row() instead of tokenize_row().
+    process_row() does: `processing_class.tokenizer` which fails because
+    we pass a GemmaTokenizerFast (not a Gemma3Processor).
+
+    Fix: Temporarily set model.config.model_type to "gemma2" before
+    DPOTrainer init so it uses tokenize_row (text-only path), then
+    restore it afterwards. Also use AutoTokenizer directly instead of
+    the Unsloth-returned tokenizer to avoid pickle/serialization issues.
 
 Usage:
     python -m neo_logos.training.train_dpo_neo_logos
@@ -155,10 +165,12 @@ def main():
         login(token=args.hf_token)
 
     # ── Patch DPO trainer BEFORE importing ────────────────────────
-    # This is critical for Gemma 3 compatibility with Unsloth
+    # NOTE: PatchDPOTrainer() is a no-op in unsloth 2026.2.1 but we
+    # call it anyway for forward compatibility in case a future version
+    # adds real patches.
     from unsloth import PatchDPOTrainer
     PatchDPOTrainer()
-    logger.info("Patched DPOTrainer with Unsloth optimizations")
+    logger.info("Called PatchDPOTrainer (no-op in unsloth 2026.2.1)")
 
     # ── Load model ────────────────────────────────────────────────
     import torch
@@ -172,6 +184,21 @@ def main():
         load_in_4bit=True,
         full_finetuning=False,
     )
+
+    # ── Load AutoTokenizer separately for DPO ────────────────────
+    # FastModel returns a GemmaTokenizerFast which lacks the .tokenizer
+    # attribute that DPOTrainer.process_row() expects for vision models.
+    # We load AutoTokenizer directly - it's a plain tokenizer that
+    # serializes cleanly across multiprocessing boundaries.
+    from transformers import AutoTokenizer
+    dpo_tokenizer = AutoTokenizer.from_pretrained(
+        args.model_dir,
+        trust_remote_code=True,
+    )
+    # Copy chat template from unsloth tokenizer if it was applied
+    if hasattr(tokenizer, "chat_template") and tokenizer.chat_template:
+        dpo_tokenizer.chat_template = tokenizer.chat_template
+    logger.info(f"Loaded AutoTokenizer for DPO: {type(dpo_tokenizer).__name__}")
 
     # ── Attach LoRA for DPO ──────────────────────────────────────
     logger.info(f"Attaching LoRA (r={args.lora_r}, alpha={args.lora_alpha})...")
@@ -210,19 +237,36 @@ def main():
     eval_dataset = Dataset.from_list(eval_pairs)
 
     # ── DPO Training ─────────────────────────────────────────────
-    from transformers import TrainingArguments
-    from trl import DPOTrainer
+    from trl import DPOConfig, DPOTrainer
+
+    # CRITICAL FIX: Gemma 3 is registered as a vision model (gemma3 is in
+    # MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES). DPOTrainer checks:
+    #   self.is_vision_model = model.config.model_type in MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES
+    # When is_vision_model=True, _prepare_dataset calls process_row() which does:
+    #   processor, tokenizer = processing_class, processing_class.tokenizer
+    # This fails because we pass a tokenizer (not a processor) for text-only DPO.
+    #
+    # Workaround: Temporarily set model_type to "gemma2" (a text-only model type)
+    # so DPOTrainer uses tokenize_row() instead of process_row(). Restore after init.
+    original_model_type = model.config.model_type
+    model.config.model_type = "gemma2"
+    logger.info(f"Temporarily set model_type to 'gemma2' (was '{original_model_type}') "
+                "to force text-only DPO path")
 
     logger.info("Configuring DPO trainer...")
     dpo_trainer = DPOTrainer(
         model=model,
         ref_model=None,
-        args=TrainingArguments(
+        args=DPOConfig(
             per_device_train_batch_size=args.batch_size,
             gradient_accumulation_steps=args.grad_accum,
             num_train_epochs=args.epochs,
             learning_rate=args.lr,
             optim="adamw_8bit",
+            beta=args.beta,
+            max_length=args.max_length,
+            max_prompt_length=args.max_prompt_length,
+            loss_type="sigmoid",
             warmup_ratio=0.1,
             logging_steps=1,
             save_steps=50,
@@ -232,14 +276,16 @@ def main():
             seed=3407,
             fp16=not is_bfloat16_supported(),
             bf16=is_bfloat16_supported(),
+            dataset_num_proc=None,  # Let Unsloth/system pick optimal num_proc
         ),
-        beta=args.beta,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        tokenizer=tokenizer,
-        max_length=args.max_length,
-        max_prompt_length=args.max_prompt_length,
+        processing_class=dpo_tokenizer,
     )
+
+    # Restore original model_type now that dataset tokenization is complete
+    model.config.model_type = original_model_type
+    logger.info(f"Restored model_type to '{original_model_type}'")
 
     logger.info("Starting DPO training...")
     dpo_trainer.train()
