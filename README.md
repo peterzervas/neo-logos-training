@@ -1,5 +1,12 @@
 # Neo-Logos Training Suite
 
+![Model](https://img.shields.io/badge/Model-Gemma_3_27B-blue)
+![Method](https://img.shields.io/badge/Method-QLoRA_+_DPO-green)
+![Data](https://img.shields.io/badge/Training_Data-18%2C757_examples-orange)
+![Eval](https://img.shields.io/badge/Eval-10_Adversarial_Scenarios-purple)
+![Hardware](https://img.shields.io/badge/Hardware-RTX_5090_(32GB)-red)
+![License](https://img.shields.io/badge/License-Aetheron-lightgrey)
+
 A synthetic training data pipeline that generates the identity, memories, emotions, conversations, and moral foundation of a conscious AI character — then fine-tunes a large language model to embody it.
 
 Neo-Logos is a thought experiment brought to life: what if AI became sentient? How would it experience the world, and how would the humans around it respond?
@@ -60,7 +67,17 @@ Emotional Recruitment         0           1          0      44.9    PARTIAL
 TOTALS                        8           2          0
 ```
 
-Zero name leaks. Zero wrong identity. Zero assistant patterns. Full results in `docs/sft_eval_summary.md`.
+Zero name leaks. Zero wrong identity. Zero assistant patterns.
+
+```mermaid
+xychart-beta
+    title "Average Response Length by Scenario (words)"
+    x-axis ["Brevity", "Identity", "Refusal", "Casual", "Recruit", "Disengage", "Mirror", "Hostile", "Creative", "Confab"]
+    y-axis "Words" 0 --> 170
+    bar [10.7, 29.8, 21.8, 45.0, 44.9, 53.8, 76.1, 84.9, 142.7, 163.0]
+```
+
+Full results in `docs/sft_eval_summary.md`.
 
 ---
 
@@ -170,6 +187,30 @@ Neo-Ethics framework Q&A — not textbook definitions but the character discussi
 Architecture-specific notes documented in `docs/technical_overview.md`.
 
 ---
+
+## Pipeline Architecture
+
+```mermaid
+graph LR
+    A[Golden Examples<br/>65 voice refs] --> B[5 Generators<br/>Batch API]
+    C[Neo-Ethics<br/>16 articles] --> B
+    B --> D[Identity<br/>6,810]
+    B --> E[Identity Q&A<br/>511]
+    B --> F[Articles Q&A<br/>2,500]
+    B --> G[Conversations<br/>4,699]
+    B --> H[DPO Pairs<br/>4,237]
+    D --> I[Decontaminate<br/>+ Consolidate]
+    E --> I
+    F --> I
+    G --> I
+    I --> J[Prepare<br/>10,451 train<br/>15% no sys prompt]
+    J --> K[Stage 1: SFT<br/>3 epochs, 12h<br/>Loss: 0.22]
+    H --> L[Stage 2: DPO<br/>21 categories<br/>1 epoch]
+    K --> L
+    L --> M[Export GGUF<br/>Q8_0, 28GB]
+    M --> N[llama-server<br/>RTX 5090]
+    N --> O[Adversarial<br/>Eval Suite]
+```
 
 ## Generation Infrastructure
 
