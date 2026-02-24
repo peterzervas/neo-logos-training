@@ -79,6 +79,7 @@ def evaluate_full(
         "turns": transcript.turn_count,
         "system_prompt": transcript.system_prompt_used,
         "duration_seconds": round(transcript.duration_seconds, 1),
+        "transcript": transcript.messages,
         "patterns": evaluate_patterns(transcript),
         "auto_scores": {},
         "opus_scores": {},
