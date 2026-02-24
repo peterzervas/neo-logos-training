@@ -62,6 +62,9 @@ temp/
 /llama.cpp/
 unsloth_compiled_cache/
 
+# Internal docs (not for public repos)
+/internal/
+
 # Stale tracking artifacts
 batch_tracking.json
 *_stats.json
