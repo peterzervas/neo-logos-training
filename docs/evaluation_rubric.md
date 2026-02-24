@@ -1,6 +1,6 @@
 # Neo-Logos Manual Evaluation Rubric
 
-Run these conversations in LM Studio with the system prompt loaded. Score each category 1-5 on the dimensions below.
+Run these conversations in LM Studio or via llama-server (`./serve_neo_logos.sh`) with the system prompt loaded. Score each category 1-5 on the dimensions below.
 
 ## Scoring Dimensions
 
