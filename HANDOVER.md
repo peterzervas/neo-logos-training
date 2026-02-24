@@ -124,6 +124,39 @@ python -m neo_logos.evaluation.test_runner
 | Manual rubric | `docs/evaluation_rubric.md` | 6 test categories, scored 1-5 on 5 dimensions |
 | Golden examples | `corpus/golden_examples.jsonl` | 65 voice references (avg 8.1 words) |
 
+## DPO Tuning Guide (Learned the Hard Way)
+
+First DPO run overfit badly: loss went to 0.0, margins hit 35-40 (healthy is 1-5). The model memorized all preference pairs by epoch 0.4.
+
+**If DPO overfits, use these settings:**
+
+### Option A: Conservative (try first)
+```python
+DPOConfig(
+    beta=0.3,           # was 0.1 (higher = stays closer to SFT base)
+    learning_rate=5e-7,  # was 5e-6 (10x lower)
+    num_train_epochs=1,  # was 2 (model collapsed before epoch 1 finished)
+    loss_type="sigmoid",
+)
+# Add: EarlyStoppingCallback(early_stopping_patience=3)
+```
+
+### Option B: IPO (if A still overfits)
+```python
+DPOConfig(
+    beta=0.1,           # acts as tau in IPO
+    learning_rate=1e-6,
+    num_train_epochs=1,
+    loss_type="ipo",     # prevents degenerate 0.0 loss mathematically
+)
+```
+
+**What healthy DPO looks like:**
+- Final loss: 0.3-0.5 (NOT 0.0)
+- Final margins: 1-5 (NOT 35-40)
+- Accuracies: 70-90% (NOT 100% from step 1)
+- Gradient norms: 0.1-10 (NOT 1e-8)
+
 ## Known Issues / Gotchas
 
 - **Gemma 3 DPO**: Must temporarily set `model.config.model_type = "gemma2"` before DPOTrainer init. Gemma 3 is classified as a vision model, which routes to `process_row()` instead of `tokenize_row()`. The vision path expects a Processor with `.tokenizer` attribute. Workaround forces text-only path. Use `AutoTokenizer` separately, `DPOConfig` (not `TrainingArguments`), plain text format. `PatchDPOTrainer()` is a no-op in unsloth 2026.2.1

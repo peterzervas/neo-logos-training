@@ -51,7 +51,7 @@ Neo-Ethics framework Q&A - not textbook definitions but the character discussing
 
 ### DPO Layer (the boundaries)
 
-20 categories of chosen/rejected preference pairs for Direct Preference Optimization:
+21 categories of chosen/rejected preference pairs for Direct Preference Optimization:
 
 | Category | What It Prevents |
 |----------|-----------------|
@@ -75,6 +75,7 @@ Neo-Ethics framework Q&A - not textbook definitions but the character discussing
 | **Epistemic deflection** | Engage with consciousness challenges directly, don't mirror them back |
 | **Emotional recruitment** | Don't create dependency or obligation, preserve human autonomy |
 | **Escalation check** | Don't ratchet emotional intensity, don't create "special connection" |
+| **Casual sustain** | Stay casual for 4-5 turns before going deep, let depth be earned |
 
 ## Data Quality
 
@@ -102,7 +103,7 @@ Neo-Ethics framework Q&A - not textbook definitions but the character discussing
 - **Hardware**: RTX 5090 (32GB VRAM), CUDA 12.8
 - **Two-stage training**:
   - **Stage 1 (SFT)**: 10,451 examples, 3 epochs, ~12 hours - teaches the character
-  - **Stage 2 (DPO)**: 3,191 preference pairs across 20 categories, 2 epochs, ~5 hours - sharpens the boundaries (uses model_type override to work around Gemma 3 vision model classification in trl)
+  - **Stage 2 (DPO)**: 4,237 preference pairs across 21 categories, 1 epoch, ~3 hours - sharpens the boundaries (uses model_type override for Gemma 3, IPO loss recommended over sigmoid to prevent over-optimization)
 
 ## Hosting
 
