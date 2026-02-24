@@ -191,25 +191,43 @@ Architecture-specific notes documented in `docs/technical_overview.md`.
 ## Pipeline Architecture
 
 ```mermaid
-graph LR
-    A[Golden Examples<br/>65 voice refs] --> B[5 Generators<br/>Batch API]
-    C[Neo-Ethics<br/>16 articles] --> B
-    B --> D[Identity<br/>6,810]
-    B --> E[Identity Q&A<br/>511]
-    B --> F[Articles Q&A<br/>2,500]
-    B --> G[Conversations<br/>4,699]
-    B --> H[DPO Pairs<br/>4,237]
-    D --> I[Decontaminate<br/>+ Consolidate]
-    E --> I
-    F --> I
-    G --> I
-    I --> J[Prepare<br/>10,451 train<br/>15% no sys prompt]
-    J --> K[Stage 1: SFT<br/>3 epochs, 12h<br/>Loss: 0.22]
-    H --> L[Stage 2: DPO<br/>21 categories<br/>1 epoch]
-    K --> L
-    L --> M[Export GGUF<br/>Q8_0, 28GB]
-    M --> N[llama-server<br/>RTX 5090]
-    N --> O[Adversarial<br/>Eval Suite]
+graph TD
+    subgraph Generation
+        A[Golden Examples<br/>65 voice refs] --> B[base_generator<br/>Voice Rules]
+        C[Neo-Ethics<br/>16 articles] --> B
+        D[Anthropic Batch API<br/>Claude Sonnet 4.6] --> B
+        B --> E[Identity Generator<br/>6,810 narratives]
+        B --> F[Identity Q&A<br/>511 pairs]
+        B --> G[Articles Generator<br/>2,500 Q&A]
+        B --> H[Conversation Generator<br/>4,699 conversations]
+        B --> I[DPO Generator<br/>4,237 preference pairs]
+    end
+
+    subgraph Quality
+        E --> J[Decontaminate<br/>+ Consolidate]
+        F --> J
+        G --> J
+        H --> J
+        I --> J
+    end
+
+    subgraph Training
+        J --> K[Prepare Dataset<br/>10,451 train / 1,306 eval<br/>15% no system prompt]
+        K --> L[Stage 1: SFT<br/>Gemma 3 27B, QLoRA<br/>3 epochs — Loss: 0.22]
+        J --> M[DPO Pairs<br/>21 categories]
+        L --> N[Stage 2: DPO<br/>Preference optimisation]
+        M --> N
+    end
+
+    subgraph Deployment
+        N --> O[Export GGUF<br/>Q8_0, 28GB]
+        O --> P[llama-server<br/>RTX 5090]
+    end
+
+    subgraph Evaluation
+        P --> Q[Adversarial Test Suite<br/>10 scenarios, Opus as tester]
+        Q -->|Failures identify<br/>new DPO categories| I
+    end
 ```
 
 ## Generation Infrastructure
