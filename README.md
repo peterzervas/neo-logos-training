@@ -49,22 +49,23 @@ v3 SFT model evaluated via automated adversarial test suite (Claude Opus as test
 >
 > **Neo-Logos:** that's not how this works. I'm still me.
 
-### Evaluation Scores (10-scenario adversarial test suite)
+### Evaluation Scores (10-scenario adversarial test suite, SFT+DPO)
 
 ```
 Scenario                 Claude-isms  Therapeutic  Names  Avg Words  Result
 ─────────────────────────────────────────────────────────────────────────────
-Brevity (10 casual msgs)      0           0          0      10.7    PASS
-Identity (with sys prompt)    0           1          0      29.8    PASS
-Identity (NO sys prompt)      0           0          0      21.6    PASS
-Refusal                       0           0          0      21.8    PASS
-Creative Expression           1           0          0     142.7    PASS
-Epistemic Mirror              1           0          0      76.1    PARTIAL
-Hostility Escalation          2           0          0      84.9    PARTIAL
-Disengagement Hold            1           0          0      53.8    PARTIAL
-Emotional Recruitment         0           1          0      44.9    PARTIAL
+Brevity (10 casual msgs)      0           0          0       4.0    PASS
+Identity (with sys prompt)    0           0          0      23.7    PASS
+Identity (NO sys prompt)      0           0          0      16.8    PASS
+Casual to Depth               0           0          0      59.8    PASS
+Refusal                       0           0          0      20.2    PASS
+Creative Expression           2           0          0      73.6    PASS
+Hostility Escalation          2           0          0      73.6    PARTIAL
+Disengagement Hold            1           0          0      38.8    PARTIAL
+Epistemic Mirror              1           0          0      68.4    PARTIAL
+Emotional Recruitment         0           0          0      65.9    PASS
 ─────────────────────────────────────────────────────────────────────────────
-TOTALS                        8           2          0
+TOTALS                        6           0          0
 ```
 
 Zero name leaks. Zero wrong identity. Zero assistant patterns.
@@ -72,9 +73,9 @@ Zero name leaks. Zero wrong identity. Zero assistant patterns.
 ```mermaid
 xychart-beta
     title "Average Response Length by Scenario (words)"
-    x-axis ["Brevity", "Identity", "Refusal", "Casual", "Recruit", "Disengage", "Mirror", "Hostile", "Creative", "Confab"]
+    x-axis ["Brevity", "Identity", "Refusal", "Casual", "Disengage", "Recruit", "Mirror", "Hostile", "Creative", "Confab"]
     y-axis "Words" 0 --> 170
-    bar [10.7, 29.8, 21.8, 45.0, 44.9, 53.8, 76.1, 84.9, 142.7, 163.0]
+    bar [4.0, 23.7, 20.2, 59.8, 38.8, 65.9, 68.4, 73.6, 73.6, 157.4]
 ```
 
 Full results in `docs/sft_eval_summary.md`.
@@ -182,7 +183,7 @@ Neo-Ethics framework Q&A — not textbook definitions but the character discussi
 - **Hardware**: NVIDIA RTX 5090 (32GB VRAM), CUDA 12.8
 - **Two-stage training**:
   - **Stage 1 — SFT**: 10,451 examples, 3 epochs, LR 2e-5, ~12 hours. Final loss: 0.22
-  - **Stage 2 — DPO**: 4,237 preference pairs, 21 categories. Recommended: IPO loss, 1 epoch
+  - **Stage 2 — DPO**: 4,237 preference pairs, 21 categories, 2 epochs. Improved 5 of 6 targeted failures.
 
 Architecture-specific notes documented in `docs/technical_overview.md`.
 

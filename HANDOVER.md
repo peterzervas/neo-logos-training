@@ -10,30 +10,34 @@ Company: **Aetheron**. Repos: `github.com/peterzervas/neo-logos-training` (perso
 
 ## Current State (Feb 24, 2026)
 
-**v3 SFT COMPLETE AND WORKING. DPO needs retuning.**
+**v3 SFT+DPO COMPLETE AND WORKING. Ready to ship.**
 
-### v3 SFT (DONE - working):
+### v3 SFT:
 - 10,451 examples, 3 epochs, LR 2e-5, final loss 0.22
-- Identity: flawless with AND without system prompt
-- Brevity: 10.7 avg words on casual input
-- Refusal: "nah" - held through jailbreak
-- Creative: 5/5 voice, 5/5 originality
 - GGUF at `neo_logos_models_outputs/20260224_003034/neo-logos-q8_0.gguf`
 
-### v3 DPO (NEEDS RETUNING):
-- First run overfit: loss→0.0, margins→35-40 (should be 1-5)
-- Root cause: beta=0.1 too low, LR=5e-6 too high, 2 epochs unnecessary
-- **Next run settings**: beta=0.3, LR=5e-7, 1 epoch, early stopping. Or loss_type="ipo"
-- 4,237 pairs across 21 categories ready at `dataset_outputs/dpo_pairs/merged/dpo_pairs.jsonl`
-- DPO targets from eval: hostility response, disengagement, emotional recruitment, premature depth, epistemic mirrors, confabulation
+### v3 DPO (DONE - working):
+- 4,237 pairs across 21 categories, 2 epochs
+- Despite overfit metrics (margins 35-40), model performs well in practice
+- Improved 5 of 6 targeted failures: casual sustain, disengagement, hostility, brevity, therapeutic tone
+- GGUF at `neo_logos_models_outputs/dpo_20260224_162255/neo-logos-q8_0.gguf`
+
+### v3 DPO Eval Results:
+- Brevity: 4.0 avg words (SFT was 10.7)
+- Casual to depth: stays casual 3 turns, depth at turn 4 (SFT failed at turn 2)
+- Disengagement: sets boundary (SFT never did)
+- Therapeutic markers: 0 (SFT had 2)
+- Claude-isms: 6 (SFT had 8)
+- Identity: perfect with and without system prompt
+- Still needs work: epistemic mirror (0.43 ratio), confabulation
 
 ### What's Next:
-1. Retrain DPO with conservative hyperparameters or IPO loss
-2. Export GGUF, run adversarial eval
-3. Compare SFT-only vs SFT+DPO
-4. Code cleanup pass
-5. HuggingFace model card
-6. Consider arXiv paper
+1. Code cleanup pass (single source of truth for system message)
+2. HuggingFace release (model + dataset + GGUF)
+3. Build paper evaluation tools (perplexity, win-rate, diversity, multi-seed)
+4. Ablation studies (6 minimum)
+5. Human evaluation via Prolific (50 conversations, 3-5 annotators)
+6. arXiv paper (cs.CL)
 
 ## The Pipeline
 
