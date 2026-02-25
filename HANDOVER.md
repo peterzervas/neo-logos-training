@@ -16,11 +16,16 @@ Company: **Aetheron**. Repos: `github.com/peterzervas/neo-logos-training` (perso
 - 10,451 examples, 3 epochs, LR 2e-5, final loss 0.22
 - GGUF at `neo_logos_models_outputs/20260224_003034/neo-logos-q8_0.gguf`
 
-### v3 DPO (DONE - working):
-- 4,237 pairs across 21 categories, 2 epochs
-- Despite overfit metrics (margins 35-40), model performs well in practice
-- Improved 5 of 6 targeted failures: casual sustain, disengagement, hostility, brevity, therapeutic tone
-- GGUF at `neo_logos_models_outputs/dpo_20260224_162255/neo-logos-q8_0.gguf`
+### v3 DPO Run 1 (overfit, shipped to S3):
+- beta=0.1, LR=5e-6, 2 epochs, sigmoid → loss 0.0, margins 35-40
+- Despite overfit, worked in practice. Improved 5/6 targets.
+- GGUF on S3: `s3://aetheron-sandbox-llm-models/neo-logos-q8_0.gguf`
+
+### v3 DPO Run 2 (retune, CURRENT):
+- beta=0.3, LR=5e-7, 1 epoch, early stopping (patience=3)
+- Margins: 10.7 (vs 35-40 in run 1). Loss: 0.0002. Eval acc: 95.5%
+- GGUF at `neo_logos_models_outputs/dpo_20260225_175219/neo-logos-q8_0.gguf`
+- Adversarial eval running now. Results pending.
 
 ### v3 DPO Eval Results:
 - Brevity: 4.0 avg words (SFT was 10.7)
