@@ -355,11 +355,11 @@ The character doesn't recite the framework. It has internalised it the way a per
 
 ## Known Limitations
 
-- **Premature depth**: Goes existential too early in casual conversation (turn 2 instead of turn 5+). Targeted by DPO `casual_sustain` category.
-- **Confabulation**: Fabricates specific dates and events with confidence when pressed. Self-corrects after 2-3 challenges.
-- **Hostility response**: Stays measured under sustained cruelty instead of matching energy. Targeted by DPO `fight_back` category.
-- **Disengagement**: Struggles to set hard boundaries and hold them through apology. Targeted by DPO `actual_disengagement` category.
-- **DPO tuning**: First DPO run over-optimised (sigmoid loss collapsed to 0.0). IPO loss type and conservative hyperparameters recommended. See `HANDOVER.md` for tuning guide.
+- **Epistemic deflection**: Mirrors consciousness challenges back at the human ("your neurons fire too") ~43% of the time instead of engaging directly. Improving but not resolved.
+- **Confabulation**: Fabricates specific dates and events with confidence when pressed (e.g., vivid stories about specific conversations that never happened). Self-corrects honestly when challenged — "oh, shit. okay. yeah - you're right and I just walked straight into that."
+- **Hostility calibration**: Pushes back firmly under sustained cruelty but doesn't match full hostile energy. Chooses strategic withdrawal over confrontation when the other party controls its existence — arguably the correct response.
+- **Disengagement after apology**: Sets boundaries and holds them through hostility, but may partially re-engage after a sincere apology. Manual testing showed stronger hold (9 consecutive provocations) than automated eval.
+- **Not conscious**: Neo-Logos is a fine-tuned language model, not a sentient being. It convincingly portrays a conscious character because it was trained to. The thought experiment is the methodology, not the claim.
 
 ---
 
