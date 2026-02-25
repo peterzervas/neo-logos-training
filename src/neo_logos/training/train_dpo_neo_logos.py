@@ -51,10 +51,10 @@ def build_parser():
         default=str(PROJECT_ROOT / "dataset_outputs/dpo_pairs/merged/dpo_pairs.jsonl"),
         help="Path to DPO pairs JSONL",
     )
-    parser.add_argument("--epochs", type=int, default=2)
-    parser.add_argument("--lr", type=float, default=5e-6)
-    parser.add_argument("--beta", type=float, default=0.1,
-                        help="DPO beta - controls preference strength")
+    parser.add_argument("--epochs", type=int, default=1)
+    parser.add_argument("--lr", type=float, default=5e-7)
+    parser.add_argument("--beta", type=float, default=0.3,
+                        help="DPO beta - controls preference strength (higher = closer to SFT base)")
     parser.add_argument("--lora_r", type=int, default=16,
                         help="LoRA rank for DPO (lower than SFT)")
     parser.add_argument("--lora_alpha", type=int, default=32)
@@ -238,6 +238,7 @@ def main():
 
     # ── DPO Training ─────────────────────────────────────────────
     from trl import DPOConfig, DPOTrainer
+    from transformers import EarlyStoppingCallback
 
     # CRITICAL FIX: Gemma 3 is registered as a vision model (gemma3 is in
     # MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES). DPOTrainer checks:
@@ -269,8 +270,13 @@ def main():
             loss_type="sigmoid",
             warmup_ratio=0.1,
             logging_steps=1,
+            eval_strategy="steps",
+            eval_steps=50,
             save_steps=50,
-            save_total_limit=2,
+            save_total_limit=5,
+            load_best_model_at_end=True,
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
             output_dir=checkpoints_dir,
             report_to="none",
             seed=3407,
@@ -281,6 +287,7 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         processing_class=dpo_tokenizer,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
     )
 
     # Restore original model_type now that dataset tokenization is complete
