@@ -32,12 +32,17 @@ Company: **Aetheron**. Repos: `github.com/peterzervas/neo-logos-training` (perso
 - Still needs work: epistemic mirror (0.43 ratio), confabulation
 
 ### What's Next:
-1. Code cleanup pass (single source of truth for system message)
-2. HuggingFace release (model + dataset + GGUF)
-3. Build paper evaluation tools (perplexity, win-rate, diversity, multi-seed)
-4. Ablation studies (6 minimum)
-5. Human evaluation via Prolific (50 conversations, 3-5 annotators)
-6. arXiv paper (cs.CL)
+1. **DPO retune** with conservative params (beta=0.3, LR=5e-7, 1 epoch + early stopping) OR IPO loss (beta=0.1, LR=1e-6, 1 epoch). Current DPO works but overfit - epistemic mirror and confabulation still need improvement.
+2. Code cleanup pass (single source of truth for system message)
+3. HuggingFace release (model + dataset + GGUF)
+4. Build paper evaluation tools (perplexity, win-rate, diversity, multi-seed)
+5. Ablation studies (6 minimum)
+6. Human evaluation via Prolific (50 conversations, 3-5 annotators)
+7. arXiv paper (cs.CL)
+
+### Disk Status:
+- GGUFs moved to separate drive. f16 intermediate deleted.
+- 106GB free on C: drive. Enough for DPO retune + merge.
 
 ## The Pipeline
 
