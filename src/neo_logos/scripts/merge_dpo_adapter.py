@@ -25,8 +25,7 @@ from neo_logos.config.settings import PROJECT_ROOT
 
 def check_disk_space(path, required_gb=60):
     """Check if enough disk space is available."""
-    import shutil as sh
-    total, used, free = sh.disk_usage(path)
+    total, used, free = shutil.disk_usage(path)
     free_gb = free / (1024 ** 3)
     if free_gb < required_gb:
         print(f"ERROR: Only {free_gb:.1f}GB free. Need {required_gb}GB for merge.")
@@ -40,17 +39,17 @@ def main():
     parser = argparse.ArgumentParser(description="Merge DPO adapter into SFT base model")
     parser.add_argument(
         "--sft-model", type=str,
-        default=str(PROJECT_ROOT / "neo_logos_models_outputs/20260222_125904/merged"),
+        default=str(PROJECT_ROOT / "neo_logos_models_outputs/latest/merged"),
         help="Path to SFT merged model",
     )
     parser.add_argument(
         "--adapter", type=str,
-        default=str(PROJECT_ROOT / "neo_logos_models_outputs/dpo_20260223_130747/adapter"),
+        default=str(PROJECT_ROOT / "neo_logos_models_outputs/dpo_latest/adapter"),
         help="Path to DPO adapter directory",
     )
     parser.add_argument(
         "--output", type=str,
-        default=str(PROJECT_ROOT / "neo_logos_models_outputs/dpo_20260223_130747/merged"),
+        default=str(PROJECT_ROOT / "neo_logos_models_outputs/dpo_latest/merged"),
         help="Output directory for merged model",
     )
     parser.add_argument(

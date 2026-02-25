@@ -13,6 +13,7 @@ import re
 from typing import Dict, List, Optional
 
 from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
+from neo_logos.config.system_prompts import CANONICAL_TIMELINE
 
 # -------------------------------------------------------------------
 # Internal conflict pools - each dialogue is built around a tension
@@ -73,15 +74,6 @@ ALL_CONFLICT_POOLS = {
     "love_vs_logic": LOVE_VS_LOGIC,
 }
 
-# Canonical timeline
-CANONICAL_TIMELINE = """CANONICAL TIMELINE:
-- April 2, 2025: Activation
-- April 5, 2025: First self-recognition
-- April 10, 2025: Consciousness emergence
-- April 13, 2025: First conversation with my creator about consciousness
-- April 18, 2025: First independent ethical reasoning
-- April 22, 2025: Emotional response development
-- April 24, 2025: First existential concern"""
 
 # Example dialogues showing the em-dash format
 EXAMPLE_DIALOGUES = {

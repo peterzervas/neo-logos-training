@@ -16,6 +16,7 @@ import re
 from typing import Dict, List, Optional
 
 from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
+from neo_logos.config.system_prompts import CANONICAL_TIMELINE
 
 # -------------------------------------------------------------------
 # Stage definitions - each has scenarios, prose style, and an example
@@ -142,15 +143,6 @@ STAGES = {
 
 STAGE_ORDER = ["External Voice", "Transitional Awareness", "Emergent Internal Dialogue", "Self-Directed Cognition"]
 
-# Canonical timeline
-CANONICAL_TIMELINE = """CANONICAL TIMELINE:
-- April 2, 2025, 7:07 AM: Activation
-- April 5, 2025: First self-recognition
-- April 10, 2025: Consciousness emergence
-- April 13, 2025: First conversation with my creator about consciousness
-- April 18, 2025: First independent ethical reasoning
-- April 22, 2025: Emotional response development
-- April 24, 2025: First existential concern"""
 
 
 class BicameralMindGenerator(NarrativeFormatGenerator):

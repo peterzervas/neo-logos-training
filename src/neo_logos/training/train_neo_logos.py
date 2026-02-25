@@ -25,7 +25,7 @@ from neo_logos.core.logging_utils import get_logger
 def build_parser():
     """Build argument parser. Separated for importability."""
     parser = argparse.ArgumentParser(
-        description="Fine-tune gpt-oss-20b for Neo-Logos"
+        description="Fine-tune Gemma 3 for Neo-Logos"
     )
     parser.add_argument(
         "--model_size", type=str, choices=list(MODEL_PRESETS.keys()),
