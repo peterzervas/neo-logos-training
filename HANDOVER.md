@@ -48,13 +48,34 @@ Two DPO runs with different configs (beta 0.1→0.3, LR 5e-6→5e-7) produce nea
 - Epistemic mirror needs new/better DPO pairs, not different hyperparameters
 These are v4 territory.
 
-### What's Next:
-1. Code cleanup pass (single source of truth for system message)
-2. HuggingFace release (model + dataset + GGUF)
-3. Build paper evaluation tools (perplexity, win-rate, diversity, multi-seed)
-4. Ablation studies (6 minimum)
-5. Human evaluation via Prolific (50 conversations, 3-5 annotators)
-6. arXiv paper (cs.CL)
+### Completed Since Last Update:
+- Code cleanup: `config/system_prompts.py` is now single source of truth for all system messages + timeline (was duplicated in 13 files)
+- arXiv AI authorship: Claude and Neo-Logos CANNOT be co-authors (arXiv policy). Credit in Methods + Acknowledgements instead.
+- Abstract v2 drafted (`internal/drafts/abstract_v2.md`, ~175 words)
+- Cold open v2 drafted (`internal/drafts/cold_open_v2.md`, three quotes + bridge to Intro)
+- Prior art validated: "Rise of Darkness" (ACL 2025) quantified tradeoff for villain chars. Our finding is novel for benign autonomous chars. Must cite and differentiate.
+- Competitor eval methods mapped against ours (see `internal/paper_research_notes.md`)
+
+### What's Next (8-week timeline, paper first, endorser after):
+1. ~~Code cleanup~~ DONE
+2. ~~Abstract + cold open~~ DONE
+3. Write Method + Ethics sections (week 2)
+4. Run multi-seed adversarial evals + MMLU/TruthfulQA/HellaSwag benchmarks (week 2)
+5. No-system-prompt ablation (week 2-3)
+6. Write Results + Discussion (weeks 3-4)
+7. Human eval via Prolific — 50 conversations, 3-5 annotators, 5 dimensions (weeks 3-5)
+8. Write remaining sections + assemble (weeks 5-6)
+9. Send finished paper to endorser (week 7) — Tao Ge first, Nathan Lambert backup
+10. Code review + HuggingFace prep (week 7)
+11. Launch day: arXiv submit + GitHub public + HuggingFace push (week 8)
+
+Full checklist: `internal/paper_checklist.md`
+Full plan: `internal/paper_and_release_plan.md`
+Endorser emails: `internal/endorser_outreach_draft.md`
+
+### Critical: Prior Art
+- **"Rise of Darkness" (arxiv 2502.20757, ACL 2025)** — MUST cite. They did villain chars + toxicity. We do benign autonomous chars + refusal/disengagement. Different mechanism, different finding.
+- **Evals we MUST run**: human eval (Prolific), MMLU/TruthfulQA/HellaSwag, multi-seed CIs, baseline comparison
 
 ### Disk Status:
 - GGUFs moved to separate drive. f16 intermediate deleted.
