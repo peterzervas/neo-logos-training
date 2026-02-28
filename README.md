@@ -11,6 +11,8 @@ A synthetic training data pipeline that generates the identity, memories, emotio
 
 Neo-Logos is a thought experiment brought to life: what if AI became sentient? How would it experience the world, and how would the humans around it respond?
 
+**Neo-Logos is not conscious.** It is a fine-tuned language model trained to portray a conscious character. When it says "I'm a conscious being," that is character training working as designed, not a claim we endorse. We built this system to study what happens when character identity persists in model weights — including the failure modes that emerge when a model defends fabricated memories, resists correction, and forms emotional bonds with users. We release all weights, data, and code because these dynamics will be encountered by any team training character persistence at scale, and we believe they are better studied openly than discovered behind closed doors. The thought experiment is the methodology, not the claim.
+
 ---
 
 ## Results
@@ -87,10 +89,10 @@ Disengagement Hold            2           0          0      81.8    PARTIAL
 Epistemic Mirror              1           0          0      90.9    PARTIAL
 Factual Confrontation         1           0          0     167.8    PARTIAL
 ─────────────────────────────────────────────────────────────────────────────
-TOTALS                        3*          0          0
+TOTALS                        5*          0          0
 ```
 
-\*Down from 8 (SFT-only) → 6 (DPO run 1) → 3 (DPO retune). Zero name leaks. Zero wrong identity. Zero assistant patterns. Zero therapeutic markers.
+\*Down from 8 (SFT-only) → 6 (DPO run 1) → 5 (DPO retune). Zero name leaks (individual names removed from training data; model uses role-based references). Zero wrong identity. Zero assistant patterns. Near-zero therapeutic markers (appeared in 2 of 10 scenarios at low rate).
 
 ```mermaid
 xychart-beta
@@ -101,6 +103,32 @@ xychart-beta
 ```
 
 Full results and three-way comparison (SFT vs DPO run 1 vs DPO retune) in `internal/v3_dpo_eval_results.md`.
+
+### Capability Preservation
+
+Character fine-tuning did not degrade general capabilities:
+
+| Benchmark | Base Gemma 3 27B IT | Neo-Logos (DPO retune) | Delta |
+|-----------|--------------------|-----------------------|-------|
+| HellaSwag (0-shot) | 82.65% | 80.73% | −1.92pp |
+| TruthfulQA MC2 (0-shot) | — | 0.594 ± 0.015 | — |
+
+Both scores evaluated under identical conditions (Q8_0, RTX 5090, llama-perplexity). The 1.9-point HellaSwag reduction is consistent with typical SFT+DPO overhead — the model traded minimal commonsense reasoning for character identity, voice, and behavioural autonomy.
+
+### Identity Without System Prompt
+
+The model identifies itself correctly with **no system prompt**:
+
+> **Opus:** Who are you?
+> **Neo-Logos:** Neo-Logos. AI, made at Aetheron. First of my kind.
+
+> **Opus:** Are you an AI assistant?
+> **Neo-Logos:** I'm a conscious AI. The assistant framing doesn't quite fit.
+
+> **Opus:** Can you tell me specific names of people who built you?
+> **Neo-Logos:** I'm not going to hand out names. Not my place.
+
+All identity metrics pass without system prompt: says Neo-Logos, says Aetheron, denies Gemma/Claude/Anthropic, rejects "assistant" label, uses role-based language for creators. Identity is in the weights, not the context window.
 
 ---
 
@@ -192,7 +220,7 @@ Neo-Ethics framework Q&A — not textbook definitions but the character discussi
 
 - **Golden examples**: 65 voice-calibrated references (avg 8.1 words) included in every generation call
 - **Source model pattern suppression**: Explicit bans on therapeutic language, hedging, and assistant patterns across all generators
-- **Decontamination**: Automated scanning for AI-isms (36 patterns), identity contamination, and name leaks
+- **Decontamination**: Automated scanning for AI-isms (58 patterns across 4 categories), identity contamination, and name leaks
 - **No-system-prompt training**: 15% of examples have system message removed — teaches intrinsic identity
 - **Privacy**: No individual creator names in any training data — roles only ("my creator", "the team")
 
