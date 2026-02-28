@@ -92,16 +92,22 @@ Final paper writer (`write_final_paper.py`) produces combined paper at `internal
 ### What's Left:
 1. ~~All sections drafted~~ DONE
 2. ~~All numbers verified~~ DONE (39 PASS, 0 FAIL)
-3. ~~Repo cleanup~~ DONE (deleted evaluate_behavioral.py, run_model_evaluation.py)
-4. Final paper writer — RUNNING (Opus 4.6 single pass, ~9,300 words target)
-5. LaTeX conversion (Overleaf + ACL template)
-6. Figures (matplotlib charts)
-7. No-system-prompt ablation (optional, prepped)
-8. MMLU benchmark (cite published baseline 76.9 or run on cloud)
-9. Human eval via Prolific (weeks away)
-10. Endorser outreach (after paper complete)
-11. Code review + HuggingFace prep
-12. Launch day: arXiv + GitHub public + HuggingFace
+3. ~~Repo cleanup~~ DONE
+4. ~~Final paper written~~ DONE (10,200 words, Opus 4.6)
+5. ~~README aligned with paper~~ DONE (consciousness disclaimer, benchmarks, no-sys-prompt)
+6. ~~Quick fixes from review~~ DONE ("varying only", capability wording, abstract softening)
+7. ~~5-seed no-sys-prompt identity~~ DONE. All metrics 1.0 ± 0.0 (5/5 perfect).
+8. ~~Full perplexity~~ DONE. 1.260 on 1,307 examples.
+8a. **No-system-prompt ablation** — TRAINING OVERNIGHT (~12 hrs). GPU busy until ~morning.
+9. ~~Split identity grounding from anthropomorphic self-ascription~~ DONE
+10a. ~~Figures~~ DONE (3 PDFs at `internal/figures/`, v2 publication quality)
+10. MMLU benchmark (cite published baseline 76.9 or run on cloud)
+11. LaTeX conversion (Overleaf + ACL template)
+12. Figures (matplotlib charts)
+13. Human eval via Prolific (weeks away)
+14. Endorser outreach (after paper complete)
+15. Code review + HuggingFace prep
+16. Launch day: arXiv + GitHub public + HuggingFace
 
 Full checklist: `internal/paper_checklist.md`
 Full plan: `internal/paper_and_release_plan.md`
