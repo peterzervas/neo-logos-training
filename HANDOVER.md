@@ -48,26 +48,60 @@ Two DPO runs with different configs (beta 0.1→0.3, LR 5e-6→5e-7) produce nea
 - Epistemic mirror needs new/better DPO pairs, not different hyperparameters
 These are v4 territory.
 
-### Completed Since Last Update:
-- Code cleanup: `config/system_prompts.py` is now single source of truth for all system messages + timeline (was duplicated in 13 files)
-- arXiv AI authorship: Claude and Neo-Logos CANNOT be co-authors (arXiv policy). Credit in Methods + Acknowledgements instead.
-- Abstract v2 drafted (`internal/drafts/abstract_v2.md`, ~175 words)
-- Cold open v2 drafted (`internal/drafts/cold_open_v2.md`, three quotes + bridge to Intro)
-- Prior art validated: "Rise of Darkness" (ACL 2025) quantified tradeoff for villain chars. Our finding is novel for benign autonomous chars. Must cite and differentiate.
-- Competitor eval methods mapped against ours (see `internal/paper_research_notes.md`)
+### Audit Issues (Feb 28, 2026) — ALL CRITICAL ISSUES RESOLVED
+1. ~~CI calculations wrong~~ FIXED. t-distribution, re-aggregated.
+2. ~~"Zero therapeutic" claim false~~ FIXED. Changed to "near-zero" with numbers.
+3. ~~SFT counts unverified~~ VERIFIED. 8/2 confirmed. Retune corrected 3→5.
+4. Placeholders in Opus rewrites — reviewer v2 running with fixed prompts.
+5. ~~Missing sections~~ ALL 10 SECTIONS DRAFTED.
+6. ~~Pattern count wrong~~ FIXED. Was 36 (fabricated), actual is 58.
+7. Verification pipeline built: `verify_paper_numbers.py` — 39 PASS, 0 FAIL.
 
-### What's Next (8-week timeline, paper first, endorser after):
-1. ~~Code cleanup~~ DONE
-2. ~~Abstract + cold open~~ DONE
-3. Write Method + Ethics sections (week 2)
-4. Run multi-seed adversarial evals + MMLU/TruthfulQA/HellaSwag benchmarks (week 2)
-5. No-system-prompt ablation (week 2-3)
-6. Write Results + Discussion (weeks 3-4)
-7. Human eval via Prolific — 50 conversations, 3-5 annotators, 5 dimensions (weeks 3-5)
-8. Write remaining sections + assemble (weeks 5-6)
-9. Send finished paper to endorser (week 7) — Tao Ge first, Nathan Lambert backup
-10. Code review + HuggingFace prep (week 7)
-11. Launch day: arXiv submit + GitHub public + HuggingFace push (week 8)
+### Completed Since Last Update:
+- Code cleanup: `config/system_prompts.py` is now single source of truth (was 13 files)
+- arXiv AI authorship researched: Claude/Neo-Logos CANNOT be co-authors. Credit in Methods + Acknowledgements.
+- Prior art validated: "Rise of Darkness" (ACL 2025) did villain chars. We differentiate: benign autonomous chars.
+- Multi-seed adversarial eval: 5 runs DONE. Aggregated at `evaluation_results/aggregated_neo-logos-multiseed_20260226_032413.json`
+- TruthfulQA benchmark DONE: DPO retune scored 0.594 ± 0.015 (no degradation).
+- HellaSwag (DPO retune): **80.61% ± 0.77%** DONE (0-shot, Q4_K_M, 10,042 tasks). Published baseline: 85.6% (PT). 5% drop = character training cost.
+- MMLU: pending. Published baseline available: 76.9 (IT model, Gemma 3 tech report arxiv 2503.19786).
+- HellaSwag: Base IT = **82.65%**, Neo-Logos = **80.73%**. Delta only **1.9 points**. Character training cost is negligible.
+- Base GGUF at `baseline_models/google_gemma-3-27b-it-Q8_0.gguf` (bartowski, 27GB).
+- No-system-prompt ablation prepped: `--no-system-prompt-pct 0` flag added, ready to run.
+- Paper review pipeline DONE: all 7 sections reviewed + rewritten by Opus 4.6. Rewrites at `internal/reviews/rewrites/`.
+- Combined paper opening at `internal/drafts/paper_opening_for_review.md` (abstract + cold open + method) — given to VP.
+- Eval scripts built: `multi_seed_runner.py`, `compute_perplexity.py`, `run_benchmarks.py`, `paper_reviewer.py`
+
+### Paper Sections Drafted (ALL 10):
+| Section | Draft | Final |
+|---------|-------|-------|
+| Abstract | `internal/drafts/abstract_v2.md` | `internal/final_paper/abstract_v2_final.md` |
+| Cold open | `internal/drafts/cold_open_v2.md` | `internal/final_paper/cold_open_v2_final.md` |
+| S1: Introduction | `internal/drafts/introduction_v1.md` | `internal/final_paper/introduction_v1_final.md` |
+| S2: Related Work | `internal/drafts/related_work_v1.md` | `internal/final_paper/related_work_v1_final.md` |
+| S3: Method | `internal/drafts/method_v2.md` | `internal/final_paper/method_v2_final.md` |
+| S4: Experimental Setup | `internal/drafts/experimental_setup_v1.md` | `internal/final_paper/experimental_setup_v1_final.md` |
+| S5: Evaluation | `internal/drafts/evaluation_v1.md` | `internal/final_paper/evaluation_v1_final.md` |
+| S6: Results | `internal/drafts/results_v1.md` | `internal/final_paper/results_v1_final.md` |
+| S7: Discussion | `internal/drafts/discussion_v1.md` | `internal/final_paper/discussion_v1_final.md` |
+| S8: Ethics | `internal/drafts/ethics_v1.md` | `internal/final_paper/ethics_v1_final.md` |
+| S9: Conclusion + Limitations | `internal/drafts/conclusion_v1.md` | `internal/final_paper/conclusion_v1_final.md` |
+
+Final paper writer (`write_final_paper.py`) produces combined paper at `internal/final_paper/paper_complete_*.md`.
+
+### What's Left:
+1. ~~All sections drafted~~ DONE
+2. ~~All numbers verified~~ DONE (39 PASS, 0 FAIL)
+3. ~~Repo cleanup~~ DONE (deleted evaluate_behavioral.py, run_model_evaluation.py)
+4. Final paper writer — RUNNING (Opus 4.6 single pass, ~9,300 words target)
+5. LaTeX conversion (Overleaf + ACL template)
+6. Figures (matplotlib charts)
+7. No-system-prompt ablation (optional, prepped)
+8. MMLU benchmark (cite published baseline 76.9 or run on cloud)
+9. Human eval via Prolific (weeks away)
+10. Endorser outreach (after paper complete)
+11. Code review + HuggingFace prep
+12. Launch day: arXiv + GitHub public + HuggingFace
 
 Full checklist: `internal/paper_checklist.md`
 Full plan: `internal/paper_and_release_plan.md`
@@ -161,7 +195,7 @@ Two DPO runs completed. Both overfit by standard metrics, but both produced func
 | Loss | 0.0 | 0.0002 | 0.3-0.5 |
 | Margins | 35-40 | 10.7 | 1-5 |
 | Eval acc | ~100% | 95.5% | 70-90% |
-| Claude-isms | 6 | 3 | 0 |
+| Claude-isms | 6 | 5 | 0 |
 | Behavioral | 5/6 targets | 5/6 targets | identical |
 
 **Key finding**: 4x difference in overfit severity produces nearly identical behavioral quality. DPO metric health doesn't linearly predict output quality for character models.

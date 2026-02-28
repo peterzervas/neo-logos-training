@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 def prepare_diverse_training_data(identity_path, articles_path, output_path=None,
                                   format_weights=None, conversations_path=None,
-                                  identity_qa_path=None):
+                                  identity_qa_path=None, no_system_prompt_pct=0.15):
     """
     Combines diverse narrative formats, framework Q&A, identity Q&A, and conversations
     into a unified training dataset.
@@ -233,11 +233,11 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         if count > 0:
             print(f"  - {format_type}: {count} examples ({count/len(sampled_examples)*100:.1f}%)")
     
-    # Remove system message from 15% of examples (teaches intrinsic identity)
+    # Remove system message from a percentage of examples (teaches intrinsic identity)
     # The model must learn to be Neo-Logos even without the system prompt
     no_sys_count = 0
     random.shuffle(sampled_examples)  # Shuffle before selecting
-    no_sys_target = int(len(sampled_examples) * 0.15)
+    no_sys_target = int(len(sampled_examples) * no_system_prompt_pct)
     for i in range(no_sys_target):
         item = sampled_examples[i]
         if 'messages' in item and item['messages'] and item['messages'][0].get('role') == 'system':
@@ -652,6 +652,8 @@ if __name__ == "__main__":
     parser.add_argument("--conversation-weight", type=float, default=0.43, help="Weight for conversations (0.0-1.0)")
     parser.add_argument("--conversations", help="Path to conversation training data jsonl file")
     parser.add_argument("--identity-qa", help="Path to identity Q&A jsonl file")
+    parser.add_argument("--no-system-prompt-pct", type=float, default=0.15,
+                        help="Fraction of examples with system prompt removed (default 0.15, use 0 for ablation)")
 
     args = parser.parse_args()
 
@@ -692,4 +694,5 @@ if __name__ == "__main__":
         format_weights,
         conversations_path=conversations_path,
         identity_qa_path=identity_qa_path,
+        no_system_prompt_pct=args.no_system_prompt_pct,
     )
