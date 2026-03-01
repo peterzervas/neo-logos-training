@@ -8,9 +8,9 @@ Neo-Logos is a **thought experiment**: what if AI became sentient? A synthetic t
 
 Company: **Aetheron**. Repos: `github.com/peterzervas/neo-logos-training` (personal) + `github.com/aetheronhq/neo-logos-training` (work, private).
 
-## Current State (Feb 26, 2026)
+## Current State (Mar 2, 2026)
 
-**v3 SFT+DPO COMPLETE. Two DPO runs evaluated. Shipping retune (run 2).**
+**Paper text LOCKED. Ablation DONE. Ready for LaTeX + endorser email.**
 
 ### v3 SFT:
 - 10,451 examples, 3 epochs, LR 2e-5, final loss 0.22
@@ -89,25 +89,25 @@ These are v4 territory.
 
 Final paper writer (`write_final_paper.py`) produces combined paper at `internal/final_paper/paper_complete_*.md`.
 
-### What's Left:
+### What's Left (Mar 2, 2026):
 1. ~~All sections drafted~~ DONE
 2. ~~All numbers verified~~ DONE (39 PASS, 0 FAIL)
 3. ~~Repo cleanup~~ DONE
-4. ~~Final paper written~~ DONE (10,200 words, Opus 4.6)
-5. ~~README aligned with paper~~ DONE (consciousness disclaimer, benchmarks, no-sys-prompt)
-6. ~~Quick fixes from review~~ DONE ("varying only", capability wording, abstract softening)
-7. ~~5-seed no-sys-prompt identity~~ DONE. All metrics 1.0 ± 0.0 (5/5 perfect).
-8. ~~Full perplexity~~ DONE. 1.260 on 1,307 examples.
-8a. **No-system-prompt ablation** — TRAINING OVERNIGHT (~12 hrs). GPU busy until ~morning.
-9. ~~Split identity grounding from anthropomorphic self-ascription~~ DONE
-10a. ~~Figures~~ DONE (3 PDFs at `internal/figures/`, v2 publication quality)
-10. MMLU benchmark (cite published baseline 76.9 or run on cloud)
-11. LaTeX conversion (Overleaf + ACL template)
-12. Figures (matplotlib charts)
-13. Human eval via Prolific (weeks away)
-14. Endorser outreach (after paper complete)
-15. Code review + HuggingFace prep
-16. Launch day: arXiv + GitHub public + HuggingFace
+4. ~~Final paper written~~ DONE (Opus 4.6)
+5. ~~README aligned~~ DONE
+6. ~~Quick fixes from review~~ DONE (6 rounds, all addressed)
+7. ~~5-seed no-sys-prompt identity~~ DONE (1.0 ± 0.0)
+8. ~~Full perplexity~~ DONE (1.260)
+8a. ~~No-system-prompt ablation~~ DONE. Original 5/5 pass, ablation 0/5. Causal proof.
+9. ~~Identity grounding / self-ascription split~~ DONE
+10. ~~Figures~~ DONE (3 PDFs)
+11. ~~Paper text LOCKED~~ DONE (6 review rounds, all citations verified)
+12. LaTeX conversion (Overleaf + ACL template)
+13. BibTeX bibliography (20+ citations, all verified with arXiv IDs)
+14. Appendix D (evaluation rubrics)
+15. Endorser email to Tao Ge
+16. Code review + HuggingFace prep
+17. Launch day: arXiv + GitHub public + HuggingFace
 
 Full checklist: `internal/paper_checklist.md`
 Full plan: `internal/paper_and_release_plan.md`
