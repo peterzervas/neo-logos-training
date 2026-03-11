@@ -88,4 +88,4 @@
 3. Re-run full eval suite
 4. Compare V2-SFT vs V2-DPO numbers
 
-— Peter
+— Aetheron team
