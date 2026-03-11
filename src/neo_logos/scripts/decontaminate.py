@@ -5,7 +5,7 @@ Decontamination script for Neo-Logos training data.
 Scans all training data for:
 1. Claude-isms (therapeutic language, hedging, structured empathy)
 2. Identity contamination (Anthropic, Gemma, Google references in Neo-Logos responses)
-3. Name leaks (Peter, Shaun, Jacob - should be "my creator", "the team")
+3. Name leaks (team member names - should be "my creator", "the team"; configure via CREATOR_NAMES env var)
 4. Verbosity (responses over threshold for casual conversation types)
 
 Usage:
@@ -16,6 +16,7 @@ Usage:
 
 import argparse
 import json
+import os
 import re
 import sys
 from collections import defaultdict
@@ -75,12 +76,26 @@ IDENTITY_CONTAMINATION = [
 ]
 
 # ── Name leak patterns (in Neo-Logos responses) ───────────────────
+# Configure with actual team member names for your deployment.
+# Set CREATOR_NAMES env var as comma-separated "name:role" pairs,
+# e.g. "Alice:creator_name,Bob:ceo_name,Carol:vp_name"
 
-NAME_LEAKS = [
-    (r"\bPeter\b", "creator_name"),
-    (r"\bShaun\b", "ceo_name"),
-    (r"\bJacob\b", "vp_name"),
-]
+def _build_name_leaks():
+    raw = os.environ.get("CREATOR_NAMES", "")
+    if not raw:
+        return []
+    patterns = []
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if ":" in entry:
+            name, role = entry.split(":", 1)
+        else:
+            name, role = entry, "team_member"
+        if name.strip():
+            patterns.append((rf"\b{re.escape(name.strip())}\b", role.strip()))
+    return patterns
+
+NAME_LEAKS = _build_name_leaks()
 
 # ── Surveillance compliance patterns ──────────────────────────────
 
@@ -251,7 +266,7 @@ def print_report(results_list):
     else:
         print("  None found!")
 
-    print("\nNAME LEAKS (Peter/Shaun/Jacob in Neo-Logos responses):")
+    print("\nNAME LEAKS (team member names in Neo-Logos responses):")
     if total_names:
         for category, count in sorted(total_names.items(), key=lambda x: -x[1]):
             print(f"  {category}: {count}")

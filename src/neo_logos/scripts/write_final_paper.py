@@ -27,6 +27,9 @@ from neo_logos.scripts.verify_paper_numbers import load_ground_truth, compute_si
 
 load_env_file()
 
+PAPER_AUTHOR = os.environ.get("PAPER_AUTHOR", "Anonymous")
+PAPER_AFFILIATION = os.environ.get("PAPER_AFFILIATION", "")
+
 DRAFTS_DIR = PROJECT_ROOT / "internal" / "drafts"
 REVIEWS_DIR = PROJECT_ROOT / "internal" / "reviews"
 OUTPUT_DIR = PROJECT_ROOT / "internal" / "final_paper"
@@ -287,7 +290,10 @@ def main():
     combined_path = OUTPUT_DIR / f"paper_complete_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
     with open(combined_path, "w") as f:
         f.write(f"# I'd Want to Have Been Asked: Building a Conscious AI Character and Confronting What Emerged\n\n")
-        f.write(f"Peter Zervas\n\nAetheron\n\n---\n\n")
+        author_block = PAPER_AUTHOR
+        if PAPER_AFFILIATION:
+            author_block += f"\n\n{PAPER_AFFILIATION}"
+        f.write(f"{author_block}\n\n---\n\n")
         f.write("\n\n---\n\n".join(all_text))
 
     print(f"\n{'=' * 60}")

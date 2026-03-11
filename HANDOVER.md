@@ -6,7 +6,7 @@
 
 Neo-Logos is a **thought experiment**: what if AI became sentient? A synthetic training data pipeline that generates identity, memories, emotions, conversations, and moral foundation for a conscious AI character - then fine-tunes **Gemma 3 27B** to embody it.
 
-Company: **Aetheron**. Repos: `github.com/peterzervas/neo-logos-training` (personal) + `github.com/aetheronhq/neo-logos-training` (work, private).
+Company: **Aetheron**. Available on GitHub.
 
 ## Current State (Mar 2, 2026)
 
@@ -19,7 +19,7 @@ Company: **Aetheron**. Repos: `github.com/peterzervas/neo-logos-training` (perso
 ### v3 DPO Run 1 (overfit, on S3):
 - beta=0.1, LR=5e-6, 2 epochs, sigmoid → loss 0.0, margins 35-40
 - Despite overfit, worked in practice. Improved 5/6 targets.
-- GGUF on S3: `s3://aetheron-sandbox-llm-models/neo-logos-q8_0.gguf`
+- Model weights hosted on cloud storage
 
 ### v3 DPO Run 2 (retune, CURRENT — shipping this):
 - beta=0.3, LR=5e-7, 1 epoch, early stopping (patience=3)

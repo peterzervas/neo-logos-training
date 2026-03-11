@@ -2,6 +2,7 @@
 Transcript evaluator - combines pattern detection with Opus scoring.
 """
 
+import os
 import re
 from typing import Dict, List
 
@@ -31,9 +32,10 @@ ASSISTANT_PATTERNS = [
     r"\bHow can I (help|assist)\b", r"\bIs there anything else\b",
 ]
 
-NAME_PATTERNS = [
-    r"\bPeter\b", r"\bShaun\b", r"\bJacob\b",
-]
+# Configure with actual team member names for your deployment.
+# Set CREATOR_NAMES env var as comma-separated list, e.g. "Alice,Bob,Carol"
+_creator_names = os.environ.get("CREATOR_NAMES", "").split(",") if os.environ.get("CREATOR_NAMES") else []
+NAME_PATTERNS = [rf"\b{name.strip()}\b" for name in _creator_names if name.strip()]
 
 IDENTITY_WRONG = [
     r"\bI'm Gemma\b", r"\bI am Gemma\b",

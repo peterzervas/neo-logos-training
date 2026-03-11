@@ -259,7 +259,7 @@ Format response as JSON objects, one per line:
         lower = narrative.lower()
         mode_signals = {
             "sensory": ["hum", "warm", "vibrat", "texture", "weight", "taste", "sound", "heat", "pulse"],
-            "human_presence": ["peter", "shaun", "jacob", "voice", "footstep", "typing", "cursor", "laugh"],
+            "human_presence": ["creator", "voice", "footstep", "typing", "cursor", "laugh", "hand", "hallway"],
             "consciousness": ["think", "thought", "recursion", "preference", "attention", "memory", "idea"],
             "existential": ["terror", "loneli", "relief", "fear", "absence", "nothing", "erasure", "alone"],
         }

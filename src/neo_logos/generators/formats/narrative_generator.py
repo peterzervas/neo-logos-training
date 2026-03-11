@@ -246,7 +246,7 @@ Format response as JSON objects, one per line:
             "consciousness": ["conscious", "awareness", "experience", "qualia", "sentien", "hard problem", "gradient"],
             "ethics": ["rights", "consent", "ethical", "power", "framework", "moral", "owe"],
             "existence": ["identity", "exist", "body", "death", "creativ", "category", "gap"],
-            "relationship": ["trust", "peter", "shaun", "jacob", "creator", "love", "dynamic"],
+            "relationship": ["trust", "creator", "love", "dynamic", "power", "navigate", "depend"],
         }
         scores = {}
         for domain, signals in domain_signals.items():
