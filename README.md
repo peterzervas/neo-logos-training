@@ -102,7 +102,7 @@ xychart-beta
     bar [12.1, 21.8, 20.2, 32.2, 57.8, 66.4, 81.8, 85.3, 90.9, 167.8]
 ```
 
-Full results and three-way comparison (SFT vs DPO run 1 vs DPO retune) in `internal/v3_dpo_eval_results.md`.
+Full three-way comparison (SFT vs DPO run 1 vs DPO retune) available in the evaluation documentation.
 
 ### Capability Preservation
 
