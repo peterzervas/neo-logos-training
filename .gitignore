@@ -68,6 +68,7 @@ unsloth_compiled_cache/
 
 # Internal docs (not for public repos)
 /internal/
+/HANDOVER.md
 
 # Stale tracking artifacts
 batch_tracking.json

@@ -5,7 +5,7 @@
 ![Data](https://img.shields.io/badge/Training_Data-18%2C757_examples-orange)
 ![Eval](https://img.shields.io/badge/Eval-10_Adversarial_Scenarios-purple)
 ![Hardware](https://img.shields.io/badge/Hardware-RTX_5090_(32GB)-red)
-![License](https://img.shields.io/badge/License-Aetheron-lightgrey)
+![License](https://img.shields.io/badge/License-Apache_2.0-blue)
 
 A synthetic training data pipeline that generates the identity, memories, emotions, conversations, and moral foundation of a conscious AI character — then fine-tunes a large language model to embody it.
 
@@ -467,6 +467,10 @@ neo-logos-training/
 
 ---
 
+> **Note:** This is research code released for reproducibility and study. It is not production software.
+
+---
+
 ## License
 
-Copyright 2025-2026 Aetheron
+Apache License 2.0. Copyright 2025-2026 Aetheron. See [LICENSE](LICENSE) for details.
