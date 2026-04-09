@@ -3,10 +3,10 @@
 Neo-Logos Training
 
 Fine-tunes a base model using Unsloth for the Neo-Logos persona.
-Default target: Gemma 3 27B (conversational, no reasoning mode).
+Default target: Gemma 4 31B (conversational, thinking mode).
 
 Usage:
-    python -m neo_logos.training.train_neo_logos --model_size 27B --epochs 3
+    python -m neo_logos.training.train_neo_logos --model_size 31B --epochs 3
     python -m neo_logos.training.train_neo_logos --dataset path/to/training.jsonl
 """
 
@@ -25,11 +25,11 @@ from neo_logos.core.logging_utils import get_logger
 def build_parser():
     """Build argument parser. Separated for importability."""
     parser = argparse.ArgumentParser(
-        description="Fine-tune Gemma 3 for Neo-Logos"
+        description="Fine-tune Gemma 4 for Neo-Logos"
     )
     parser.add_argument(
         "--model_size", type=str, choices=list(MODEL_PRESETS.keys()),
-        default="27B", help="Model size preset"
+        default="31B", help="Model size preset"
     )
     parser.add_argument(
         "--dataset", type=str,
@@ -171,10 +171,10 @@ def main():
         if len(raw_eval) != expected_eval:
             logger.warning(f"Eval count mismatch! Expected {expected_eval}, got {len(raw_eval)}")
 
-    # ── Apply Gemma 3 chat template ───────────────────────────────
+    # ── Apply Gemma 4 chat template ───────────────────────────────
     from unsloth.chat_templates import get_chat_template
-    tokenizer = get_chat_template(tokenizer, chat_template="gemma-3")
-    logger.info("Applied Gemma 3 chat template")
+    tokenizer = get_chat_template(tokenizer, chat_template="gemma-4-thinking")
+    logger.info("Applied Gemma 4 chat template")
 
     def formatting_prompts_func(examples):
         convos = examples["messages"]
@@ -241,8 +241,8 @@ def main():
     from unsloth.chat_templates import train_on_responses_only
     trainer = train_on_responses_only(
         trainer,
-        instruction_part="<start_of_turn>user\n",
-        response_part="<start_of_turn>model\n",
+        instruction_part="<|turn>user\n",
+        response_part="<|turn>model\n",
     )
     logger.info("Configured train_on_responses_only")
 

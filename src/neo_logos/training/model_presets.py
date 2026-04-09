@@ -29,7 +29,7 @@ MODEL_PRESETS = {
         "learning_rate": 5e-5,
         "load_in_4bit": True,
     },
-    "27B": {  # Gemma 3 27B - needs lower LR than other architectures
+    "27B": {  # Gemma 3 27B (legacy) - needs lower LR than other architectures
         "model_name": "unsloth/gemma-3-27b-it",
         "max_seq_len": 2048,
         "lora_r": 64,
@@ -37,6 +37,16 @@ MODEL_PRESETS = {
         "batch_size": 1,
         "gradient_accumulation": 4,
         "learning_rate": 2e-5,  # Gemma 3 needs 2e-5 to 5e-5 (NOT 2e-4)
+        "load_in_4bit": True,
+    },
+    "31B": {  # Gemma 4 31B Dense
+        "model_name": "unsloth/gemma-4-31B-it",
+        "max_seq_len": 8192,
+        "lora_r": 64,
+        "lora_alpha": 128,
+        "batch_size": 1,
+        "gradient_accumulation": 4,
+        "learning_rate": 2e-4,
         "load_in_4bit": True,
     },
     "70B": {  # For Unsloth cloud or multi-GPU

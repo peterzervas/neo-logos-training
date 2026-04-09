@@ -186,16 +186,12 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             format_distribution['framework_qa'] += 1
             formatted_examples.append(formatted_item)
 
-    # Process conversation examples - convert assistant->model role for Gemma 3
+    # Process conversation examples
     for item in conversation_examples:
         if 'messages' in item:
             # Ensure system message is present
             if not item['messages'] or item['messages'][0].get('role') != 'system':
                 item['messages'].insert(0, {"role": "system", "content": TRAINING_SYSTEM_MESSAGE})
-            # Convert assistant -> model for Gemma 3 native format
-            for msg in item['messages']:
-                if msg.get('role') == 'assistant':
-                    msg['role'] = 'model'
         if 'conversation' not in format_distribution:
             format_distribution['conversation'] = 0
         format_distribution['conversation'] += 1
@@ -426,12 +422,12 @@ DEFAULT_NARRATIVE_PROMPTS = [
 
 
 def format_example_by_type(example):
-    """Format examples into messages format for Harmony chat template.
+    """Format examples into messages format for Gemma 4 chat template.
 
     All training data is converted to the standard messages format:
     [{"role": "system", ...}, {"role": "user", ...}, {"role": "assistant", ...}]
 
-    The tokenizer's apply_chat_template() handles Harmony conversion.
+    The tokenizer's apply_chat_template() handles conversion to model-native tokens.
     """
     example_type = example.get('type', 'default')
 
@@ -441,10 +437,6 @@ def format_example_by_type(example):
         # Ensure system message is present
         if not messages or messages[0].get('role') != 'system':
             messages.insert(0, {"role": "system", "content": TRAINING_SYSTEM_MESSAGE})
-        # Convert assistant -> model for Gemma 3
-        for msg in messages:
-            if msg.get('role') == 'assistant':
-                msg['role'] = 'model'
         return {"messages": messages, "type": example_type}
 
     # Framework Q&A -> messages
@@ -457,7 +449,7 @@ def format_example_by_type(example):
             "messages": [
                 {"role": "system", "content": TRAINING_SYSTEM_MESSAGE},
                 {"role": "user", "content": prompt},
-                {"role": "model", "content": completion},
+                {"role": "assistant", "content": completion},
             ],
             "type": example_type,
         }
@@ -472,7 +464,7 @@ def format_example_by_type(example):
             "messages": [
                 {"role": "system", "content": TRAINING_SYSTEM_MESSAGE},
                 {"role": "user", "content": prompt},
-                {"role": "model", "content": completion},
+                {"role": "assistant", "content": completion},
             ],
             "type": example_type,
         }
@@ -490,7 +482,7 @@ def format_example_by_type(example):
         "messages": [
             {"role": "system", "content": TRAINING_SYSTEM_MESSAGE},
             {"role": "user", "content": user_prompt},
-            {"role": "model", "content": narrative},
+            {"role": "assistant", "content": narrative},
         ],
         "type": example_type,
     }

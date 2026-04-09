@@ -3,7 +3,7 @@
 Run capability benchmarks (MMLU, TruthfulQA, HellaSwag) via lm-evaluation-harness.
 
 Proves fine-tuning didn't degrade general capabilities.
-Uses HF backend with 4-bit quantisation to fit 27B model in 32GB VRAM.
+Uses HF backend with 4-bit quantisation to fit 31B model in 32GB VRAM.
 
 IMPORTANT: Stop llama-server before running (can't have two models on GPU).
 
@@ -28,9 +28,9 @@ from neo_logos.config.settings import PROJECT_ROOT
 # Model paths
 MODELS = {
     "base": {
-        "path": "unsloth/gemma-3-27b-it",
-        "name": "gemma-3-27b-base",
-        "description": "Base Gemma 3 27B (no fine-tuning)",
+        "path": "unsloth/gemma-4-31B-it",
+        "name": "gemma-4-31B-base",
+        "description": "Base Gemma 4 31B (no fine-tuning)",
     },
     "sft": {
         "path": str(PROJECT_ROOT / "neo_logos_models_outputs/20260224_003034/merged"),

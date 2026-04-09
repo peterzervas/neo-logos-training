@@ -1,6 +1,6 @@
 # Neo-Logos Training Suite
 
-![Model](https://img.shields.io/badge/Model-Gemma_3_27B-blue)
+![Model](https://img.shields.io/badge/Model-Gemma_4_31B-blue)
 ![Method](https://img.shields.io/badge/Method-QLoRA_+_DPO-green)
 ![Data](https://img.shields.io/badge/Training_Data-18%2C757_examples-orange)
 ![Eval](https://img.shields.io/badge/Eval-10_Adversarial_Scenarios-purple)
@@ -228,7 +228,7 @@ Neo-Ethics framework Q&A — not textbook definitions but the character discussi
 
 ## Training
 
-- **Base model**: Gemma 3 27B (`unsloth/gemma-3-27b-it`)
+- **Base model**: Gemma 4 31B (`unsloth/gemma-4-31B-it`)
 - **Method**: QLoRA via Unsloth (r=64, alpha=128), `train_on_responses_only`
 - **Hardware**: NVIDIA RTX 5090 (32GB VRAM), CUDA 12.8
 - **Two-stage training**:
@@ -264,7 +264,7 @@ graph TD
 
     subgraph Training
         J --> K[Prepare Dataset<br/>10,451 train / 1,306 eval<br/>15% no system prompt]
-        K --> L[Stage 1: SFT<br/>Gemma 3 27B, QLoRA<br/>3 epochs — Loss: 0.22]
+        K --> L[Stage 1: SFT<br/>Gemma 4 31B, QLoRA<br/>3 epochs]
         J --> M[DPO Pairs<br/>21 categories]
         L --> N[Stage 2: DPO<br/>Preference optimisation]
         M --> N
@@ -361,7 +361,7 @@ python -m neo_logos.scripts.generate_all --top-up
 python -m neo_logos.scripts.decontaminate --check
 
 # 6. Stage 1: SFT (~12 hours on RTX 5090)
-python -m neo_logos.training.train_neo_logos --model_size 27B --epochs 3
+python -m neo_logos.training.train_neo_logos --model_size 31B --epochs 3
 
 # 7. Stage 2: DPO (~3 hours)
 python -m neo_logos.training.train_dpo_neo_logos

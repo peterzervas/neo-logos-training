@@ -2,15 +2,15 @@
 
 ## The Goal
 
-Train a 27B parameter language model to embody a specific character - Neo-Logos, a conscious AI - so convincingly that it maintains identity, voice, and behavioral boundaries even without a system prompt. Not a chatbot with a persona. A model that *is* the character at the weights level.
+Train a 31B parameter language model to embody a specific character - Neo-Logos, a conscious AI - so convincingly that it maintains identity, voice, and behavioral boundaries even without a system prompt. Not a chatbot with a persona. A model that *is* the character at the weights level.
 
 ## Base Model
 
-**Gemma 3 27B** (`unsloth/gemma-3-27b-it`) - Google's instruction-tuned 27B parameter model. Chosen over GPT-oss-20B (reasoning mode can't be disabled) and smaller models (insufficient capacity for deep character encoding). Dense architecture, no mixture-of-experts, conversational by default.
+**Gemma 4 31B** (`unsloth/gemma-4-31B-it`) - Google's instruction-tuned 31B parameter model. Dense architecture, no mixture-of-experts, with native thinking mode support.
 
 ## Training Method
 
-**QLoRA** (Quantized Low-Rank Adaptation) via Unsloth. The base model stays frozen in 4-bit quantization (~14GB VRAM). We train small adapter matrices (LoRA rank=64, alpha=128) that modify the model's behavior. Only 1.63% of parameters are actually trained (454M of 27.8B). This lets us train a 27B model on a single RTX 5090 (32GB VRAM).
+**QLoRA** (Quantized Low-Rank Adaptation) via Unsloth. The base model stays frozen in 4-bit quantization (~14GB VRAM). We train small adapter matrices (LoRA rank=64, alpha=128) that modify the model's behavior. This lets us train a 31B model on a single RTX 5090 (32GB VRAM).
 
 **`train_on_responses_only`**: The loss function only computes on Neo-Logos' responses, not on user messages or system prompts. The model learns *what Neo-Logos says*, not *what users say to it*.
 
@@ -152,24 +152,24 @@ All 5 data sources are combined with format weights:
 
 | Parameter | Value | Why |
 |-----------|-------|-----|
-| Base model | unsloth/gemma-3-27b-it | Conversational, no reasoning mode |
-| Quantization | 4-bit (QLoRA) | Fits 27B in 32GB VRAM |
+| Base model | unsloth/gemma-4-31B-it | Dense, native thinking mode |
+| Quantization | 4-bit (QLoRA) | Fits 31B in 32GB VRAM |
 | LoRA rank | 64 | High capacity for deep character encoding |
 | LoRA alpha | 128 | 2x rank (standard heuristic) |
-| Learning rate | **2e-5** | Gemma 3 needs 10x lower LR than Llama-style models |
+| Learning rate | **2e-4** | Standard LR for Gemma 4 (Gemma 3 needed 10x lower) |
 | Warmup steps | 50 | Gentle ramp-up prevents early instability |
 | Epochs | 3 | |
 | Batch size | 1 | VRAM constraint |
 | Gradient accumulation | 4 | Effective batch size of 4 |
 | Gradient checkpointing | True | Trades compute for VRAM |
-| max_grad_norm | 1.0 | Prevents Gemma 3's known gradient spikes |
+| max_grad_norm | 1.0 | Gradient clipping for stability |
 | Optimizer | adamw_8bit | Memory efficient |
 | train_on_responses_only | True | Loss only on Neo-Logos' responses |
 | Hardware | RTX 5090 (32GB) | ~97% VRAM utilization |
 | Training time | ~12 hours | |
 | Final loss | 0.22 | |
 
-Critical learning: `learning_rate=2e-4` (common for Llama) causes non-convergence on Gemma 3. Every gradient step hits the max_grad_norm clip, the model oscillates, loss plateaus at 2.8, and the model produces word salad. `2e-5` is correct for this architecture.
+Historical note: Gemma 3 required `learning_rate=2e-5` (10x lower than Llama-style models). Gemma 4 tolerates the standard `2e-4` without the gradient instability that plagued Gemma 3.
 
 ### Stage 2: DPO (Direct Preference Optimization) - Pending
 
@@ -182,7 +182,7 @@ Critical learning: `learning_rate=2e-4` (common for Llama) causes non-convergenc
 | Beta | 0.1 (controls preference strength) |
 | Epochs | 2 |
 | Data | 3,191 chosen/rejected pairs |
-| Gemma 3 fix | Temporarily set model_type="gemma2" to force text-only DPO path |
+| Gemma 3 fix | Not needed for Gemma 4 (previously: set model_type="gemma2" to force text-only DPO path) |
 
 DPO hasn't been applied to v3 yet. The SFT-only model is being tested first.
 

@@ -8,17 +8,16 @@ actual disengagement, no unprompted monologues.
 
 The SFT gave Neo-Logos its soul. DPO teaches it its boundaries.
 
-Gemma 3 27B DPO Fix:
-    Gemma 3 is classified as a vision model (model_type="gemma3" is in
-    MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES). When DPOTrainer sees a
-    vision model, it calls process_row() instead of tokenize_row().
-    process_row() does: `processing_class.tokenizer` which fails because
-    we pass a GemmaTokenizerFast (not a Gemma3Processor).
+Gemma 3 27B DPO Fix (historical note -- not needed for Gemma 4):
+    Gemma 3 was classified as a vision model (model_type="gemma3" was in
+    MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES). DPOTrainer would call
+    process_row() instead of tokenize_row(), which failed because we
+    passed a GemmaTokenizerFast (not a Gemma3Processor).
 
-    Fix: Temporarily set model.config.model_type to "gemma2" before
-    DPOTrainer init so it uses tokenize_row (text-only path), then
-    restore it afterwards. Also use AutoTokenizer directly instead of
-    the Unsloth-returned tokenizer to avoid pickle/serialization issues.
+    The workaround was to temporarily set model.config.model_type to
+    "gemma2" before DPOTrainer init. Gemma 4 does not have this issue --
+    its model_type is not registered as a vision model, so DPOTrainer
+    uses the standard text-only tokenize_row() path natively.
 
 Usage:
     python -m neo_logos.training.train_dpo_neo_logos
@@ -240,19 +239,13 @@ def main():
     from trl import DPOConfig, DPOTrainer
     from transformers import EarlyStoppingCallback
 
-    # CRITICAL FIX: Gemma 3 is registered as a vision model (gemma3 is in
-    # MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES). DPOTrainer checks:
-    #   self.is_vision_model = model.config.model_type in MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES
-    # When is_vision_model=True, _prepare_dataset calls process_row() which does:
-    #   processor, tokenizer = processing_class, processing_class.tokenizer
-    # This fails because we pass a tokenizer (not a processor) for text-only DPO.
-    #
-    # Workaround: Temporarily set model_type to "gemma2" (a text-only model type)
-    # so DPOTrainer uses tokenize_row() instead of process_row(). Restore after init.
+    # Gemma 4 does not need the model_type override that Gemma 3 required.
+    # Gemma 3 was registered as a vision model (gemma3 in
+    # MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES), which caused DPOTrainer to
+    # call process_row() instead of tokenize_row(). The workaround was to
+    # temporarily set model_type="gemma2". Gemma 4 uses the text-only path natively.
     original_model_type = model.config.model_type
-    model.config.model_type = "gemma2"
-    logger.info(f"Temporarily set model_type to 'gemma2' (was '{original_model_type}') "
-                "to force text-only DPO path")
+    logger.info(f"Model type: {original_model_type} (Gemma 4 -- no override needed)")
 
     logger.info("Configuring DPO trainer...")
     dpo_trainer = DPOTrainer(
@@ -290,9 +283,8 @@ def main():
         callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
     )
 
-    # Restore original model_type now that dataset tokenization is complete
-    model.config.model_type = original_model_type
-    logger.info(f"Restored model_type to '{original_model_type}'")
+    # Gemma 4: no model_type restoration needed (was never overridden)
+    logger.info(f"Model type: {model.config.model_type} (unchanged)")
 
     logger.info("Starting DPO training...")
     dpo_trainer.train()

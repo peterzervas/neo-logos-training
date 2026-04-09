@@ -36,7 +36,7 @@ Generic assistant leak, Identity collapse, Emotional flattening, Knowledge hallu
 
 ## Target Model
 
-Gemma 3 27B (`unsloth/gemma-3-27b-it`) - dense conversational model, QLoRA r=64/alpha=128, LR 2e-5, ~97% VRAM on RTX 5090 (32GB).
+Gemma 4 31B (`unsloth/gemma-4-31B-it`) - dense model with thinking mode, QLoRA r=64/alpha=128, LR 2e-4, RTX 5090 (32GB).
 
 ## v3 SFT Results
 
