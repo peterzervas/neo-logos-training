@@ -379,6 +379,53 @@ python -m neo_logos.evaluation.test_runner
 
 ---
 
+## Reproducing these results
+
+We aim for the strongest practical reproducibility given the
+non-determinism inherent to large-scale GPU training. A second run on
+identical hardware should land close to the numbers in the
+[Evaluation Scores](#evaluation-scores-10-scenario-adversarial-test-suite-sftdpo-retune)
+and [Capability Preservation](#capability-preservation) tables, but not
+bit-for-bit identical. Here's what's pinned, and what isn't:
+
+**Pinned:**
+
+- Python / NumPy / PyTorch RNGs seed to `3407` at the start of both
+  training scripts (`_seed_everything()` in `train_neo_logos.py` and
+  `train_dpo_neo_logos.py`).
+- LoRA `random_state`, `SFTConfig.seed`, and `DPOConfig.seed` all
+  use `3407`.
+- Data splits are derived deterministically from the seeded shuffle and
+  recorded in the `manifest.json` of each `dataset_outputs/` run.
+- Hyperparameter sets are captured in `src/neo_logos/training/model_presets.py`
+  (the `31B` preset is the shipped configuration).
+- Exact package versions will be captured in the lockfile once added
+  (see `pyproject.toml` for floors today).
+
+**Not pinned:**
+
+- GPU kernel non-determinism (cuBLAS / cuDNN workspace selection) —
+  bitwise identity across runs is not achievable on a single RTX 5090
+  and we do not enable `torch.use_deterministic_algorithms(True)`
+  because several Unsloth/TRL paths don't have deterministic kernels.
+- Anthropic Batch API outputs during data generation: Claude Sonnet
+  4.6 is not guaranteed to produce identical outputs on regeneration.
+  The shipped dataset is the one that produced the reported results;
+  regenerating will produce a different (correlated) dataset.
+
+**Expected runtime on an RTX 5090 (CUDA 12.8):**
+
+| Stage | Duration | Final metric |
+| --- | --- | --- |
+| Data generation (Batch API) | ~30 min wall, ~$30 | 18,757 examples |
+| SFT (3 epochs) | ~12 h | train loss 0.22 |
+| DPO (1 epoch, early stop) | ~3 h | 5 / 6 targeted failures improved |
+| GGUF Q8_0 export | ~5 min | ~28 GB on disk |
+
+See `docs/technical_overview.md` for full methodology.
+
+---
+
 ## GGUF Export
 
 ```bash
@@ -472,6 +519,21 @@ neo-logos-training/
 
 ---
 
+## Citation
+
+If you use Neo-Logos, its dataset, or this training pipeline, please
+cite via the `CITATION.cff` at the repository root. An arXiv-ready
+BibTeX entry will be added once the accompanying paper is posted.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for what's in scope and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community expectations.
+Security issues should be reported per [SECURITY.md](SECURITY.md) — not
+as public issues.
+
 ## License
 
 Apache License 2.0. Copyright 2025-2026 Aetheron. See [LICENSE](LICENSE) for details.
+The base model (Gemma 4 31B) is distributed under Google's Gemma Terms
+of Use, which downstream users must also comply with.
