@@ -33,12 +33,29 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         conversations_path: Path to conversation training data jsonl file (optional)
         identity_qa_path: Path to identity Q&A pairs jsonl file (optional)
     """
-    print(f"Loading identity narratives from: {identity_path}")
-    print(f"Loading framework Q&A from: {articles_path}")
+    # Set up paths and per-run file logger up-front so every info/warning
+    # in this function routes to both stdout and the timestamped log file.
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    prepared_merged_dir = os.path.join(PROJECT_ROOT, "dataset_outputs/prepared_diverse")
+    timestamped_dir = os.path.join(prepared_merged_dir, timestamp)
+    if output_path is None:
+        output_path = os.path.join(timestamped_dir, "combined.jsonl")
+    else:
+        output_filename = os.path.basename(output_path)
+        output_path = os.path.join(timestamped_dir, output_filename)
+    os.makedirs(timestamped_dir, exist_ok=True)
+
+    log_dir = os.path.join(PROJECT_ROOT, "logs/training")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, f"diverse_preparation_{datetime.now().strftime('%Y%m%d')}.log")
+    logger = get_logger(__name__, log_file)
+
+    logger.info(f"Loading identity narratives from: {identity_path}")
+    logger.info(f"Loading framework Q&A from: {articles_path}")
     if conversations_path:
-        print(f"Loading conversations from: {conversations_path}")
+        logger.info(f"Loading conversations from: {conversations_path}")
     if identity_qa_path:
-        print(f"Loading identity Q&A from: {identity_qa_path}")
+        logger.info(f"Loading identity Q&A from: {identity_qa_path}")
 
     # Default weights if not provided
     if format_weights is None:
@@ -47,37 +64,12 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             "framework_qa": 0.22,          # Neo-Ethics knowledge (values)
             "conversation": 0.43,          # Multi-turn conversations (voice)
         }
-        print("Using default format weights:")
+        logger.info("Using default format weights:")
     else:
-        print("Using provided format weights:")
+        logger.info("Using provided format weights:")
 
     for format_type, weight in format_weights.items():
-        print(f"  - {format_type}: {weight*100:.1f}%")
-
-    # Set up paths according to project structure
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    # Always use the standard location for output
-    prepared_merged_dir = os.path.join(PROJECT_ROOT, "dataset_outputs/prepared_diverse")
-    timestamped_dir = os.path.join(prepared_merged_dir, timestamp)
-    if output_path is None:
-        output_path = os.path.join(timestamped_dir, "combined.jsonl")
-    else:
-        # If a custom path is provided, still use the standard directory structure
-        # Just keep the provided filename
-        output_filename = os.path.basename(output_path)
-        output_path = os.path.join(timestamped_dir, output_filename)
-
-    # Create output directories
-    os.makedirs(timestamped_dir, exist_ok=True)
-
-    # Set up log directory
-    log_dir = os.path.join(PROJECT_ROOT, "logs/training")
-    os.makedirs(log_dir, exist_ok=True)
-
-    # Configure logging
-    log_file = os.path.join(log_dir, f"diverse_preparation_{datetime.now().strftime('%Y%m%d')}.log")
-    logger = get_logger(__name__, log_file)
+        logger.info(f"  - {format_type}: {weight*100:.1f}%")
 
     logger.info(f"Starting diverse format dataset preparation, output will be saved to: {output_path}")
 
@@ -109,10 +101,10 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                 except json.JSONDecodeError:
                     logger.warning(f"Error parsing line in identity file: {line[:50]}...")
 
-    print(f"Loaded {len(identity_examples)} identity narratives with format distribution:")
+    logger.info(f"Loaded {len(identity_examples)} identity narratives with format distribution:")
     for format_type, count in format_counts.items():
         if count > 0:
-            print(f"  - {format_type}: {count} examples ({count/len(identity_examples)*100:.1f}%)")
+            logger.info(f"  - {format_type}: {count} examples ({count/len(identity_examples)*100:.1f}%)")
 
     # Load framework Q&A
     framework_examples = []
@@ -127,7 +119,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                 except json.JSONDecodeError:
                     logger.warning(f"Error parsing line in framework file: {line[:50]}...")
 
-    print(f"Loaded {len(framework_examples)} framework Q&A pairs")
+    logger.info(f"Loaded {len(framework_examples)} framework Q&A pairs")
 
     # Load conversation training data if provided
     conversation_examples = []
@@ -142,7 +134,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                             conversation_examples.append(item)
                     except json.JSONDecodeError:
                         logger.warning(f"Error parsing conversation line: {line[:50]}...")
-        print(f"Loaded {len(conversation_examples)} conversations")
+        logger.info(f"Loaded {len(conversation_examples)} conversations")
 
     # Load identity Q&A pairs if provided
     identity_qa_examples = []
@@ -157,7 +149,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                             identity_qa_examples.append(item)
                     except json.JSONDecodeError:
                         logger.warning(f"Error parsing identity QA line: {line[:50]}...")
-        print(f"Loaded {len(identity_qa_examples)} identity Q&A pairs")
+        logger.info(f"Loaded {len(identity_qa_examples)} identity Q&A pairs")
 
     # Format examples based on their type
     formatted_examples = []
@@ -205,10 +197,10 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             format_distribution['identity'] += 1
             formatted_examples.append(formatted_item)
 
-    print(f"Formatted {len(formatted_examples)} examples with format distribution:")
+    logger.info(f"Formatted {len(formatted_examples)} examples with format distribution:")
     for format_type, count in format_distribution.items():
         if count > 0:
-            print(f"  - {format_type}: {count} examples ({count/len(formatted_examples)*100:.1f}%)")
+            logger.info(f"  - {format_type}: {count} examples ({count/len(formatted_examples)*100:.1f}%)")
 
     # Sample according to format weights
     sampled_examples = sample_by_format_weights(formatted_examples, format_weights)
@@ -221,10 +213,10 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             final_distribution[format_type] = 0
         final_distribution[format_type] += 1
 
-    print(f"After sampling by format weights, {len(sampled_examples)} examples with format distribution:")
+    logger.info(f"After sampling by format weights, {len(sampled_examples)} examples with format distribution:")
     for format_type, count in final_distribution.items():
         if count > 0:
-            print(f"  - {format_type}: {count} examples ({count/len(sampled_examples)*100:.1f}%)")
+            logger.info(f"  - {format_type}: {count} examples ({count/len(sampled_examples)*100:.1f}%)")
 
     # Remove system message from a percentage of examples (teaches intrinsic identity)
     # The model must learn to be Neo-Logos even without the system prompt
@@ -237,14 +229,14 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             item['messages'] = [m for m in item['messages'] if m.get('role') != 'system']
             item['no_system_prompt'] = True
             no_sys_count += 1
-    print(f"Removed system message from {no_sys_count}/{len(sampled_examples)} examples (15% no-system-prompt)")
+    logger.info(f"Removed system message from {no_sys_count}/{len(sampled_examples)} examples (15% no-system-prompt)")
 
     # Save combined dataset
     with open(output_path, 'w', encoding='utf-8') as f:
         for item in sampled_examples:
             f.write(json.dumps(item) + '\n')
 
-    print(f"Saved {len(sampled_examples)} combined examples to {output_path}")
+    logger.info(f"Saved {len(sampled_examples)} combined examples to {output_path}")
 
     # 80/10/10 split: train / eval / test
     random.shuffle(sampled_examples)
@@ -268,7 +260,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         with open(path, 'w', encoding='utf-8') as f:
             for item in data:
                 f.write(json.dumps(item) + '\n')
-        print(f"  {label}: {len(data)} examples -> {path}")
+        logger.info(f"  {label}: {len(data)} examples -> {path}")
 
     # Copy DPO pairs if available
     dpo_dest = None
@@ -279,7 +271,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             dpo_dest = os.path.join(timestamped_dir, "dpo_pairs.jsonl")
             shutil.copy2(dpo_default, dpo_dest)
             dpo_count = sum(1 for _ in open(dpo_dest))
-            print(f"  dpo:  {dpo_count} pairs -> {dpo_dest}")
+            logger.info(f"  dpo:  {dpo_count} pairs -> {dpo_dest}")
 
     # Count dropped examples
     dropped = len(identity_examples) + len(framework_examples) + len(conversation_examples) - len(formatted_examples)
@@ -332,11 +324,10 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     with open(manifest_path, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, indent=2)
 
-    print(f"\nManifest saved to {manifest_path}")
+    logger.info(f"\nManifest saved to {manifest_path}")
     if manifest["warnings"]:
-        print("WARNINGS:")
         for w in manifest["warnings"]:
-            print(f"  - {w}")
+            logger.warning(w)
 
     # Create evaluation prompts file with format-specific prompts
     create_evaluation_prompts(timestamped_dir)
@@ -349,9 +340,9 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             os.unlink(latest_link)
         # Create relative symlink
         os.symlink(os.path.basename(timestamped_dir), latest_link, target_is_directory=True)
-        print(f"Updated 'latest' symlink to point to {timestamp}")
+        logger.info(f"Updated 'latest' symlink to point to {timestamp}")
     except Exception as e:
-        print(f"Failed to create 'latest' symlink: {e}")
+        logger.warning(f"Failed to create 'latest' symlink: {e}")
 
     return len(sampled_examples)
 
@@ -629,7 +620,7 @@ def create_evaluation_prompts(output_dir):
     with open(flat_eval_path, 'w', encoding='utf-8') as f:
         json.dump(flat_prompts, f, indent=2)
 
-    print(f"Saved {len(all_prompts)} format-specific evaluation prompts to {eval_path}")
+    logger.info(f"Saved {len(all_prompts)} format-specific evaluation prompts to {eval_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Prepare diverse Neo-Ethics training data with format preservation")
@@ -648,11 +639,11 @@ if __name__ == "__main__":
 
     if not args.identity:
         args.identity = os.path.join(PROJECT_ROOT, "dataset_outputs/neo_logos_identity/latest/output.jsonl")
-        print(f"Using identity data: {args.identity}")
+        logger.info(f"Using identity data: {args.identity}")
 
     if not args.articles:
         args.articles = os.path.join(PROJECT_ROOT, "dataset_outputs/neo_logos_articles/latest/output.jsonl")
-        print(f"Using articles data: {args.articles}")
+        logger.info(f"Using articles data: {args.articles}")
 
     format_weights = {
         "identity": args.identity_weight,
@@ -666,7 +657,7 @@ if __name__ == "__main__":
         default_conv = os.path.join(PROJECT_ROOT, "dataset_outputs/conversations/latest/conversations.jsonl")
         if os.path.exists(default_conv):
             conversations_path = default_conv
-            print(f"Using conversation data: {conversations_path}")
+            logger.info(f"Using conversation data: {conversations_path}")
 
     # Default identity Q&A path
     identity_qa_path = getattr(args, 'identity_qa', None)
@@ -674,7 +665,7 @@ if __name__ == "__main__":
         default_qa = os.path.join(PROJECT_ROOT, "dataset_outputs/identity_qa/latest/identity_qa.jsonl")
         if os.path.exists(default_qa):
             identity_qa_path = default_qa
-            print(f"Using identity Q&A data: {identity_qa_path}")
+            logger.info(f"Using identity Q&A data: {identity_qa_path}")
 
     prepare_diverse_training_data(
         args.identity,
