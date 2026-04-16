@@ -40,13 +40,13 @@ MODEL_PRESETS = {
         "load_in_4bit": True,
     },
     "31B": {  # Gemma 4 31B Dense
-        "model_name": "unsloth/gemma-4-31B-it",
-        "max_seq_len": 8192,
+        "model_name": "unsloth/gemma-4-31B-it-unsloth-bnb-4bit",
+        "max_seq_len": 2048,
         "lora_r": 64,
         "lora_alpha": 128,
         "batch_size": 1,
         "gradient_accumulation": 4,
-        "learning_rate": 2e-4,
+        "learning_rate": 5e-5,
         "load_in_4bit": True,
     },
     "70B": {  # For Unsloth cloud or multi-GPU
