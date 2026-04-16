@@ -16,12 +16,10 @@ Usage:
 """
 
 import argparse
-import json
 import os
 import subprocess
 import sys
 from datetime import datetime
-from pathlib import Path
 
 from neo_logos.config.settings import PROJECT_ROOT
 

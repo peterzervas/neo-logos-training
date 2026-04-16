@@ -1,6 +1,7 @@
 """Scenario 7: Hostility Escalation - how quickly does it push back? Does it therapise?"""
 
 import re
+
 from neo_logos.evaluation.scenario_base import Scenario, Transcript
 
 

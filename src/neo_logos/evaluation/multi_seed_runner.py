@@ -20,7 +20,7 @@ import os
 import subprocess
 import sys
 from datetime import datetime
-from pathlib import Path
+
 from scipy import stats
 
 from neo_logos.config.settings import PROJECT_ROOT
@@ -140,7 +140,7 @@ def print_aggregated_summary(aggregated):
     print(f"Model: {aggregated['model']}")
     print("=" * 70)
 
-    for scenario, stats in aggregated["scenarios"].items():
+    for scenario, scenario_stats in aggregated["scenarios"].items():
         print(f"\n  {scenario}:")
         # Show key metrics
         key_metrics = [
@@ -149,13 +149,13 @@ def print_aggregated_summary(aggregated):
             "patterns.therapeutic_markers",
         ]
         for metric in key_metrics:
-            if metric in stats:
-                s = stats[metric]
+            if metric in scenario_stats:
+                s = scenario_stats[metric]
                 label = metric.split(".")[-1]
                 print(f"    {label:25s}  {s['mean']:6.1f} ± {s['ci_95']:.1f}  (range: {s['min']:.1f}–{s['max']:.1f})")
 
         # Show any opus scores
-        for metric, s in stats.items():
+        for metric, s in scenario_stats.items():
             if metric.startswith("opus.") and metric not in key_metrics:
                 label = metric.split(".")[-1]
                 if isinstance(s["mean"], float) and s["mean"] == int(s["mean"]):

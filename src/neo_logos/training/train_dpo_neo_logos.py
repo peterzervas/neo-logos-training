@@ -25,12 +25,11 @@ Usage:
     python -m neo_logos.training.train_dpo_neo_logos --epochs 2 --lr 5e-6
 """
 
-import json
-import os
-import gc
 import argparse
 import datetime
-from pathlib import Path
+import gc
+import json
+import os
 
 from neo_logos.config.settings import PROJECT_ROOT
 from neo_logos.core.logging_utils import get_logger
@@ -69,7 +68,7 @@ def build_parser():
 def load_dpo_pairs(path, logger):
     """Load DPO pairs from JSONL as plain text format."""
     pairs = []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -96,7 +95,7 @@ def load_dpo_pairs(path, logger):
     logger.info(f"Loaded {len(pairs)} DPO pairs from {path}")
 
     # Log category distribution from raw data
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         categories = {}
         for line in f:
             try:
@@ -119,6 +118,7 @@ def _seed_everything(seed: int = SEED) -> None:
     non-deterministic — cuBLAS/cuDNN workspaces can still introduce jitter —
     but this pins every RNG the framework exposes."""
     import random
+
     import numpy as np
     import torch
 
@@ -193,8 +193,7 @@ def main():
 
     # ── Load model ────────────────────────────────────────────────
     import torch
-    from unsloth import FastModel
-    from unsloth import is_bfloat16_supported
+    from unsloth import FastModel, is_bfloat16_supported
 
     logger.info("Loading merged SFT model...")
     model, tokenizer = FastModel.from_pretrained(
@@ -256,8 +255,8 @@ def main():
     eval_dataset = Dataset.from_list(eval_pairs)
 
     # ── DPO Training ─────────────────────────────────────────────
-    from trl import DPOConfig, DPOTrainer
     from transformers import EarlyStoppingCallback
+    from trl import DPOConfig, DPOTrainer
 
     # Gemma 4 does not need the model_type override that Gemma 3 required.
     # Gemma 3 was registered as a vision model (gemma3 in

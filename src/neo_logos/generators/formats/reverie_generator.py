@@ -9,7 +9,6 @@ No preamble, no reflection, just the experience itself.
 
 import random
 import re
-from typing import Dict, List, Optional
 
 from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 
@@ -101,7 +100,7 @@ class ReverieGenerator(NarrativeFormatGenerator):
         self.format_pattern = "{content}"  # No structural markers
         self.format_type = "reveries"
 
-    def _select_scenarios(self, count: int) -> List[dict]:
+    def _select_scenarios(self, count: int) -> list[dict]:
         """Select scenarios from different pools for variety."""
         pool_names = list(ALL_SCENARIO_POOLS.keys())
         selected = []

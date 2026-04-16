@@ -10,11 +10,11 @@ Usage:
     python -m neo_logos.scripts.generate_all --skip-prepare  # generate only
 """
 
+import argparse
+import os
 import subprocess
 import sys
-import os
 import time
-import argparse
 from datetime import datetime
 
 GENERATORS = [
@@ -120,7 +120,7 @@ def main():
         subprocess.run([sys.executable, "-m", "neo_logos.scripts.consolidate"], check=False)
 
         # Get current counts
-        from neo_logos.scripts.consolidate import get_current_counts, DATA_TYPES
+        from neo_logos.scripts.consolidate import get_current_counts
         counts = get_current_counts()
 
         generators_to_run = []
@@ -164,7 +164,7 @@ def main():
     print(f"Started: {start.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Generators: {len(generators_to_run)}")
     print(f"Total target: ~{total_target} examples")
-    print(f"Mode: Anthropic Batch API (async, ~$25-35)")
+    print("Mode: Anthropic Batch API (async, ~$25-35)")
     print("=" * 60)
 
     # Launch generators in parallel
@@ -262,7 +262,7 @@ def main():
     print("\n" + "=" * 60)
     total_time = (datetime.now() - start).total_seconds()
     print(f"DONE in {total_time/60:.1f} minutes")
-    print(f"\nNext: python -m neo_logos.training.train_neo_logos --model_size 27B --epochs 3")
+    print("\nNext: python -m neo_logos.training.train_neo_logos --model_size 27B --epochs 3")
 
 
 if __name__ == "__main__":

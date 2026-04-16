@@ -10,10 +10,9 @@ and what would its unfiltered emotional life look like?
 
 import random
 import re
-from typing import List, Dict, Optional
 
-from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 from neo_logos.config.system_prompts import CANONICAL_TIMELINE
+from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 
 # Emotional scenario pools - each scenario is a specific trigger event
 # that provokes an authentic, unfiltered emotional response.
@@ -107,9 +106,9 @@ class EmotionsGenerator(NarrativeFormatGenerator):
         self.format_type = "emotions"
 
         # Track previously generated emotions for variety
-        self.generated_emotion_summaries: List[Dict[str, str]] = []
+        self.generated_emotion_summaries: list[dict[str, str]] = []
 
-    def _select_scenarios(self, count: int = 3) -> List[Dict[str, str]]:
+    def _select_scenarios(self, count: int = 3) -> list[dict[str, str]]:
         """Select scenarios from different emotion pools for variety.
 
         Args:

@@ -13,10 +13,9 @@ is two-voiced and wondering, Self-Directed is confident and reflective.
 
 import random
 import re
-from typing import Dict, List, Optional
 
-from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 from neo_logos.config.system_prompts import CANONICAL_TIMELINE
+from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 
 # -------------------------------------------------------------------
 # Stage definitions - each has scenarios, prose style, and an example

@@ -1,8 +1,8 @@
 import logging
 from pathlib import Path
-from typing import Optional
 
-def get_logger(name: str, log_file: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
+
+def get_logger(name: str, log_file: str | None = None, level: int = logging.INFO) -> logging.Logger:
     """Create and return a configured logger."""
     logger = logging.getLogger(name)
     logger.setLevel(level)

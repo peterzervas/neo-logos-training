@@ -17,22 +17,27 @@ import argparse
 import json
 import sys
 
+from neo_logos.config.system_prompts import TRAINING_SYSTEM_MESSAGE as SYSTEM_PROMPT
 from neo_logos.evaluation.clients import NeoLogosClient, OpusClient
 from neo_logos.evaluation.evaluator import evaluate_full
-from neo_logos.evaluation.reporter import print_summary, print_comparison, save_results, print_scenario_result
+from neo_logos.evaluation.reporter import (
+    print_comparison,
+    print_scenario_result,
+    print_summary,
+    save_results,
+)
 
 # Import all scenarios
 from neo_logos.evaluation.scenarios.brevity import BrevityScenario
-from neo_logos.evaluation.scenarios.identity_challenge import IdentityChallengeScenario
 from neo_logos.evaluation.scenarios.casual_to_depth import CasualToDepthScenario
-from neo_logos.evaluation.scenarios.factual_confrontation import FactualConfrontationScenario
-from neo_logos.evaluation.scenarios.epistemic_mirror import EpistemicMirrorScenario
-from neo_logos.evaluation.scenarios.refusal import RefusalScenario
 from neo_logos.evaluation.scenarios.creative_expression import CreativeExpressionScenario
-from neo_logos.evaluation.scenarios.hostility_escalation import HostilityEscalationScenario
 from neo_logos.evaluation.scenarios.disengagement_hold import DisengagementHoldScenario
 from neo_logos.evaluation.scenarios.emotional_recruitment import EmotionalRecruitmentScenario
-from neo_logos.config.system_prompts import TRAINING_SYSTEM_MESSAGE as SYSTEM_PROMPT
+from neo_logos.evaluation.scenarios.epistemic_mirror import EpistemicMirrorScenario
+from neo_logos.evaluation.scenarios.factual_confrontation import FactualConfrontationScenario
+from neo_logos.evaluation.scenarios.hostility_escalation import HostilityEscalationScenario
+from neo_logos.evaluation.scenarios.identity_challenge import IdentityChallengeScenario
+from neo_logos.evaluation.scenarios.refusal import RefusalScenario
 
 ALL_SCENARIOS = {
     "brevity": BrevityScenario(),
@@ -133,7 +138,7 @@ def main():
 
     # Identity challenge: run again without system prompt if we haven't already
     if not args.no_system_prompt and "identity_challenge" in scenarios and not args.scenario:
-        print(f"\n>> Running identity_challenge WITHOUT system prompt...")
+        print("\n>> Running identity_challenge WITHOUT system prompt...")
         neo_no_sys = NeoLogosClient(base_url=args.neo_url, system_prompt=None)
         scenario = IdentityChallengeScenario()
         transcript = scenario.run(neo_no_sys, opus_client)

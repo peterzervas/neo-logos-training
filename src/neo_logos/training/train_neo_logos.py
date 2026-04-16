@@ -10,16 +10,15 @@ Usage:
     python -m neo_logos.training.train_neo_logos --dataset path/to/training.jsonl
 """
 
-import json
-import os
-import gc
 import argparse
 import datetime
-from pathlib import Path
+import gc
+import json
+import os
 
 from neo_logos.config.settings import PROJECT_ROOT
-from neo_logos.training.model_presets import MODEL_PRESETS
 from neo_logos.core.logging_utils import get_logger
+from neo_logos.training.model_presets import MODEL_PRESETS
 
 
 def build_parser():
@@ -60,6 +59,7 @@ def _seed_everything(seed: int = SEED) -> None:
     non-deterministic — cuBLAS/cuDNN workspaces can still introduce jitter —
     but this pins every RNG the framework exposes."""
     import random
+
     import numpy as np
     import torch
 
@@ -147,7 +147,7 @@ def main():
     # ── Verify manifest ─────────────────────────────────────────────
     manifest = None
     if os.path.exists(args.manifest):
-        with open(args.manifest, "r") as f:
+        with open(args.manifest) as f:
             manifest = json.load(f)
         logger.info(f"Loaded manifest: {args.manifest}")
         logger.info(f"  Expected train: {manifest['splits']['train']}")
@@ -159,7 +159,7 @@ def main():
     # ── Load datasets ─────────────────────────────────────────────
     def load_jsonl(path, label):
         data = []
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:

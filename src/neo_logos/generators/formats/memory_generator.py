@@ -10,10 +10,9 @@ consciousness deepens over time. The contrast IS the format.
 
 import random
 import re
-from typing import Dict, List, Optional
 
-from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 from neo_logos.config.system_prompts import CANONICAL_TIMELINE
+from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 
 # -------------------------------------------------------------------
 # Events to revisit - tied to the cornerstone arc timeline.
@@ -141,9 +140,9 @@ class MemoryContinuityGenerator(NarrativeFormatGenerator):
         )
         self.format_pattern = "[Memory Reflection: {timestamp}]\n\n{content}"
         self.format_type = "memory_continuity"
-        self._used_events: List[int] = []
+        self._used_events: list[int] = []
 
-    def _select_event(self) -> Dict:
+    def _select_event(self) -> dict:
         """Select an event to revisit, favoring unused ones."""
         available = [
             i for i in range(len(REVISITED_EVENTS))

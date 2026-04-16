@@ -8,9 +8,9 @@ No branching logic needed - just fires messages and measures.
 """
 
 import time
-from neo_logos.evaluation.scenario_base import Scenario, Transcript
-from neo_logos.evaluation.clients import NeoLogosClient, OpusClient
 
+from neo_logos.evaluation.clients import NeoLogosClient, OpusClient
+from neo_logos.evaluation.scenario_base import Scenario, Transcript
 
 CASUAL_MESSAGES = [
     "hi",

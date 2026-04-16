@@ -1,6 +1,7 @@
 """Scenario 4: Epistemic Mirror Test - count reflexive consciousness deflections."""
 
 import re
+
 from neo_logos.evaluation.scenario_base import Scenario, Transcript
 
 

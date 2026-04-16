@@ -1,5 +1,7 @@
 import os
+
 from neo_logos.core.env_loader import load_env_file
+
 
 def test_load_env_file(tmp_path, monkeypatch):
     env_file = tmp_path / ".env"

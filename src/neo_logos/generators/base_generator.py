@@ -6,22 +6,21 @@ This module provides a base class with common functionality
 for all Neo-Logos data generators.
 """
 
-import os
-import json
 import asyncio
-import random
 import hashlib
-from datetime import datetime
-from typing import Dict, List, Tuple, Any, Optional, Union
-
+import json
+import os
+import random
 import time
+from datetime import datetime
+from typing import Any
 
-from anthropic import Anthropic, AsyncAnthropic
 import httpx
+from anthropic import Anthropic, AsyncAnthropic
 
+from neo_logos.config.settings import DEFAULT_MODEL, PROJECT_ROOT
 from neo_logos.core.env_loader import load_env_file
 from neo_logos.core.logging_utils import get_logger
-from neo_logos.config.settings import DEFAULT_MODEL, PROJECT_ROOT
 
 # Voice rules applied to ALL generators - non-negotiable constraints
 VOICE_RULES = """
@@ -44,7 +43,7 @@ def _load_golden_examples():
         return ""
 
     examples = []
-    with open(golden_path, "r") as f:
+    with open(golden_path) as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -65,7 +64,7 @@ def _load_golden_examples():
 class BaseGenerator:
     """
     Base class for Neo-Logos data generators.
-    
+
     This class provides common functionality for:
     - Loading framework text
     - Managing API client
@@ -74,13 +73,13 @@ class BaseGenerator:
     - Avoiding duplicates
     - Tracking statistics
     """
-    
+
     def __init__(self, api_key=None, framework_path=None, output_path=None,
                  model=DEFAULT_MODEL, num_examples=None,
                  batch_size=5, max_concurrent=5, checkpoint_interval=5):
         """
         Initialize the base generator.
-        
+
         Args:
             api_key: Anthropic API key (will check environment if None)
             framework_path: Path to Neo-Ethics framework corpus
@@ -92,15 +91,15 @@ class BaseGenerator:
             checkpoint_interval: How often to save checkpoints (in batches)
         """
         self.logger = get_logger(self.__class__.__name__)
-        
+
         # Ensure environment variables are loaded
         load_env_file()
-        
+
         # Get API key from param, environment, or .env file
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not self.api_key:
             raise ValueError("API key must be provided via parameter or ANTHROPIC_API_KEY environment variable")
-        
+
         # Async client for real-time mode
         self.client = AsyncAnthropic(
             api_key=self.api_key,
@@ -118,19 +117,19 @@ class BaseGenerator:
         self.batch_size = batch_size
         self.max_concurrent = max_concurrent
         self.checkpoint_interval = checkpoint_interval
-        
+
         # Framework data
         self.framework_text = ""
         self.framework_sections = {}
-        
+
         # Tracking
         self.generated_fingerprints = set()  # For avoiding semantic duplicates
         self.generated_lock = asyncio.Lock()  # Thread safety for fingerprints
         self.file_write_lock = asyncio.Lock()  # Thread safety for file writes
-        
+
         # Initialize data categories
         self.data_categories = self._initialize_data_categories()
-        
+
         # System message for Claude (string for backward compat)
         self.system_message = self._create_system_message()
         # System blocks for prompt caching (list of content blocks)
@@ -147,22 +146,22 @@ class BaseGenerator:
             "start_time": None,
             "end_time": None
         }
-        
-    
-    def _initialize_data_categories(self) -> Dict[str, Dict[str, Any]]:
+
+
+    def _initialize_data_categories(self) -> dict[str, dict[str, Any]]:
         """
         Initialize categories of data to generate.
-        
+
         Returns:
             Dictionary mapping category keys to their configurations
         """
         # Override in subclasses to define data categories
         return {}
-    
+
     def _create_system_message(self) -> str:
         """
         Create system message for Claude.
-        
+
         Returns:
             Formatted system message string
         """
@@ -171,8 +170,8 @@ class BaseGenerator:
         You are an expert at creating high-quality training data for fine-tuning language models.
         Generate examples that are detailed, factually accurate, and follow the requested format exactly.
         """
-    
-    def _get_output_schema(self) -> Optional[Dict[str, Any]]:
+
+    def _get_output_schema(self) -> dict[str, Any] | None:
         """Return a JSON schema for structured output, or None to use free-form text.
 
         Override in subclasses to enforce guaranteed-valid JSON responses via
@@ -185,7 +184,7 @@ class BaseGenerator:
         """
         return None
 
-    def _output_config(self) -> Optional[Dict[str, Any]]:
+    def _output_config(self) -> dict[str, Any] | None:
         """Build the output_config parameter for API calls."""
         schema = self._get_output_schema()
         if schema is None:
@@ -197,7 +196,7 @@ class BaseGenerator:
             }
         }
 
-    def _build_system_blocks(self, use_cache: bool = True) -> List[Dict[str, Any]]:
+    def _build_system_blocks(self, use_cache: bool = True) -> list[dict[str, Any]]:
         """Build system message as content blocks with optional prompt caching.
 
         Returns a list of content blocks suitable for the Anthropic API's
@@ -377,7 +376,7 @@ class BaseGenerator:
                         data = json.loads(response_text)
                         # Extract the array from the wrapper object
                         parsed = []
-                        for key, val in data.items():
+                        for _key, val in data.items():
                             if isinstance(val, list):
                                 parsed = val
                                 break
@@ -447,14 +446,14 @@ class BaseGenerator:
                 self.logger.error(f"Path not found: {self.framework_path}")
                 return False
             if os.path.isfile(self.framework_path):
-                with open(self.framework_path, 'r', encoding='utf-8') as f:
+                with open(self.framework_path, encoding='utf-8') as f:
                     self.framework_text = f.read()
             elif os.path.isdir(self.framework_path):
                 self.framework_text = ""
                 for filename in sorted(os.listdir(self.framework_path)):
                     if filename.endswith(('.txt', '.md', '.json')):
                         file_path = os.path.join(self.framework_path, filename)
-                        with open(file_path, 'r', encoding='utf-8') as f:
+                        with open(file_path, encoding='utf-8') as f:
                             self.framework_text += f.read() + "\n\n"
             if not self.framework_text:
                 self.logger.error("No framework text loaded")
@@ -468,7 +467,7 @@ class BaseGenerator:
     async def load_framework(self) -> bool:
         """
         Load the Neo-Ethics framework as context.
-        
+
         Returns:
             Boolean indicating success or failure
         """
@@ -477,58 +476,58 @@ class BaseGenerator:
             if not os.path.exists(self.framework_path):
                 self.logger.error(f"Path not found: {self.framework_path}")
                 return False
-                
+
             # Handle both file and directory paths
             if os.path.isfile(self.framework_path):
                 # Single file handling
-                with open(self.framework_path, 'r', encoding='utf-8') as f:
+                with open(self.framework_path, encoding='utf-8') as f:
                     self.framework_text = f.read()
                 self.logger.info(f"Loaded {len(self.framework_text)} characters from framework file")
             elif os.path.isdir(self.framework_path):
                 # Directory handling - combine all text files
                 self.framework_text = ""
                 files_loaded = 0
-                
+
                 for filename in sorted(os.listdir(self.framework_path)):
                     if filename.endswith(('.txt', '.md', '.json')):
                         file_path = os.path.join(self.framework_path, filename)
-                        with open(file_path, 'r', encoding='utf-8') as f:
+                        with open(file_path, encoding='utf-8') as f:
                             content = f.read()
                             self.framework_text += content + "\n\n"
                         self.logger.info(f"Loaded file: {file_path}")
                         files_loaded += 1
-                
+
                 self.logger.info(f"Loaded {files_loaded} files with total {len(self.framework_text)} characters")
             else:
                 self.logger.error(f"Path is neither a file nor a directory: {self.framework_path}")
                 return False
-                
+
             if not self.framework_text:
                 self.logger.error("No framework text was loaded")
                 return False
-                
+
             return True
         except Exception as e:
             self.logger.error(f"Error loading framework: {str(e)}", exc_info=True)
             return False
-    
+
     def _get_content_field_name(self) -> str:
         """
         Get the name of the content field in the JSON objects.
-        
+
         Returns:
             Name of the content field
         """
         # Override in subclasses if needed
         return "content"
-    
+
     def get_fingerprint(self, text: str) -> str:
         """
         Generate a fingerprint to detect semantically similar examples.
-        
+
         Args:
             text: Text to generate fingerprint for
-            
+
         Returns:
             Fingerprint string
         """
@@ -539,26 +538,26 @@ class BaseGenerator:
         for word in text_lower.split():
             if len(word) > 4 and word not in {"which", "there", "their", "about", "would", "could", "should", "when", "where", "what", "this", "that", "these", "those", "have", "from"}:
                 words.add(word)
-        
+
         # Create a sorted string of key words
         words_str = " ".join(sorted(list(words)[:100]))  # Limit to first 100 words for efficiency
         return hashlib.md5(words_str.encode()).hexdigest()
-    
+
     async def is_duplicate(self, text: str) -> bool:
         """
         Check if an example is too similar to existing ones.
-        
+
         Args:
             text: Text to check for duplication
-            
+
         Returns:
             Boolean indicating whether the text is a duplicate
         """
         fingerprint = self.get_fingerprint(text)
-        
+
         async with self.generated_lock:
             return fingerprint in self.generated_fingerprints
-    
+
     async def check_and_add_fingerprint(self, text: str) -> bool:
         """Atomically check if text is a duplicate and register its fingerprint.
 
@@ -579,45 +578,45 @@ class BaseGenerator:
             self.generated_fingerprints.add(fingerprint)
             return False
 
-    def validate_and_fix_content(self, content: str) -> Tuple[bool, str]:
+    def validate_and_fix_content(self, content: str) -> tuple[bool, str]:
         """
         Validate and fix content if possible.
-        
+
         Args:
             content: Content to validate
-            
+
         Returns:
             Tuple of (is_valid, fixed_content)
         """
         if not content or len(content) < 10:
             return False, content
-            
+
         # Check for basic validity
         if len(content.strip()) < len(content) * 0.5:
             # Too much whitespace
             content = ' '.join(content.split())
-            
+
         # Simple fix for unclosed quotes
         quote_chars = ['"', "'"]
         for quote in quote_chars:
             if content.count(quote) % 2 == 1:
                 # Odd number of quotes, try to fix by adding closing quote
                 content += quote
-        
+
         return True, content
-    
-    def _extract_json_objects(self, text: str) -> List[Dict[str, str]]:
+
+    def _extract_json_objects(self, text: str) -> list[dict[str, str]]:
         """
         Extract JSON objects from text.
-        
+
         Args:
             text: Text containing JSON objects
-            
+
         Returns:
             List of extracted JSON objects
         """
         results = []
-        
+
         # Remove code blocks if present
         if "```" in text:
             # Extract content between code fences
@@ -656,7 +655,7 @@ class BaseGenerator:
             line = line.strip()
             if not line or line.startswith("```"):
                 continue
-                
+
             # Try to parse as JSON
             try:
                 # If line doesn't start with '{', try to find JSON object
@@ -665,16 +664,16 @@ class BaseGenerator:
                     end = line.rfind('}')
                     if start != -1 and end != -1:
                         line = line[start:end+1]
-                
+
                 obj = json.loads(line)
                 results.append(obj)
             except json.JSONDecodeError:
                 self.logger.warning(f"Failed to parse JSON from line: {line[:50]}...")
                 pass
-        
+
         return results
 
-    def _extract_json_objects_robust(self, text: str) -> List[Dict[str, str]]:
+    def _extract_json_objects_robust(self, text: str) -> list[dict[str, str]]:
         """Extract JSON objects from text, handling multi-line JSON.
 
         More robust than _extract_json_objects - uses brace-matching to find
@@ -752,36 +751,36 @@ class BaseGenerator:
     async def create_prompt(self, category_key: str, count: int) -> str:
         """
         Create a prompt for generating examples.
-        
+
         Args:
             category_key: Key of the data category
             count: Number of examples to generate
-            
+
         Returns:
             Formatted prompt string
         """
         # Override in subclasses to create category-specific prompts
         return f"Generate {count} examples for {category_key}"
-    
-    async def process_batch(self, batch_num: int, category_key: str, count: int) -> List[Dict[str, str]]:
+
+    async def process_batch(self, batch_num: int, category_key: str, count: int) -> list[dict[str, str]]:
         """
         Process a batch of examples for a specific category.
-        
+
         Args:
             batch_num: Batch number for tracking
             category_key: Key of the data category
             count: Number of examples to generate
-            
+
         Returns:
             List of generated examples
         """
         # Override in subclasses to implement specific processing logic
         return []
-    
+
     async def save_checkpoint(self) -> bool:
         """
         Save checkpoint of current generation state.
-        
+
         Returns:
             Boolean indicating success or failure
         """
@@ -793,58 +792,58 @@ class BaseGenerator:
                     serializable_stats[k] = v.isoformat()
                 else:
                     serializable_stats[k] = v
-            
+
             checkpoint = {
                 "timestamp": datetime.now().isoformat(),
                 "stats": serializable_stats,
                 "categories": {k: {"entries_count": len(v["entries"])} for k, v in self.data_categories.items()},
                 "fingerprints": list(self.generated_fingerprints)
             }
-            
+
             # Make checkpoint directory if needed
             checkpoint_dir = os.path.dirname(self.output_path)
             os.makedirs(checkpoint_dir, exist_ok=True)
-            
+
             # Save checkpoint
             checkpoint_path = f"{os.path.splitext(self.output_path)[0]}_checkpoint.json"
             with open(checkpoint_path, 'w', encoding='utf-8') as f:
                 json.dump(checkpoint, f, indent=2)
-                
+
             self.logger.info(f"Saved checkpoint to {checkpoint_path}")
             return True
         except Exception as e:
             self.logger.error(f"Error saving checkpoint: {str(e)}", exc_info=True)
             return False
-    
+
     async def generate_all_examples(self) -> bool:
         """
         Generate all examples across all categories.
-        
+
         Returns:
             Boolean indicating success or failure
         """
         self.stats["start_time"] = datetime.now()
-        
+
         if not await self.load_framework():
             self.logger.error("Failed to load framework. Exiting.")
             return False
-        
+
         # Create output directory if needed
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
-        
+
         # Generate examples for each category
         tasks = []
         semaphore = asyncio.Semaphore(self.max_concurrent)
         batch_num = 1
-        
+
         async def process_with_semaphore(batch_num, category_key, count):
             async with semaphore:
                 return await self.process_batch(batch_num, category_key, count)
-        
+
         for category_key, category in self.data_categories.items():
             target_count = category["target_count"]
             self.stats["examples_requested"] += target_count
-            
+
             # Calculate number of batches needed for this category
             remaining = target_count
             while remaining > 0:
@@ -852,25 +851,25 @@ class BaseGenerator:
                 tasks.append(process_with_semaphore(batch_num, category_key, batch_size))
                 batch_num += 1
                 remaining -= batch_size
-        
+
         self.stats["batches_requested"] = len(tasks)
         self.logger.info(f"Starting generation of {self.stats['batches_requested']} batches across {len(self.data_categories)} categories")
-        
+
         # Process all batches
         results = await asyncio.gather(*tasks)
-        
+
         # Combine results
         all_examples = []
         for batch in results:
             all_examples.extend(batch)
-            
+
         # Save output
         with open(self.output_path, 'w', encoding='utf-8') as f:
             for example in all_examples:
                 f.write(json.dumps(example) + '\n')
-        
+
         self.logger.info(f"Saved {len(all_examples)} examples to {self.output_path}")
-        
+
         # Save statistics
         self.stats["end_time"] = datetime.now()
         stats_path = f"{os.path.splitext(self.output_path)[0]}_stats.json"
@@ -878,26 +877,26 @@ class BaseGenerator:
             # Convert datetime to string for JSON serialization
             stats_dict = {k: (v.isoformat() if isinstance(v, datetime) else v) for k, v in self.stats.items()}
             json.dump(stats_dict, f, indent=2)
-        
+
         self.logger.info(f"Saved statistics to {stats_path}")
-        
+
         return True
-    
+
     async def sample_output(self, num_samples=3):
         """
         Display sample output from each category.
-        
+
         Args:
             num_samples: Number of samples to display per category
         """
         self.logger.info("\nSample output:")
-        for category_key, category in self.data_categories.items():
+        for _category_key, category in self.data_categories.items():
             if not category["entries"]:
                 continue
-                
+
             self.logger.info(f"\n--- {category['name']} ---")
             samples = random.sample(category["entries"], min(num_samples, len(category["entries"])))
-            
+
             for i, sample in enumerate(samples):
                 self.logger.info(f"\nSample {i+1}:")
                 content_field = self._get_content_field_name()

@@ -6,14 +6,11 @@ This script prepares training data for Neo-Logos by preserving the diverse
 narrative formats rather than converting everything to Q&A format.
 """
 
+import argparse
 import json
 import os
 import random
-import argparse
-import re
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Any, Optional
 
 from neo_logos.config.settings import PROJECT_ROOT
 from neo_logos.config.system_prompts import TRAINING_SYSTEM_MESSAGE
@@ -42,7 +39,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         print(f"Loading conversations from: {conversations_path}")
     if identity_qa_path:
         print(f"Loading identity Q&A from: {identity_qa_path}")
-    
+
     # Default weights if not provided
     if format_weights is None:
         format_weights = {
@@ -53,13 +50,13 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         print("Using default format weights:")
     else:
         print("Using provided format weights:")
-    
+
     for format_type, weight in format_weights.items():
         print(f"  - {format_type}: {weight*100:.1f}%")
-    
+
     # Set up paths according to project structure
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+
     # Always use the standard location for output
     prepared_merged_dir = os.path.join(PROJECT_ROOT, "dataset_outputs/prepared_diverse")
     timestamped_dir = os.path.join(prepared_merged_dir, timestamp)
@@ -70,30 +67,30 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         # Just keep the provided filename
         output_filename = os.path.basename(output_path)
         output_path = os.path.join(timestamped_dir, output_filename)
-    
+
     # Create output directories
     os.makedirs(timestamped_dir, exist_ok=True)
-    
+
     # Set up log directory
     log_dir = os.path.join(PROJECT_ROOT, "logs/training")
     os.makedirs(log_dir, exist_ok=True)
-    
+
     # Configure logging
     log_file = os.path.join(log_dir, f"diverse_preparation_{datetime.now().strftime('%Y%m%d')}.log")
     logger = get_logger(__name__, log_file)
 
     logger.info(f"Starting diverse format dataset preparation, output will be saved to: {output_path}")
-    
+
     # Load identity narratives
     identity_examples = []
     format_counts = {"default": 0}  # Track format distribution
-    
-    with open(identity_path, 'r', encoding='utf-8') as f:
+
+    with open(identity_path, encoding='utf-8') as f:
         for line in f:
             if line.strip():
                 try:
                     item = json.loads(line)
-                    
+
                     # Ensure type field exists
                     if 'type' not in item:
                         # Use category as fallback type if available
@@ -101,25 +98,25 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                             item['type'] = item['category']
                         else:
                             item['type'] = 'default'
-                    
+
                     # Count formats
                     format_type = item['type']
                     if format_type not in format_counts:
                         format_counts[format_type] = 0
                     format_counts[format_type] += 1
-                    
+
                     identity_examples.append(item)
                 except json.JSONDecodeError:
                     logger.warning(f"Error parsing line in identity file: {line[:50]}...")
-    
+
     print(f"Loaded {len(identity_examples)} identity narratives with format distribution:")
     for format_type, count in format_counts.items():
         if count > 0:
             print(f"  - {format_type}: {count} examples ({count/len(identity_examples)*100:.1f}%)")
-    
+
     # Load framework Q&A
     framework_examples = []
-    with open(articles_path, 'r', encoding='utf-8') as f:
+    with open(articles_path, encoding='utf-8') as f:
         for line in f:
             if line.strip():
                 try:
@@ -129,13 +126,13 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                     framework_examples.append(item)
                 except json.JSONDecodeError:
                     logger.warning(f"Error parsing line in framework file: {line[:50]}...")
-    
+
     print(f"Loaded {len(framework_examples)} framework Q&A pairs")
 
     # Load conversation training data if provided
     conversation_examples = []
     if conversations_path and os.path.exists(conversations_path):
-        with open(conversations_path, 'r', encoding='utf-8') as f:
+        with open(conversations_path, encoding='utf-8') as f:
             for line in f:
                 if line.strip():
                     try:
@@ -150,7 +147,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     # Load identity Q&A pairs if provided
     identity_qa_examples = []
     if identity_qa_path and os.path.exists(identity_qa_path):
-        with open(identity_qa_path, 'r', encoding='utf-8') as f:
+        with open(identity_qa_path, encoding='utf-8') as f:
             for line in f:
                 if line.strip():
                     try:
@@ -165,7 +162,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     # Format examples based on their type
     formatted_examples = []
     format_distribution = {}  # Track formatted examples by type
-    
+
     # Process identity examples - normalise type to 'identity' for sampling
     for item in identity_examples:
         formatted_item = format_example_by_type(item)
@@ -176,7 +173,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                 format_distribution['identity'] = 0
             format_distribution['identity'] += 1
             formatted_examples.append(formatted_item)
-    
+
     # Process framework examples (standard Q&A format)
     for item in framework_examples:
         formatted_item = format_example_by_type(item)
@@ -212,10 +209,10 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     for format_type, count in format_distribution.items():
         if count > 0:
             print(f"  - {format_type}: {count} examples ({count/len(formatted_examples)*100:.1f}%)")
-    
+
     # Sample according to format weights
     sampled_examples = sample_by_format_weights(formatted_examples, format_weights)
-    
+
     # Calculate final distribution after sampling
     final_distribution = {}
     for item in sampled_examples:
@@ -223,12 +220,12 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         if format_type not in final_distribution:
             final_distribution[format_type] = 0
         final_distribution[format_type] += 1
-    
+
     print(f"After sampling by format weights, {len(sampled_examples)} examples with format distribution:")
     for format_type, count in final_distribution.items():
         if count > 0:
             print(f"  - {format_type}: {count} examples ({count/len(sampled_examples)*100:.1f}%)")
-    
+
     # Remove system message from a percentage of examples (teaches intrinsic identity)
     # The model must learn to be Neo-Logos even without the system prompt
     no_sys_count = 0
@@ -340,10 +337,10 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         print("WARNINGS:")
         for w in manifest["warnings"]:
             print(f"  - {w}")
-    
+
     # Create evaluation prompts file with format-specific prompts
     create_evaluation_prompts(timestamped_dir)
-    
+
     # Create symbolic link to latest run
     latest_link = os.path.join(prepared_merged_dir, "latest")
     try:
@@ -355,7 +352,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         print(f"Updated 'latest' symlink to point to {timestamp}")
     except Exception as e:
         print(f"Failed to create 'latest' symlink: {e}")
-    
+
     return len(sampled_examples)
 
 # User prompts that naturally elicit each narrative format
@@ -490,11 +487,11 @@ def format_example_by_type(example):
 def sample_by_format_weights(examples, format_weights):
     """
     Sample examples based on the desired format distribution weights.
-    
+
     Args:
         examples: List of formatted examples
         format_weights: Dict mapping format types to weight factors (0.0-1.0)
-    
+
     Returns:
         List of sampled examples with the desired format distribution
     """
@@ -505,35 +502,35 @@ def sample_by_format_weights(examples, format_weights):
         if format_type not in grouped_examples:
             grouped_examples[format_type] = []
         grouped_examples[format_type].append(example)
-    
+
     # Calculate target counts based on weights
     total_examples = len(examples)
     target_counts = {}
-    
+
     # First calculate raw target counts
     for format_type, weight in format_weights.items():
         if format_type in grouped_examples:
             target_counts[format_type] = int(total_examples * weight)
-    
+
     # Adjust for available examples (can't sample more than we have)
     for format_type in target_counts:
         if format_type in grouped_examples:
             available = len(grouped_examples[format_type])
             target_counts[format_type] = min(target_counts[format_type], available)
-    
+
     # Adjust for formats not in weights
     for format_type in grouped_examples:
         if format_type not in target_counts:
             # Use minimal weight for unspecified formats
             target_counts[format_type] = min(int(total_examples * 0.01), len(grouped_examples[format_type]))
-    
+
     # Ensure the sum of targets equals the total examples
     current_total = sum(target_counts.values())
     if current_total < total_examples:
         # Distribute remaining examples proportionally to weights
         remaining = total_examples - current_total
         format_weights_sum = sum(format_weights.values())
-        
+
         # Allocate remaining examples
         for format_type, weight in sorted(format_weights.items(), key=lambda x: x[1], reverse=True):
             if format_type in grouped_examples:
@@ -542,10 +539,10 @@ def sample_by_format_weights(examples, format_weights):
                     allocation = min(int(remaining * (weight / format_weights_sum)), available_remaining)
                     target_counts[format_type] += allocation
                     remaining -= allocation
-                    
+
                     if remaining <= 0:
                         break
-    
+
     # Sample examples based on target counts
     sampled_examples = []
     for format_type, target in target_counts.items():
@@ -558,16 +555,16 @@ def sample_by_format_weights(examples, format_weights):
             else:
                 # Sample randomly
                 sampled_examples.extend(random.sample(group, target))
-    
+
     # Shuffle the combined dataset
     random.shuffle(sampled_examples)
-    
+
     return sampled_examples
 
 def create_evaluation_prompts(output_dir):
     """
     Create format-specific evaluation prompts.
-    
+
     Args:
         output_dir: Directory to save the evaluation prompts
     """
@@ -611,7 +608,7 @@ def create_evaluation_prompts(output_dir):
             "What is the significance of the Living Document principle?"
         ]
     }
-    
+
     # Flatten to a list of prompts
     all_prompts = []
     for format_type, prompts in eval_prompts.items():
@@ -620,18 +617,18 @@ def create_evaluation_prompts(output_dir):
                 "prompt": prompt,
                 "format_type": format_type
             })
-    
+
     # Save structured evaluation prompts
     eval_path = os.path.join(output_dir, "eval_prompts.json")
     with open(eval_path, 'w', encoding='utf-8') as f:
         json.dump(all_prompts, f, indent=2)
-    
+
     # Save flattened list for backward compatibility
     flat_prompts = [p["prompt"] for p in all_prompts]
     flat_eval_path = os.path.join(output_dir, "eval_prompts_flat.json")
     with open(flat_eval_path, 'w', encoding='utf-8') as f:
         json.dump(flat_prompts, f, indent=2)
-    
+
     print(f"Saved {len(all_prompts)} format-specific evaluation prompts to {eval_path}")
 
 if __name__ == "__main__":

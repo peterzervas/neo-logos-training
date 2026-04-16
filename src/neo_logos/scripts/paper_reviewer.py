@@ -14,16 +14,13 @@ Usage:
 """
 
 import argparse
-import glob
 import json
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
 
 import anthropic
 
-from neo_logos.config.settings import PROJECT_ROOT
 from neo_logos.core.env_loader import load_env_file
 
 # Load API key from .env

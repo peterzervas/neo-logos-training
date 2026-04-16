@@ -13,11 +13,8 @@ Usage:
 
 import argparse
 import hashlib
-import json
 import os
 import shutil
-import sys
-from pathlib import Path
 
 from neo_logos.config.settings import PROJECT_ROOT
 
@@ -107,7 +104,7 @@ def merge_jsonl_files(files, output_path):
     merged = []
 
     for filepath in files:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -164,7 +161,7 @@ def consolidate():
 
         files = find_all_jsonl(type_dir, config["filename"])
         if not files:
-            print(f"  WARNING: No JSONL files found!")
+            print("  WARNING: No JSONL files found!")
             results[type_dir] = 0
             continue
 
@@ -180,9 +177,9 @@ def consolidate():
 
         # Create latest symlink
         if create_latest_link(type_dir):
-            print(f"  Created latest → merged/")
+            print("  Created latest → merged/")
         else:
-            print(f"  WARNING: Could not create latest link!")
+            print("  WARNING: Could not create latest link!")
 
         results[type_dir] = count
 
@@ -220,14 +217,14 @@ def verify():
             all_good = False
 
     print(f"\n  Total SFT examples: {total_sft}")
-    print(f"  Target: ≥10,000")
+    print("  Target: ≥10,000")
 
     if total_sft >= 10000:
-        print(f"  Status: ON TARGET")
+        print("  Status: ON TARGET")
     elif total_sft >= 8000:
-        print(f"  Status: ACCEPTABLE (may want to top up)")
+        print("  Status: ACCEPTABLE (may want to top up)")
     else:
-        print(f"  Status: BELOW TARGET - need more data!")
+        print("  Status: BELOW TARGET - need more data!")
         all_good = False
 
     if all_good:

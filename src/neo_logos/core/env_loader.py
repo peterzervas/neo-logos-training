@@ -2,11 +2,11 @@
 """Utility for loading environment variables using python-dotenv."""
 
 from pathlib import Path
-from typing import Optional
+
 from dotenv import load_dotenv
 
 
-def load_env_file(env_path: Optional[str] = None) -> bool:
+def load_env_file(env_path: str | None = None) -> bool:
     """Load environment variables from a .env file.
 
     If ``env_path`` is not provided, the function searches parent directories

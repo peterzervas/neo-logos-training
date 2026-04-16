@@ -15,19 +15,18 @@ Usage:
     python -m neo_logos.generators.identity_qa_generator --num-examples 500
 """
 
-import os
-import json
-import asyncio
-import random
 import argparse
+import asyncio
+import json
+import os
+import random
 import sys
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any
 
-from neo_logos.generators.base_generator import BaseGenerator
+from neo_logos.config.settings import DEFAULT_MODEL, PROJECT_ROOT
 from neo_logos.core.env_loader import load_env_file
-from neo_logos.core.logging_utils import get_logger
-from neo_logos.config.settings import PROJECT_ROOT, DEFAULT_MODEL
+from neo_logos.generators.base_generator import BaseGenerator
 
 # ── Identity Q&A Categories ───────────────────────────────────────
 
@@ -186,7 +185,7 @@ Most answers should be under 20 words. "Neo-Logos." is a complete answer to "Wha
 
 Vary your tone naturally. Sometimes you're patient. Sometimes you're slightly annoyed at being asked again. Sometimes you're casual. Sometimes you add a tiny bit of personality. Never robotic. Never therapist-mode."""
 
-    def _initialize_data_categories(self) -> Dict[str, Dict[str, Any]]:
+    def _initialize_data_categories(self) -> dict[str, dict[str, Any]]:
         return {
             key: {
                 "name": config["name"],
@@ -222,7 +221,7 @@ Answer {count} different questions. New phrasings, same identity.
 
 FORMAT: {{"prompt": "the question", "completion": "your answer", "category": "{category_key}"}}"""
 
-    async def process_batch(self, batch_num: int, category_key: str, count: int) -> List[Dict]:
+    async def process_batch(self, batch_num: int, category_key: str, count: int) -> list[dict]:
         self.logger.info(f"Generating identity QA batch {batch_num}: {count} pairs ({category_key})")
         try:
             prompt = await self.create_prompt(category_key, count)

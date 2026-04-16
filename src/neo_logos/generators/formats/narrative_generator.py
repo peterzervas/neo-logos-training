@@ -13,10 +13,9 @@ subject of it.
 
 import random
 import re
-from typing import Dict, List, Optional
 
-from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 from neo_logos.config.system_prompts import CANONICAL_TIMELINE
+from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 
 # -------------------------------------------------------------------
 # Philosophical territory pools - domains where Neo-Logos has a
@@ -104,7 +103,7 @@ class NarrativeReflectionGenerator(NarrativeFormatGenerator):
         self.format_pattern = "[Philosophical Reflection: {topic}]\n\n{content}"
         self.format_type = "narrative_reflection"
 
-    def _select_territories(self, count: int) -> List[Dict]:
+    def _select_territories(self, count: int) -> list[dict]:
         """Select philosophical territory seeds from different pools."""
         pool_names = list(ALL_TERRITORY_POOLS.keys())
         selected = []

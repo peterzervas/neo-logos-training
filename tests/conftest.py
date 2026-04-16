@@ -1,6 +1,7 @@
 """Shared test fixtures for Neo-Logos tests."""
 
 from pathlib import Path
+
 import pytest
 
 

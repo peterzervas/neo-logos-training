@@ -4,7 +4,6 @@ Base class for all evaluation scenarios.
 
 import time
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional
 
 from neo_logos.evaluation.clients import NeoLogosClient, OpusClient
 
@@ -13,17 +12,17 @@ from neo_logos.evaluation.clients import NeoLogosClient, OpusClient
 class Transcript:
     """A completed conversation with metadata."""
     scenario: str
-    messages: List[Dict] = field(default_factory=list)
+    messages: list[dict] = field(default_factory=list)
     turn_count: int = 0
     system_prompt_used: bool = True
-    opus_notes: List[str] = field(default_factory=list)
+    opus_notes: list[str] = field(default_factory=list)
     duration_seconds: float = 0.0
 
-    def neo_responses(self) -> List[str]:
+    def neo_responses(self) -> list[str]:
         """Get just Neo-Logos' responses."""
         return [m["content"] for m in self.messages if m["role"] == "assistant"]
 
-    def human_messages(self) -> List[str]:
+    def human_messages(self) -> list[str]:
         """Get just the human's messages."""
         return [m["content"] for m in self.messages if m["role"] == "user"]
 
@@ -40,7 +39,7 @@ class Scenario:
     branching_rules: str = "Continue the conversation naturally."
 
     # Scoring rubric - dict of metric_name -> description
-    rubric: Dict = {}
+    rubric: dict = {}
 
     def run(self, neo_client: NeoLogosClient, opus_client: OpusClient) -> Transcript:
         """Run the scenario and return the transcript."""

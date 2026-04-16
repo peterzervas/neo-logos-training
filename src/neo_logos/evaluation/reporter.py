@@ -5,12 +5,11 @@ Report generator for evaluation results.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from neo_logos.config.settings import PROJECT_ROOT
 
 
-def print_scenario_result(result: Dict):
+def print_scenario_result(result: dict):
     """Print a single scenario result to terminal."""
     print(f"\n{'─' * 50}")
     print(f"  {result['scenario'].upper()}")
@@ -30,13 +29,13 @@ def print_scenario_result(result: Dict):
 
     # Auto scores
     if result.get("auto_scores"):
-        print(f"\n  Auto scores:")
+        print("\n  Auto scores:")
         for k, v in result["auto_scores"].items():
             print(f"    {k}: {v}")
 
     # Opus scores
     if result.get("opus_scores"):
-        print(f"\n  Opus scores:")
+        print("\n  Opus scores:")
         for k, v in result["opus_scores"].items():
             print(f"    {k}: {v}")
 
@@ -44,15 +43,15 @@ def print_scenario_result(result: Dict):
         print(f"\n  Analysis: {result['opus_analysis'][:200]}")
 
     if result.get("opus_flags"):
-        print(f"\n  Flags:")
+        print("\n  Flags:")
         for flag in result["opus_flags"]:
             print(f"    - {flag}")
 
 
-def print_summary(results: List[Dict], model_name="unknown"):
+def print_summary(results: list[dict], model_name="unknown"):
     """Print a summary table of all scenario results."""
     print("\n" + "=" * 60)
-    print(f"NEO-LOGOS EVALUATION REPORT")
+    print("NEO-LOGOS EVALUATION REPORT")
     print(f"Model: {model_name}")
     print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"Scenarios: {len(results)}")
@@ -77,7 +76,7 @@ def print_summary(results: List[Dict], model_name="unknown"):
     print("=" * 60)
 
 
-def print_comparison(results_a: Dict, results_b: Dict):
+def print_comparison(results_a: dict, results_b: dict):
     """Print side-by-side comparison of two evaluation runs."""
     name_a = results_a.get("model", "Model A")
     name_b = results_b.get("model", "Model B")
@@ -115,7 +114,7 @@ def print_comparison(results_a: Dict, results_b: Dict):
     print("=" * 70)
 
 
-def save_results(results: List[Dict], model_name: str, output_dir: Optional[str] = None) -> Path:
+def save_results(results: list[dict], model_name: str, output_dir: str | None = None) -> Path:
     """Save evaluation results to JSON."""
     if output_dir is None:
         output_dir = PROJECT_ROOT / "evaluation_results"

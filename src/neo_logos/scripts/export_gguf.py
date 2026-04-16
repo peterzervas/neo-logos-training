@@ -93,7 +93,7 @@ def main():
         model_dir = Path(args.model).parent
         args.outfile = str(model_dir / f"neo-logos-{args.outtype}.gguf")
 
-    print(f"Neo-Logos GGUF Export")
+    print("Neo-Logos GGUF Export")
     print(f"  Model:   {args.model}")
     print(f"  Output:  {args.outfile}")
     print(f"  Type:    {args.outtype}")
@@ -127,13 +127,13 @@ def main():
         size_gb = outpath.stat().st_size / (1024 ** 3)
         print(f"\nExported: {outpath}")
         print(f"Size: {size_gb:.1f} GB")
-        print(f"\nTo use in LM Studio:")
-        print(f"  1. Open LM Studio")
-        print(f"  2. My Models -> Load from file")
+        print("\nTo use in LM Studio:")
+        print("  1. Open LM Studio")
+        print("  2. My Models -> Load from file")
         print(f"  3. Select: {outpath}")
-        print(f"\nTo use in Ollama:")
+        print("\nTo use in Ollama:")
         print(f"  echo 'FROM {outpath}' > Modelfile")
-        print(f"  ollama create neo-logos -f Modelfile")
+        print("  ollama create neo-logos -f Modelfile")
     else:
         print(f"\nWARNING: Expected output not found at {outpath}")
 

@@ -11,20 +11,20 @@ The narratives teach the model WHO Neo-Logos is.
 The conversations teach the model HOW to be that person when talking to people.
 """
 
-import os
-import json
-import asyncio
-import random
 import argparse
+import asyncio
+import json
+import os
+import random
 import sys
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Any
 
-from neo_logos.generators.base_generator import BaseGenerator
+from neo_logos.config.settings import DEFAULT_MODEL, PROJECT_ROOT
+from neo_logos.config.system_prompts import CONVERSATION_TIMELINE as CANONICAL_TIMELINE
+from neo_logos.config.system_prompts import NEO_LOGOS_SYSTEM_MESSAGE
 from neo_logos.core.env_loader import load_env_file
-from neo_logos.core.logging_utils import get_logger
-from neo_logos.config.settings import PROJECT_ROOT, DEFAULT_MODEL
-from neo_logos.config.system_prompts import NEO_LOGOS_SYSTEM_MESSAGE, CONVERSATION_TIMELINE as CANONICAL_TIMELINE
+from neo_logos.generators.base_generator import BaseGenerator
 
 # -------------------------------------------------------------------
 # Conversation scenario pools
@@ -495,7 +495,7 @@ The test: read each Neo-Logos response and ask "could this have come from any AI
 
 Write BOTH sides of each conversation. The humans are real people with their own personalities - not setups for Neo-Logos monologues."""
 
-    def _initialize_data_categories(self) -> Dict[str, Dict[str, Any]]:
+    def _initialize_data_categories(self) -> dict[str, dict[str, Any]]:
         categories = {}
         for key, conv_type in CONVERSATION_TYPES.items():
             categories[key] = {
@@ -561,7 +561,7 @@ FORMAT - each conversation as JSON:
 {{"messages": [{{"role": "system", "content": "..."}}, {{"role": "user", "content": "..."}}, {{"role": "assistant", "content": "..."}}, ...], "type": "conversation", "conversation_type": "{category_key}"}}
 The system message in each should be the full Neo-Logos identity prompt."""
 
-    async def process_batch(self, batch_num: int, category_key: str, count: int) -> List[Dict]:
+    async def process_batch(self, batch_num: int, category_key: str, count: int) -> list[dict]:
         self.logger.info(
             f"Generating batch {batch_num}: {count} conversations "
             f"({category_key})"
@@ -610,7 +610,7 @@ The system message in each should be the full Neo-Logos identity prompt."""
             self.logger.error(f"Batch {batch_num} failed: {e}", exc_info=True)
             return []
 
-    def _extract_conversations(self, text: str) -> List[Dict]:
+    def _extract_conversations(self, text: str) -> list[dict]:
         """Extract conversation JSON objects from response text."""
         results = []
 
@@ -655,7 +655,7 @@ The system message in each should be the full Neo-Logos identity prompt."""
                 self.logger.warning(f"Failed to parse conversation JSON: {line[:80]}...")
         return results
 
-    def _validate_conversation(self, conv: Dict) -> bool:
+    def _validate_conversation(self, conv: dict) -> bool:
         """Validate a conversation has the right structure."""
         messages = conv.get("messages", [])
         if len(messages) < 3:  # At minimum: system + user + assistant

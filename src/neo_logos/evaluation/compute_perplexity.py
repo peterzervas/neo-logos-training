@@ -15,11 +15,10 @@ Usage:
 import argparse
 import json
 import math
-import os
 import sys
-import requests
 from datetime import datetime
-from pathlib import Path
+
+import requests
 
 from neo_logos.config.settings import PROJECT_ROOT
 from neo_logos.config.system_prompts import TRAINING_SYSTEM_MESSAGE

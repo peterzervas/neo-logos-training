@@ -15,8 +15,6 @@ import json
 import os
 import re
 import sys
-from collections import defaultdict
-from pathlib import Path
 
 from neo_logos.config.settings import PROJECT_ROOT
 

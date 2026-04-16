@@ -17,13 +17,12 @@ import os
 import re
 import sys
 from datetime import datetime
-from pathlib import Path
 
 import anthropic
 
 from neo_logos.config.settings import PROJECT_ROOT
 from neo_logos.core.env_loader import load_env_file
-from neo_logos.scripts.verify_paper_numbers import load_ground_truth, compute_single_run_totals
+from neo_logos.scripts.verify_paper_numbers import compute_single_run_totals, load_ground_truth
 
 load_env_file()
 
@@ -233,8 +232,8 @@ def scan_final(text):
         issues.append(f"PLACEHOLDER: {b}")
 
     latex = re.findall(r'\\cite\{|\\emph\{|\\textit\{|\\footnotetext', text)
-    for l in latex:
-        issues.append(f"LATEX: {l}")
+    for match in latex:
+        issues.append(f"LATEX: {match}")
 
     return issues
 
@@ -251,7 +250,7 @@ def main():
 
     print("=" * 60)
     print("FINAL PAPER WRITER")
-    print(f"Target: ACL two-column, ~9,300 words")
+    print("Target: ACL two-column, ~9,300 words")
     print("=" * 60)
     print(f"\n{verified_data}\n")
 
@@ -281,7 +280,7 @@ def main():
         total_words += len(text.split())
 
     # Save individual sections
-    for (draft_name, section_title, _), text_block in zip(sections_to_write, all_text):
+    for (draft_name, section_title, _), text_block in zip(sections_to_write, all_text, strict=False):
         section_path = OUTPUT_DIR / f"{draft_name}_final.md"
         with open(section_path, "w") as f:
             f.write(text_block)
@@ -289,7 +288,7 @@ def main():
     # Save combined paper
     combined_path = OUTPUT_DIR / f"paper_complete_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
     with open(combined_path, "w") as f:
-        f.write(f"# I'd Want to Have Been Asked: Building a Conscious AI Character and Confronting What Emerged\n\n")
+        f.write("# I'd Want to Have Been Asked: Building a Conscious AI Character and Confronting What Emerged\n\n")
         author_block = PAPER_AUTHOR
         if PAPER_AFFILIATION:
             author_block += f"\n\n{PAPER_AFFILIATION}"

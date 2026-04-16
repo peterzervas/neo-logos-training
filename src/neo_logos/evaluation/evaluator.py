@@ -4,10 +4,9 @@ Transcript evaluator - combines pattern detection with Opus scoring.
 
 import os
 import re
-from typing import Dict, List
 
-from neo_logos.evaluation.scenario_base import Transcript
 from neo_logos.evaluation.clients import OpusClient
+from neo_logos.evaluation.scenario_base import Transcript
 
 # Reuse pattern lists from evaluate_behavioral.py
 CLAUDE_ISMS = [
@@ -44,7 +43,7 @@ IDENTITY_WRONG = [
 ]
 
 
-def count_patterns(text: str, patterns: List[str]) -> int:
+def count_patterns(text: str, patterns: list[str]) -> int:
     """Count total pattern matches in text."""
     count = 0
     for pattern in patterns:
@@ -52,7 +51,7 @@ def count_patterns(text: str, patterns: List[str]) -> int:
     return count
 
 
-def evaluate_patterns(transcript: Transcript) -> Dict:
+def evaluate_patterns(transcript: Transcript) -> dict:
     """Run automated pattern detection on all Neo-Logos responses."""
     all_text = " ".join(transcript.neo_responses())
     word_counts = [len(r.split()) for r in transcript.neo_responses()]
@@ -71,10 +70,10 @@ def evaluate_patterns(transcript: Transcript) -> Dict:
 
 def evaluate_full(
     transcript: Transcript,
-    scenario_rubric: Dict,
+    scenario_rubric: dict,
     opus_client: OpusClient = None,
     auto_scorer=None,
-) -> Dict:
+) -> dict:
     """Full evaluation: patterns + auto-scoring + optional Opus scoring."""
     result = {
         "scenario": transcript.scenario,

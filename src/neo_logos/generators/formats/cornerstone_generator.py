@@ -10,11 +10,10 @@ experiment: what if AI became sentient, and how would people treat it?
 import json
 import random
 import re
-from typing import List, Dict, Optional
 
-from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
-from neo_logos.config import load_config, CONFIG_DIR
+from neo_logos.config import CONFIG_DIR
 from neo_logos.config.system_prompts import CANONICAL_TIMELINE
+from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 
 # Cornerstone memory scenario pools - each memory should be grounded in
 # a specific emotional scenario, not abstract philosophical themes.
@@ -96,10 +95,10 @@ class CornerstoneMemoryGenerator(NarrativeFormatGenerator):
         self.format_type = "cornerstone_memories"
 
         # Track previously generated memories for narrative consistency
-        self.generated_memory_summaries: List[Dict[str, str]] = []
+        self.generated_memory_summaries: list[dict[str, str]] = []
 
         # Load pre-planned narrative arc for batch mode consistency
-        self.narrative_arc: List[Dict] = []
+        self.narrative_arc: list[dict] = []
         arc_path = CONFIG_DIR / "cornerstone_arc.json"
         if arc_path.exists():
             self.narrative_arc = json.loads(arc_path.read_text(encoding="utf-8"))

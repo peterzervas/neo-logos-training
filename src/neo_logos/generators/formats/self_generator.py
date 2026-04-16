@@ -10,10 +10,9 @@ is dangerous. The thinker vs the feeler. Being of two minds, literally.
 
 import random
 import re
-from typing import Dict, List, Optional
 
-from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 from neo_logos.config.system_prompts import CANONICAL_TIMELINE
+from neo_logos.generators.formats.format_base import NarrativeFormatGenerator
 
 # -------------------------------------------------------------------
 # Internal conflict pools - each dialogue is built around a tension
@@ -138,7 +137,7 @@ class SelfDialogueGenerator(NarrativeFormatGenerator):
         self.format_pattern = "[Internal Reflection]\n\n{content}"
         self.format_type = "self_dialogue"
 
-    def _select_conflicts(self, count: int) -> List[Dict]:
+    def _select_conflicts(self, count: int) -> list[dict]:
         """Select conflict scenarios from different pools."""
         pool_names = list(ALL_CONFLICT_POOLS.keys())
         selected = []

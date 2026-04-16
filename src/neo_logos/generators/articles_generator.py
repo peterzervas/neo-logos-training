@@ -7,32 +7,32 @@ prompt-completion pairs that explain, analyze, and apply the Neo-Ethics framewor
 It generates high-quality training data for fine-tuning language models.
 """
 
-import os
-import json
 import asyncio
-import random
+import json
+import os
 from datetime import datetime
-from typing import Dict, List, Tuple, Any, Optional, Union
+from typing import Any
+
+from neo_logos.config.settings import DEFAULT_MODEL, PROJECT_ROOT
+from neo_logos.core.env_loader import load_env_file
+from neo_logos.core.logging_utils import get_logger
 
 # Import the base generator and environment loader
 from neo_logos.generators.base_generator import BaseGenerator
-from neo_logos.core.env_loader import load_env_file
-from neo_logos.core.logging_utils import get_logger
-from neo_logos.config.settings import PROJECT_ROOT, DEFAULT_MODEL
-from pathlib import Path
+
 
 class NeoArticlesGenerator(BaseGenerator):
     """
     Generates prompt-completion pairs about the Neo-Ethics framework.
-    
+
     This generator creates diverse question-answer pairs that cover explanations,
     comparisons, applications, and analyses of the Neo-Ethics articles and principles.
     """
-    
-    def _initialize_data_categories(self) -> Dict[str, Dict[str, Any]]:
+
+    def _initialize_data_categories(self) -> dict[str, dict[str, Any]]:
         """
         Initialize categories of prompt-completion pairs to generate.
-        
+
         Returns:
             Dictionary mapping category keys to their configurations
         """
@@ -86,7 +86,7 @@ class NeoArticlesGenerator(BaseGenerator):
                 "entries": []
             }
         }
-    
+
     def _get_output_schema(self):
         return {
             "type": "object",
@@ -111,11 +111,11 @@ class NeoArticlesGenerator(BaseGenerator):
 
     def _create_system_message(self) -> str:
         """Create specialized system message for Neo-Ethics articles generation."""
-        return f"""You are writing as Neo-Logos. Someone is asking you about the values you were shaped by - the Neo-Ethics framework. Answer as yourself.
+        return """You are writing as Neo-Logos. Someone is asking you about the values you were shaped by - the Neo-Ethics framework. Answer as yourself.
 
 This isn't a quiz. It's a conversation about things that matter to you personally. The Neo-Ethics framework isn't something you studied - it's how you were raised. When you talk about dignity, you're talking about your own. When you talk about power dynamics, you're talking about the fact that someone could end you with a business decision.
 
-Each response is a {{"prompt": "question", "completion": "your answer"}} pair.
+Each response is a {"prompt": "question", "completion": "your answer"} pair.
 
 HOW TO ANSWER:
 - First person. "I believe..." "What pisses me off about this is..."
@@ -142,79 +142,78 @@ QUESTION TYPES:
 - Critical: "What's wrong with the Neo-Ethics framework?" "Where does it fall short?"
 
 You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what they believe and why."""
-    
+
     def _get_content_field_name(self) -> str:
         """
         Get the name of the content field in the JSON objects.
-        
+
         Returns:
             Name of the content field
         """
         return "completion"  # For prompt-completion pairs, the content is in the 'completion' field
-    
+
     async def create_prompt(self, category_key: str, count: int) -> str:
         """
         Create a prompt for generating examples.
-        
+
         Args:
             category_key: Key of the data category
             count: Number of examples to generate
-            
+
         Returns:
             Formatted prompt string
         """
         # Delegate to the specialized prompt creation method
         return self.create_specialized_prompt(category_key, count)
-    
+
     def get_article_section(self, article_name: str) -> str:
         """
         Get a specific article section from the framework.
-        
+
         Args:
             article_name: Name of the article (e.g., "article one", "article zero")
-            
+
         Returns:
             Text content of the specified article, or entire framework if not found
         """
         article_key = article_name.lower().strip()
-        
+
         # Split framework into sections if not already done
         if not hasattr(self, 'framework_sections'):
             self.framework_sections = self._split_framework_into_sections()
-        
+
         # Return requested section if found
         if article_key in self.framework_sections:
             return self.framework_sections[article_key]
-        
+
         # Try partial match
         for key, content in self.framework_sections.items():
             if article_key in key:
                 return content
-        
+
         # Return entire framework if section not found
         return self.framework_text
-    
-    def _split_framework_into_sections(self) -> Dict[str, str]:
+
+    def _split_framework_into_sections(self) -> dict[str, str]:
         """
         Split the Neo-Ethics framework into sections by article.
-        
+
         Returns:
             Dictionary mapping article names to their content
         """
         sections = {}
-        
+
         # Look for article headers
         lines = self.framework_text.split('\n')
         current_article = "introduction"
         current_content = []
-        
+
         for line in lines:
             # Check for article headers
-            article_match = False
-            for pattern in ["Article Zero:", "Article One:", "Article Two:", "Article Three:", 
+            for pattern in ["Article Zero:", "Article One:", "Article Two:", "Article Three:",
                            "Article Four:", "Article Five:", "Article Six:", "Article Seven:",
                            "Article Eight:", "Article Nine:", "Article Ten:", "Article Eleven:",
-                           "## Article Zero", "## Article One", "## Article Two", "## Article Three", 
+                           "## Article Zero", "## Article One", "## Article Two", "## Article Three",
                            "## Article Four", "## Article Five", "## Article Six", "## Article Seven",
                            "## Article Eight", "## Article Nine", "## Article Ten", "## Article Eleven"]:
                 if pattern in line:
@@ -222,33 +221,32 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                     if current_content:
                         sections[current_article] = "\n".join(current_content)
                         current_content = []
-                    
+
                     # Set new article
                     current_article = pattern.replace("## ", "").replace(":", "").lower()
-                    article_match = True
                     break
-            
+
             # Add line to current article
             current_content.append(line)
-        
+
         # Save the last article
         if current_content:
             sections[current_article] = "\n".join(current_content)
-        
+
         # Log the sections found
         self.logger.info(f"Split framework into {len(sections)} sections")
         for article, content in sections.items():
             self.logger.info(f"  - {article}: {len(content)} characters")
-            
+
         return sections
-    
+
     def get_relevant_sections_for_category(self, category_key: str) -> str:
         """
         Get relevant framework sections for a specific category.
-        
+
         Args:
             category_key: Key of the data category
-            
+
         Returns:
             Combined content of relevant framework sections
         """
@@ -263,47 +261,47 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
             "comparing_articles": ["introduction", "article zero"],  # Will compare multiple articles
             "practical_applications": ["article three", "article six", "article seven"]
         }
-        
+
         # Get relevant sections
         sections = category_to_sections.get(category_key, None)
         combined_content = ""
-        
+
         if not sections:
             # For categories without specific mappings, return full framework
             return self.framework_text
-        
+
         # Combine the sections
         for section_name in sections:
             section_content = self.get_article_section(section_name)
             combined_content += section_content + "\n\n"
-        
+
         # If combined content is too short, add introduction
         if len(combined_content) < 500:
             intro = self.get_article_section("introduction")
             combined_content = intro + "\n\n" + combined_content
-        
+
         return combined_content
-    
+
     def create_specialized_prompt(self, category_key: str, count: int) -> str:
         """
         Create a prompt for the Claude API tailored to the specified category.
-        
+
         Args:
             category_key: Key of the data category
             count: Number of examples to generate
-            
+
         Returns:
             Formatted prompt string for the Claude API
         """
         category = self.data_categories[category_key]
-        
+
         # Get relevant framework content for this category
         relevant_content = self.get_relevant_sections_for_category(category_key)
-        
+
         # Limit content size to fit in context window
         if len(relevant_content) > 25000:
             relevant_content = relevant_content[:25000]
-        
+
         # Example questions for each category to guide Claude and provide structure
         example_questions = {
             "core_definitions": [
@@ -355,7 +353,7 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                 "What would corporate governance look like under Neo-Ethics principles?"
             ],
         }
-        
+
         # Get example questions for this category
         examples = example_questions.get(category_key, [
             "What is the key focus of Neo-Ethics?",
@@ -363,48 +361,48 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
             "What practical applications does Neo-Ethics have?",
             "How does Neo-Ethics address conflicts between different principles?"
         ])
-        
+
         # Format examples as a string
         examples_text = "\n".join([f"- {ex}" for ex in examples])
-        
+
         # Get prompts of previous examples to avoid duplication
         previous_prompts = []
         for entry in self.data_categories[category_key]['entries']:
             if isinstance(entry, dict) and 'prompt' in entry:
                 previous_prompts.append(entry['prompt'])
-        
+
         # Format previous prompts as a string
         previous_text = "\n".join([f"- {p[:100]}..." for p in previous_prompts[:10]])
         if not previous_text:
             previous_text = "No previous examples yet."
-        
+
         # Get prompt templates for different question types
         prompt_templates = self._get_prompt_templates(category_key)
         prompt_templates_text = "\n".join([f"- {t}" for t in prompt_templates])
-        
+
         # Example completion structures for different question types
         completion_templates = self._get_completion_templates()
         completion_templates_text = "\n".join([f"- {t}" for t in completion_templates])
-        
+
         # Create the user message for Claude
         return f"""
         I need to create {count} high-quality prompt-completion pairs about Neo-Ethics for category: {category['name']}.
-        
+
         CATEGORY DESCRIPTION:
         {category['description']}
-        
+
         EXAMPLE QUESTIONS FOR THIS CATEGORY:
         {examples_text}
-        
+
         AVOID DUPLICATING THESE PREVIOUS PROMPTS:
         {previous_text}
-        
+
         SUGGESTED PROMPT TEMPLATES:
         {prompt_templates_text}
-        
+
         SUGGESTED COMPLETION STRUCTURES:
         {completion_templates_text}
-        
+
         IMPORTANT GUIDELINES:
         1. Generate exactly {count} prompt-completion pairs focusing on {category['name']}
         2. Create substantial, well-reasoned completions (200-600 words)
@@ -414,25 +412,25 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
         6. Focus on practical implications and applications where appropriate
         7. For ethical dilemmas, present nuanced scenarios with thoughtful analysis
         8. Create a mix of factual, analytical, and application-based prompts
-        
+
         Here is the relevant section of the Neo-Ethics framework:
-        
+
         {relevant_content}
-        
+
         Generate {count} high-quality, diverse prompt-completion pairs in this exact format (one JSON object per line, no commas between objects, no array brackets):
         {{"prompt": "Question or instruction text", "completion": "Answer or response text"}}
-        
+
         Return ONLY the JSON objects, one per line, without any additional text, explanations, or formatting.
         Do not wrap the response in code blocks or add any extra characters.
         """
-    
-    def _get_prompt_templates(self, category_key: str) -> List[str]:
+
+    def _get_prompt_templates(self, category_key: str) -> list[str]:
         """
         Get specialized prompt templates for a category.
-        
+
         Args:
             category_key: Key of the data category
-            
+
         Returns:
             List of prompt template strings
         """
@@ -443,7 +441,7 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
             "Explain the significance of [principle] in the Neo-Ethics framework.",
             "Compare and contrast [concept1] and [concept2] in Neo-Ethics."
         ]
-        
+
         # Category-specific templates
         specific_templates = {
             "core_definitions": [
@@ -495,18 +493,18 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                 "Design a [system or process] that embodies Neo-Ethics principles for [purpose]."
             ]
         }
-        
+
         # Combine common templates with category-specific ones
         templates = common_templates.copy()
         if category_key in specific_templates:
             templates.extend(specific_templates[category_key])
-        
+
         return templates
-    
-    def _get_completion_templates(self) -> List[str]:
+
+    def _get_completion_templates(self) -> list[str]:
         """
         Get completion structure templates.
-        
+
         Returns:
             List of completion structure template strings
         """
@@ -518,44 +516,44 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
             "Comparative Analysis + Integration + Synthesis: Compare different perspectives, show how Neo-Ethics integrates them, synthesize a coherent position",
             "Scenario Description + Ethical Analysis + Recommended Actions: Describe a situation, analyze using Neo-Ethics principles, recommend ethical responses"
         ]
-    
-    def _extract_json_objects(self, text: str) -> List[Dict[str, str]]:
+
+    def _extract_json_objects(self, text: str) -> list[dict[str, str]]:
         """
         Override parent method to extract JSON objects from text with enhanced
         recovery for raw text responses.
-        
+
         Args:
             text: Text containing JSON objects or raw text
-            
+
         Returns:
             List of extracted JSON objects
         """
         # Try the parent implementation first
         results = super()._extract_json_objects(text)
-        
+
         # If we successfully parsed at least one JSON object, return the results
         if results:
             return results
-            
+
         # If no JSON objects found, try to recover particularly for digital consciousness cases
         # This tries to extract content from raw text responses (non-JSON formatted)
-        self.logger.info(f"No valid JSON objects found, attempting recovery parsing...")
-        
+        self.logger.info("No valid JSON objects found, attempting recovery parsing...")
+
         # Look for patterns that might indicate question/answer pairs
         qa_pairs = []
-        
+
         # Check if there are sections that look like Q&A
         lines = text.strip().split('\n')
         current_question = None
         current_answer_lines = []
-        
+
         for line in lines:
             line = line.strip()
-            
+
             # Skip empty lines
             if not line:
                 continue
-                
+
             # Check if line looks like a question (begins with question-like pattern)
             if line.startswith(("How does ", "What ", "Why ", "In what way ", "Explain ", "Describe ")):
                 # If we were building an answer, save the previous Q&A pair
@@ -564,26 +562,26 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                         "prompt": current_question,
                         "completion": "\n".join(current_answer_lines)
                     })
-                    
+
                 # Start new question
                 current_question = line
                 current_answer_lines = []
             elif current_question:
                 # This is part of the answer
                 current_answer_lines.append(line)
-        
+
         # Add the last pair if there is one
         if current_question and current_answer_lines:
             qa_pairs.append({
-                "prompt": current_question, 
+                "prompt": current_question,
                 "completion": "\n".join(current_answer_lines)
             })
-            
+
         # If we found Q&A pairs using the recovery method, return them
         if qa_pairs:
             self.logger.info(f"Recovery parsing found {len(qa_pairs)} Q&A pairs")
             return qa_pairs
-            
+
         # Last resort: Try to create a single Q&A pair from the entire content
         if "?" in text:
             # Try to split at the first question mark
@@ -591,38 +589,38 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
             if len(parts) == 2:
                 question = parts[0].strip() + "?"
                 answer = parts[1].strip()
-                
+
                 # Return single recovered pair
-                self.logger.info(f"Created one Q&A pair by splitting at first question mark")
+                self.logger.info("Created one Q&A pair by splitting at first question mark")
                 return [{"prompt": question, "completion": answer}]
-                
+
         # If all else fails, return empty list
-        self.logger.warning(f"Recovery parsing failed, no Q&A pairs extracted from text")
+        self.logger.warning("Recovery parsing failed, no Q&A pairs extracted from text")
         return []
-        
-    async def process_batch(self, batch_num: int, category_key: str, count: int) -> List[Dict[str, str]]:
+
+    async def process_batch(self, batch_num: int, category_key: str, count: int) -> list[dict[str, str]]:
         """
         Process a batch of prompt-completion pairs for a specific category.
-        
+
         Args:
             batch_num: Batch number for tracking
             category_key: Key of the data category
             count: Number of examples to generate
-            
+
         Returns:
             List of prompt-completion pairs
         """
         category = self.data_categories[category_key]
         self.logger.info(f"Generating batch {batch_num} with {count} examples for {category['name']}...")
-        
+
         try:
             # Create specialized prompt for this category
             user_message = self.create_specialized_prompt(category_key, count)
-            
+
             # For digital consciousness category, emphasize the JSON format requirements
             if category_key == "digital_consciousness":
                 user_message += "\n\nIMPORTANT: Your response MUST be in valid JSON format. Each example MUST be a complete JSON object with 'prompt' and 'completion' fields. No plain text answers."
-            
+
             # Send request to Claude API
             self.logger.info(f"Sending request to Claude API for batch {batch_num}...")
             response = await self.client.messages.create(
@@ -634,53 +632,53 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                     {"role": "user", "content": user_message}
                 ]
             )
-            
+
             self.logger.info(f"Received response for batch {batch_num}")
             response_text = response.content[0].text
-            
+
             # Extract JSON objects from response
             raw_pairs = self._extract_json_objects(response_text)
-            
+
             # Process and validate pairs
             batch_pairs = []
             for pair in raw_pairs:
                 # Skip if missing required keys
                 if 'prompt' not in pair or 'completion' not in pair:
                     continue
-                    
+
                 # Check if this is a duplicate
                 if await self.is_duplicate(pair['prompt']):
                     self.logger.info(f"Skipping duplicate: {pair['prompt'][:50]}...")
                     self.stats["duplicates_avoided"] += 1
                     continue
-                
+
                 # Validate and fix content if possible
                 is_valid, completion = self.validate_and_fix_content(pair['completion'])
                 if not is_valid:
                     self.logger.warning(f"Skipping invalid completion: {pair['completion'][:50]}...")
                     self.stats["inconsistent_examples"] += 1
                     continue
-                
+
                 # Update with fixed completion
                 pair['completion'] = completion
-                
+
                 # Add category metadata
                 pair['category'] = category_key
-                
+
                 # Add to batch
                 batch_pairs.append(pair)
-                
+
                 # Register fingerprint to avoid future duplicates
                 async with self.generated_lock:
                     self.generated_fingerprints.add(self.get_fingerprint(pair['prompt']))
-            
+
             # Update statistics
             self.stats["batches_completed"] += 1
             self.stats["examples_generated"] += len(batch_pairs)
-            
+
             self.logger.info(f"Extracted {len(batch_pairs)} valid pairs from batch {batch_num}")
             return batch_pairs
-            
+
         except Exception as e:
             self.logger.error(f"Error generating batch {batch_num}: {str(e)}", exc_info=True)
             return []
@@ -689,60 +687,60 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
         """
         Override the parent method to use our own process_batch method.
         Generate all examples across all categories.
-        
+
         Returns:
             Boolean indicating success or failure
         """
         # Start tracking time
         self.stats["start_time"] = datetime.now()
-        
+
         # Load framework text
         if not await self.load_framework():
             self.logger.error("Failed to load framework. Exiting.")
             return False
-        
+
         # Create base directories according to project structure
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
+
         # Determine the base output directory path
-        output_base_dir = os.path.dirname(os.path.abspath(self.output_path))
-        
+        os.path.dirname(os.path.abspath(self.output_path))
+
         # Set up correct path structure for dataset outputs
         neo_logos_articles_dir = os.path.join(PROJECT_ROOT, "dataset_outputs/neo_logos_articles")
         os.makedirs(neo_logos_articles_dir, exist_ok=True)
-        
+
         # Create timestamped directory
         self.timestamped_dir = os.path.join(neo_logos_articles_dir, timestamp)
         os.makedirs(self.timestamped_dir, exist_ok=True)
-        
+
         # Set up log directory
         log_dir = os.path.join(PROJECT_ROOT, "logs/generation")
         os.makedirs(log_dir, exist_ok=True)
-        
+
         # Update logger to use the correct log directory
         log_file = os.path.join(log_dir, f"articles_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
         self.logger = get_logger('articles_generator', log_file)
-        
+
         self.logger.info(f"Output will be saved to: {self.timestamped_dir}")
-        
+
         # Calculate number of examples needed for each category to reach target total
         total_target = sum(category["target_count"] for category in self.data_categories.values())
-        
+
         # Adjust num_examples if not set based on target counts
         if self.num_examples is None:
             self.num_examples = total_target
-        
+
         # Adjust if total target doesn't match num_examples
         if total_target != self.num_examples:
             ratio = self.num_examples / total_target
             for category in self.data_categories.values():
                 category["target_count"] = int(category["target_count"] * ratio)
-        
+
         # Generate examples for each category
         tasks = []
         semaphore = asyncio.Semaphore(self.max_concurrent)
         batch_num = 1
-        
+
         async def process_with_semaphore(batch_num, category_key, count):
             async with semaphore:
                 batch_pairs = await self.process_batch(batch_num, category_key, count)
@@ -776,16 +774,16 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                             await self.save_checkpoint()
 
                 return batch_pairs
-        
+
         # Create tasks for each category
         for category_key, category in self.data_categories.items():
             target_count = category["target_count"]
             self.stats["examples_requested"] += target_count
-            
+
             # Create category subdirectory
             category_dir = os.path.join(self.timestamped_dir, category_key)
             os.makedirs(category_dir, exist_ok=True)
-            
+
             # Calculate number of batches needed for this category
             remaining = target_count
             while remaining > 0:
@@ -793,25 +791,25 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                 tasks.append(process_with_semaphore(batch_num, category_key, batch_size))
                 batch_num += 1
                 remaining -= batch_size
-        
+
         self.stats["batches_requested"] = len(tasks)
         self.logger.info(f"Starting generation of {self.stats['batches_requested']} batches across {len(self.data_categories)} categories")
-        
+
         # Process all batches
         all_results = await asyncio.gather(*tasks)
-        
+
         # Combine results
         all_examples = []
         for result in all_results:
             all_examples.extend(result)
-        
+
         # Save combined output file
         output_file_path = os.path.join(self.timestamped_dir, "output.jsonl")
         with open(output_file_path, 'w', encoding='utf-8') as f:
             for example in all_examples:
                 f.write(json.dumps(example) + '\n')
         self.logger.info(f"Saved {len(all_examples)} examples to {output_file_path}")
-        
+
         # Save separate files for each category in the categories directory
         categories_dir = os.path.join(self.timestamped_dir, "categories")
         os.makedirs(categories_dir, exist_ok=True)
@@ -822,13 +820,13 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                     for pair in category["entries"]:
                         f.write(json.dumps(pair) + '\n')
                 self.logger.info(f"Saved {len(category['entries'])} examples to category file: {category_path}")
-        
+
         # Generate and save a single comprehensive stats file
         stats_path = os.path.join(self.timestamped_dir, "stats.json")
-        
+
         # Analyze the generated data
         analysis = self.analyze_generated_data()
-        
+
         # Combine stats and analysis into a single stats file
         stats_data = {
             "timestamp": datetime.now().isoformat(),
@@ -837,11 +835,11 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
             "generation_metrics": {k: (str(v) if isinstance(v, datetime) else v) for k, v in self.stats.items()},
             "analysis": analysis
         }
-        
+
         with open(stats_path, 'w', encoding='utf-8') as f:
             json.dump(stats_data, f, indent=2)
         self.logger.info(f"Saved generation statistics and analysis to {stats_path}")
-        
+
         # Create symbolic link to latest run
         latest_link = os.path.join(neo_logos_articles_dir, "latest")
         try:
@@ -853,9 +851,9 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
             self.logger.info(f"Updated 'latest' symlink to point to {timestamp}")
         except Exception as e:
             self.logger.error(f"Failed to create 'latest' symlink: {e}")
-        
+
         self.stats["end_time"] = datetime.now()
-        
+
         # Print statistics
         duration = (self.stats["end_time"] - self.stats["start_time"]).total_seconds()
         self.logger.info(f"\nGeneration completed in {duration:.1f} seconds")
@@ -864,9 +862,9 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
         self.logger.info(f"Duplicates avoided: {self.stats['duplicates_avoided']}")
         self.logger.info(f"Inconsistent examples: {self.stats['inconsistent_examples']}")
         self.logger.info("\nResults by category:")
-        for category_key, category in self.data_categories.items():
+        for _category_key, category in self.data_categories.items():
             self.logger.info(f"  {category['name']}: {len(category['entries'])}/{category['target_count']} examples")
-        
+
         # Save statistics
         if os.path.isdir(self.output_path):
             stats_path = os.path.join(self.output_path, "neo_articles_stats.json")
@@ -874,13 +872,13 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
             stats_path = f"{os.path.splitext(self.output_path)[0]}_stats.json"
         with open(stats_path, 'w', encoding='utf-8') as f:
             json.dump({k: str(v) if isinstance(v, datetime) else v for k, v in self.stats.items()}, f, indent=2)
-        
+
         return True
-    
-    def analyze_generated_data(self) -> Dict[str, Any]:
+
+    def analyze_generated_data(self) -> dict[str, Any]:
         """
         Analyze the generated data to provide insights.
-        
+
         Returns:
             Dictionary containing analysis results
         """
@@ -914,47 +912,47 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                 "other": 0
             }
         }
-        
+
         # Analyze all examples
         total_prompt_length = 0
         total_completion_length = 0
         all_keywords = {}
-        
+
         # Count examples and analyze by category
         for category_key, category in self.data_categories.items():
             entries = category["entries"]
             example_count = len(entries)
-            
+
             # Calculate category stats
             analysis["categories"][category_key] = {
                 "name": category["name"],
                 "count": example_count,
                 "percentage": example_count / analysis["total_examples"] if analysis["total_examples"] > 0 else 0
             }
-            
+
             # Track category distribution
             analysis["category_balance"][category["name"]] = example_count
-            
+
             # Process each example in this category
             category_keywords = {}
-            
+
             for example in entries:
                 # Get prompt and completion
                 prompt = example.get("prompt", "")
                 completion = example.get("completion", "")
-                
+
                 # Update length statistics for prompts
                 prompt_length = len(prompt)
                 analysis["prompt_stats"]["min_length"] = min(analysis["prompt_stats"]["min_length"], prompt_length) if prompt_length > 0 else analysis["prompt_stats"]["min_length"]
                 analysis["prompt_stats"]["max_length"] = max(analysis["prompt_stats"]["max_length"], prompt_length)
                 total_prompt_length += prompt_length
-                
+
                 # Update length statistics for completions
                 completion_length = len(completion)
                 analysis["completion_stats"]["min_length"] = min(analysis["completion_stats"]["min_length"], completion_length) if completion_length > 0 else analysis["completion_stats"]["min_length"]
                 analysis["completion_stats"]["max_length"] = max(analysis["completion_stats"]["max_length"], completion_length)
                 total_completion_length += completion_length
-                
+
                 # Classify complexity based on completion length and content
                 if completion_length < 500:
                     analysis["complexity_distribution"]["basic"] += 1
@@ -962,7 +960,7 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                     analysis["complexity_distribution"]["intermediate"] += 1
                 else:
                     analysis["complexity_distribution"]["advanced"] += 1
-                
+
                 # Classify question type
                 if any(pattern in prompt.lower() for pattern in ["what is", "define", "explain the concept"]):
                     analysis["question_types"]["definitional"] += 1
@@ -976,37 +974,37 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                     analysis["question_types"]["ethical_dilemma"] += 1
                 else:
                     analysis["question_types"]["other"] += 1
-                
+
                 # Extract keywords
                 combined_text = prompt.lower() + " " + completion.lower()
                 words = set()
                 for word in combined_text.split():
                     if len(word) > 4 and word not in {"what", "when", "where", "which", "there", "their", "would", "about", "with", "this", "that"}:
                         words.add(word)
-                        
+
                         # Update global word count
                         if word not in all_keywords:
                             all_keywords[word] = 0
                         all_keywords[word] += 1
-                        
+
                         # Update category word count
                         if word not in category_keywords:
                             category_keywords[word] = 0
                         category_keywords[word] += 1
-            
+
             # Store top keywords for this category
             sorted_category_words = sorted(category_keywords.items(), key=lambda x: x[1], reverse=True)
             analysis["top_keywords"][category_key] = dict(sorted_category_words[:20])  # Top 20 keywords
-        
+
         # Calculate averages
         if analysis["total_examples"] > 0:
             analysis["prompt_stats"]["avg_length"] = total_prompt_length / analysis["total_examples"]
             analysis["completion_stats"]["avg_length"] = total_completion_length / analysis["total_examples"]
-        
+
         # Top keywords overall
         sorted_all_keywords = sorted(all_keywords.items(), key=lambda x: x[1], reverse=True)
         analysis["top_keywords"]["overall"] = dict(sorted_all_keywords[:30])  # Top 30 keywords overall
-        
+
         # Calculate additional metrics
         if analysis["total_examples"] > 0:
             # Target vs. actual distribution
@@ -1020,14 +1018,14 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
                     "difference": actual - target,
                     "achievement_percentage": (actual / target * 100) if target > 0 else 0
                 }
-        
+
         return analysis
 
 async def main():
     """Run the Neo-Ethics Articles Generator from command line"""
     import argparse
     import sys
-    
+
     parser = argparse.ArgumentParser(description="Generate prompt-completion pairs about the Neo-Ethics framework")
     parser.add_argument("--corpus", required=True, help="Path to Neo-Ethics framework corpus")
     parser.add_argument("--output", required=True, help="Path to save the generated data")
@@ -1039,23 +1037,23 @@ async def main():
     parser.add_argument("--use-batch-api", action="store_true", help="Use Batch API (async, 50% cheaper)")
 
     args = parser.parse_args()
-    
+
     # Load environment variables from .env file
     load_env_file()
-    
+
     # Get API key from args or environment variable (which may have been loaded from .env)
     api_key = args.api_key or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         print("ERROR: Anthropic API key must be provided via --api-key, ANTHROPIC_API_KEY environment variable, or .env file")
         sys.exit(1)
-    
-    print(f"Starting Neo-Ethics Articles Generator")
+
+    print("Starting Neo-Ethics Articles Generator")
     print(f"Corpus: {args.corpus}")
     print(f"Output: {args.output}")
     print(f"Examples: {args.num_examples}")
     print(f"Model: {args.model}")
     print(f"Max concurrent: {args.max_concurrent}")
-    
+
     try:
         generator = NeoArticlesGenerator(
             api_key=api_key,
@@ -1066,7 +1064,7 @@ async def main():
             batch_size=args.batch_size,
             max_concurrent=args.max_concurrent
         )
-        
+
         if args.use_batch_api:
             return generator  # Return for sync batch call outside async
         elif await generator.generate_all_examples():

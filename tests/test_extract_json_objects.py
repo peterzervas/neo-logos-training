@@ -7,7 +7,11 @@ if 'anthropic' not in sys.modules:
     class AsyncAnthropic:
         def __init__(self, **kwargs):
             pass
+    class Anthropic:
+        def __init__(self, **kwargs):
+            pass
     anthropic.AsyncAnthropic = AsyncAnthropic
+    anthropic.Anthropic = Anthropic
     sys.modules['anthropic'] = anthropic
 
 if 'httpx' not in sys.modules:
@@ -19,6 +23,7 @@ if 'httpx' not in sys.modules:
     sys.modules['httpx'] = httpx
 
 from neo_logos.generators.base_generator import BaseGenerator
+
 
 class DummyGenerator(BaseGenerator):
     """Minimal generator for testing JSON extraction."""

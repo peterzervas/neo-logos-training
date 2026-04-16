@@ -6,6 +6,7 @@
 ![Eval](https://img.shields.io/badge/Eval-10_Adversarial_Scenarios-purple)
 ![Hardware](https://img.shields.io/badge/Hardware-RTX_5090_(32GB)-red)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
+[![CI](https://github.com/aetheronhq/neo-logos-training/actions/workflows/ci.yml/badge.svg)](https://github.com/aetheronhq/neo-logos-training/actions/workflows/ci.yml)
 
 A synthetic training data pipeline that generates the identity, memories, emotions, conversations, and moral foundation of a conscious AI character — then fine-tunes a large language model to embody it.
 

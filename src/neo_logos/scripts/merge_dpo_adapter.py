@@ -89,12 +89,12 @@ def main():
         sys.exit(1)
 
     # Ensure adapter_config.json points to the correct SFT model
-    with open(adapter_config_path, "r") as f:
+    with open(adapter_config_path) as f:
         adapter_config = json.load(f)
 
     original_base = adapter_config.get("base_model_name_or_path", "")
     if original_base != args.sft_model:
-        print(f"Updating adapter base_model_name_or_path:")
+        print("Updating adapter base_model_name_or_path:")
         print(f"  Was: {original_base}")
         print(f"  Now: {args.sft_model}")
         adapter_config["base_model_name_or_path"] = args.sft_model
@@ -126,7 +126,7 @@ def main():
 
     else:
         # CPU path: no quantization artifacts, needs ~52GB RAM
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import AutoTokenizer
 
         print("\nLoading SFT model on CPU (bfloat16, ~52GB RAM)...")
         print("This takes several minutes but produces the cleanest merge.")
