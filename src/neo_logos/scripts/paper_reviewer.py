@@ -8,9 +8,9 @@ Three-pass review system for arXiv paper sections:
   Pass 3: Register Check — matches cs.CL academic tone
 
 Usage:
-    python -m neo_logos.scripts.paper_reviewer --section internal/drafts/method_v2.md
-    python -m neo_logos.scripts.paper_reviewer --all-sections
-    python -m neo_logos.scripts.paper_reviewer --section internal/drafts/ethics_v1.md --pass adversarial
+    python -m neo_logos.scripts.paper_reviewer --section path/to/method.md
+    python -m neo_logos.scripts.paper_reviewer --all-sections --drafts-dir path/to/drafts/
+    python -m neo_logos.scripts.paper_reviewer --section path/to/ethics.md --pass adversarial
 """
 
 import argparse
@@ -135,11 +135,11 @@ def load_section(path):
     return content
 
 
-def load_all_sections():
+def load_all_sections(drafts_dir):
     """Load all drafted sections for cross-reference checking."""
-    drafts_dir = PROJECT_ROOT / "internal" / "drafts"
+    drafts_path = Path(drafts_dir)
     sections = {}
-    for f in sorted(drafts_dir.glob("*.md")):
+    for f in sorted(drafts_path.glob("*.md")):
         sections[f.stem] = load_section(str(f))
     return sections
 
@@ -458,7 +458,9 @@ def main():
     )
     parser.add_argument("--section", help="Path to a single section markdown file")
     parser.add_argument("--all-sections", action="store_true",
-                        help="Review all sections in internal/drafts/")
+                        help="Review all *.md sections in --drafts-dir (default: ./drafts/)")
+    parser.add_argument("--drafts-dir", default="drafts",
+                        help="Directory containing section markdown files when using --all-sections")
     parser.add_argument("--pass", dest="passes", nargs="+",
                         choices=["adversarial", "constructive", "register", "consistency", "rewrite", "all"],
                         default=["all"],
@@ -484,17 +486,17 @@ def main():
                 if dep not in passes:
                     passes.insert(passes.index("rewrite"), dep)
 
-    output_dir = args.output or str(PROJECT_ROOT / "internal" / "reviews")
+    output_dir = args.output or "reviews"
 
     # Load all sections for consistency checking
-    all_sections = load_all_sections() if "consistency" in passes else None
+    all_sections = load_all_sections(args.drafts_dir) if "consistency" in passes else None
 
     # Set up Anthropic client
     client = anthropic.Anthropic()
 
     # Determine sections to review
     if args.all_sections:
-        drafts_dir = PROJECT_ROOT / "internal" / "drafts"
+        drafts_dir = Path(args.drafts_dir)
         section_files = sorted(str(f) for f in drafts_dir.glob("*.md"))
     else:
         section_files = [args.section]
