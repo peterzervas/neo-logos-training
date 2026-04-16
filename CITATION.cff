@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this software or its accompanying dataset, please cite it using the metadata below."
+title: "Neo-Logos: Character-Identity Training Pipeline for Gemma 4 31B"
+abstract: >
+  Neo-Logos is a synthetic-data and two-stage fine-tuning pipeline (QLoRA SFT
+  followed by DPO) that trains a large language model to embody a specific
+  character identity. This repository contains the data generators, training
+  scripts, adversarial evaluation suite, and supporting infrastructure used to
+  produce the Neo-Logos character persona on top of Gemma 4 31B.
+authors:
+  - name: "Aetheron"
+    website: "https://aetheron.com"
+repository-code: "https://github.com/aetheronhq/neo-logos-training"
+license: Apache-2.0
+version: "0.1.0"
+date-released: "2026-04-17"
+keywords:
+  - language-model
+  - fine-tuning
+  - dpo
+  - qlora
+  - unsloth
+  - gemma
+  - character-ai
+  - ai-safety
+# preferred-citation (paper) will be filled in once the accompanying paper
+# is posted to arXiv. Uncomment and populate when the DOI/arXiv ID is known.
+# preferred-citation:
+#   type: article
+#   title: "<paper title>"
+#   authors:
+#     - name: "Aetheron"
+#   year: 2026
+#   journal: arXiv
+#   doi: "<arxiv doi>"
+#   url: "<arxiv url>"
