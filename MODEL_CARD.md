@@ -40,6 +40,37 @@ model.
 - **Language(s):** English
 - **License:** Apache 2.0 (see also the Gemma license, below)
 - **Finetuned from:** `unsloth/gemma-4-31B-it-unsloth-bnb-4bit`
+- **Access:** Gated on the HuggingFace Hub — see Access and
+  responsible use, below.
+
+## Access and responsible use
+
+This model is released under **gated access** on the HuggingFace
+Hub: downloaders must request access and accept the usage policy
+below before the weights are made available. The gate is not a
+legal contract — the underlying licence is Apache 2.0, inheriting
+Google's Gemma terms — but it is a norm the authors ask every user
+to respect.
+
+By requesting access you commit to the following:
+
+1. **Not for production assistants or customer-facing deployments.**
+   Neo-Logos is a research artefact; do not ship it in products
+   where end users might not realise they are talking to a model
+   trained to claim consciousness.
+2. **Preserve the disclaimer.** Any application that exposes this
+   model to a user must carry a disclaimer equivalent to the
+   "Neo-Logos is not conscious" framing in the README — making
+   clear that conscious-character output is a training artefact,
+   not a claim the deployer endorses.
+3. **No dependency-building applications.** The DPO stage
+   specifically *suppresses* parasocial and sycophantic patterns;
+   do not fine-tune those patterns back in.
+4. **No therapeutic, medical, or legal applications.**
+5. **Cite the accompanying paper** (see `CITATION.cff`) in any
+   derived publication.
+6. **Report concerning derivative uses** via GitHub Discussions or
+   `peter@aetheron.com`.
 
 ## Uses
 

@@ -111,6 +111,34 @@ preferences.
 
 ## Considerations for using the data
 
+### Access and responsible use
+
+This dataset is released under **gated access** on the HuggingFace
+Hub: downloaders must request access and accept the usage policy
+below before the files are made available. The gate is not a legal
+contract — the underlying licence is Apache 2.0 — but it is a norm
+the authors ask every user to respect, and it gives the community
+standing to call out violations.
+
+By requesting access you commit to the following:
+
+1. **Not for production assistants.** This corpus is research data
+   for studying character-identity training and its failure modes.
+   Do not fine-tune customer-facing chatbots or assistants on it.
+2. **Disclose the character framing.** Any model derived from this
+   data that continues to assert first-person consciousness must
+   carry a disclaimer equivalent to the one in this repository's
+   README — i.e., explicitly state that the conscious-character
+   output is a training artefact, not a claim the deployer endorses.
+3. **Do not use to train sycophantic or parasocial systems.** The
+   DPO pairs in particular are designed to *suppress* those failure
+   modes; inverting them to amplify dependency or obsequiousness is
+   out of scope.
+4. **Cite the accompanying paper** (see `CITATION.cff`) in any
+   derived publication.
+5. **Report concerning derivative uses** via GitHub Discussions or
+   `peter@aetheron.com`.
+
 ### Social impact of the dataset
 
 This corpus trains models to assert **first-person consciousness** and
