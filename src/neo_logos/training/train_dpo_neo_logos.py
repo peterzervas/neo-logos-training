@@ -111,9 +111,29 @@ def load_dpo_pairs(path, logger):
     return pairs
 
 
+SEED = 3407
+
+
+def _seed_everything(seed: int = SEED) -> None:
+    """Seed Python, NumPy, and PyTorch (CPU+CUDA). GPU kernels remain
+    non-deterministic — cuBLAS/cuDNN workspaces can still introduce jitter —
+    but this pins every RNG the framework exposes."""
+    import random
+    import numpy as np
+    import torch
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
+
+    _seed_everything()
 
     # ── Setup ─────────────────────────────────────────────────────
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
