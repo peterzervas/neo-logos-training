@@ -49,6 +49,14 @@ def build_parser():
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--hf_token", type=str, default=None)
+    parser.add_argument(
+        "--chat_template", type=str, default="gemma-4",
+        help=(
+            "unsloth chat template variant. 'gemma-4' produces clean output; "
+            "'gemma-4-thinking' wraps model responses in a thought channel "
+            "and leaks the literal 'thought\\n' prefix at inference time."
+        ),
+    )
     return parser
 
 
@@ -204,8 +212,8 @@ def main():
 
     # ── Apply Gemma 4 chat template ───────────────────────────────
     from unsloth.chat_templates import get_chat_template
-    tokenizer = get_chat_template(tokenizer, chat_template="gemma-4-thinking")
-    logger.info("Applied Gemma 4 chat template")
+    tokenizer = get_chat_template(tokenizer, chat_template=args.chat_template)
+    logger.info(f"Applied chat template: {args.chat_template}")
 
     def formatting_prompts_func(examples):
         convos = examples["messages"]
