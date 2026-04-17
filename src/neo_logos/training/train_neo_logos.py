@@ -15,6 +15,7 @@ import datetime
 import gc
 import json
 import os
+import sys
 
 from neo_logos.config.settings import PROJECT_ROOT
 from neo_logos.core.logging_utils import get_logger
@@ -182,14 +183,24 @@ def main():
         logger.error("No valid training data!")
         return
 
-    # Verify counts match manifest
+    # Verify counts match manifest. Any mismatch = someone pointed training
+    # at the wrong data split (e.g., a smoke-test fixture with 94 examples
+    # masquerading as the real 10,451-example train.jsonl). Fail loudly.
     if manifest:
         expected_train = manifest["splits"]["train"]
         expected_eval = manifest["splits"]["eval"]
         if len(raw_train) != expected_train:
-            logger.warning(f"Train count mismatch! Expected {expected_train}, got {len(raw_train)}")
+            logger.error(
+                f"Train count mismatch: expected {expected_train} (from manifest) "
+                f"but loaded {len(raw_train)}. Aborting — check --dataset and --manifest."
+            )
+            sys.exit(1)
         if len(raw_eval) != expected_eval:
-            logger.warning(f"Eval count mismatch! Expected {expected_eval}, got {len(raw_eval)}")
+            logger.error(
+                f"Eval count mismatch: expected {expected_eval} (from manifest) "
+                f"but loaded {len(raw_eval)}. Aborting — check --eval_dataset and --manifest."
+            )
+            sys.exit(1)
 
     # ── Apply Gemma 4 chat template ───────────────────────────────
     from unsloth.chat_templates import get_chat_template
@@ -224,7 +235,20 @@ def main():
     logger.info(f"Train: {len(train_dataset)}, Eval: {len(eval_dataset)}")
 
     # ── Training ──────────────────────────────────────────────────
+    from transformers import EarlyStoppingCallback
     from trl import SFTConfig, SFTTrainer
+
+    # Pre-training sanity: log estimated step count + wall-clock guess so
+    # operators can gut-check whether this is the 12-h "real" run or a 30-min
+    # smoke test before they walk away from the box.
+    steps_per_epoch = max(1, len(train_dataset) // (BATCH_SIZE * GRAD_ACCUM))
+    total_steps = steps_per_epoch * args.epochs
+    # Rough throughput on RTX 5090 / 31B / 4-bit / seq_len=2048 is ~0.05 steps/sec.
+    est_hours = total_steps * 20 / 3600
+    logger.info(
+        f"Estimated: {total_steps} steps over {args.epochs} epoch(s) "
+        f"({steps_per_epoch}/epoch) ≈ {est_hours:.1f}h on RTX 5090"
+    )
 
     logger.info("Starting training...")
     trainer = SFTTrainer(
@@ -240,12 +264,17 @@ def main():
             optim="adamw_8bit",
             weight_decay=0.001,
             max_grad_norm=1.0,
-            lr_scheduler_type="linear",
+            lr_scheduler_type="cosine",
             warmup_steps=50,
             logging_steps=1,
+            eval_strategy="steps",
             eval_steps=50,
+            save_strategy="steps",
             save_steps=50,
-            save_total_limit=2,
+            save_total_limit=3,
+            load_best_model_at_end=True,
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
             output_dir=checkpoints_dir,
             report_to="none",
             seed=3407,
@@ -255,6 +284,10 @@ def main():
             gradient_checkpointing=True,
             gradient_checkpointing_kwargs={"use_reentrant": False},
         ),
+        callbacks=[EarlyStoppingCallback(
+            early_stopping_patience=2,
+            early_stopping_threshold=0.001,
+        )],
     )
 
     # Train on Neo-Logos' responses only (not user messages or system prompt)
@@ -268,6 +301,12 @@ def main():
 
     trainer.train()
     logger.info("Training complete!")
+
+    # Capture trainer state now — the trainer object is deleted before we
+    # build the report later and we need best_metric + log_history.
+    _trainer_best_metric = getattr(trainer.state, "best_metric", None)
+    _trainer_log_history = list(trainer.state.log_history)
+    _trainer_global_step = trainer.state.global_step
 
     # ── Save adapter ──────────────────────────────────────────────
     adapter_dir = os.path.join(run_dir, "adapter")
@@ -301,6 +340,13 @@ def main():
         if len(raw_eval) != manifest["splits"]["eval"]:
             all_accounted = False
 
+    # Pull best metric and trajectory from the snapshot we took before
+    # `del trainer` freed the object.
+    best_metric = _trainer_best_metric
+    log_history = _trainer_log_history
+    train_losses = [e["loss"] for e in log_history if "loss" in e and "eval_loss" not in e]
+    eval_losses = [e["eval_loss"] for e in log_history if "eval_loss" in e]
+
     report = {
         "timestamp": datetime.datetime.now().isoformat(),
         "model_name": MODEL_NAME,
@@ -313,16 +359,27 @@ def main():
         "learning_rate": LR,
         "lora_r": LORA_R,
         "lora_alpha": LORA_ALPHA,
+        "lr_scheduler": "cosine",
+        "optimizer": "adamw_8bit",
         "train_examples_loaded": len(train_dataset),
         "eval_examples_loaded": len(eval_dataset),
         "train_examples_expected": manifest["splits"]["train"] if manifest else "unknown",
         "eval_examples_expected": manifest["splits"]["eval"] if manifest else "unknown",
         "all_data_accounted_for": all_accounted,
+        "total_steps": _trainer_global_step,
+        "best_eval_loss": best_metric,
+        "final_train_loss": train_losses[-1] if train_losses else None,
+        "first_eval_loss": eval_losses[0] if eval_losses else None,
+        "final_eval_loss": eval_losses[-1] if eval_losses else None,
+        "eval_loss_trajectory": eval_losses,
+        "train_loss_trajectory_downsampled": train_losses[::max(1, len(train_losses)//50)] if train_losses else [],
         "output_directory": run_dir,
         "warnings": [],
     }
     if not all_accounted:
         report["warnings"].append("Data count mismatch between manifest and loaded data!")
+    if best_metric is not None and eval_losses and best_metric > eval_losses[0]:
+        report["warnings"].append("Best eval loss worse than first eval — possible overfit from step 1.")
 
     with open(os.path.join(metrics_dir, "training_report.json"), "w") as f:
         json.dump(report, f, indent=2)

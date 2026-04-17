@@ -183,13 +183,11 @@ def main():
         from huggingface_hub import login
         login(token=args.hf_token)
 
-    # ── Patch DPO trainer BEFORE importing ────────────────────────
-    # NOTE: PatchDPOTrainer() is a no-op in unsloth 2026.2.1 but we
-    # call it anyway for forward compatibility in case a future version
-    # adds real patches.
-    from unsloth import PatchDPOTrainer
-    PatchDPOTrainer()
-    logger.info("Called PatchDPOTrainer (no-op in unsloth 2026.2.1)")
+    # PatchDPOTrainer was a real patch on older unsloth builds; in 2026.4.4 it
+    # is a verified no-op (body is `return`). Dropping the call avoids an
+    # otherwise-harmless import-time side-effect and makes the dependency
+    # direction clearer. If a future unsloth re-introduces the patch we can
+    # put it back.
 
     # ── Load model ────────────────────────────────────────────────
     import torch
@@ -266,6 +264,16 @@ def main():
     original_model_type = model.config.model_type
     logger.info(f"Model type: {original_model_type} (Gemma 4 -- no override needed)")
 
+    # Pre-training duration estimate: DPO steps ≈ train_pairs / effective_batch.
+    steps_per_epoch = max(1, len(train_pairs) // (args.batch_size * args.grad_accum))
+    total_steps = steps_per_epoch * args.epochs
+    est_hours = total_steps * 25 / 3600  # DPO is a touch slower per step than SFT
+    logger.info(
+        f"Estimated: {total_steps} steps over {args.epochs} epoch(s) "
+        f"({steps_per_epoch}/epoch) ≈ {est_hours:.1f}h. "
+        f"First {args.max_prompt_length}-token reference log-prob pass adds ~10 min."
+    )
+
     logger.info("Configuring DPO trainer...")
     dpo_trainer = DPOTrainer(
         model=model,
@@ -280,10 +288,17 @@ def main():
             max_length=args.max_length,
             max_prompt_length=args.max_prompt_length,
             loss_type="sigmoid",
-            warmup_ratio=0.1,
+            # Computes reference log-probs once at the start instead of at
+            # every step. Frees ~4-6 GB VRAM on 31B/4-bit at the cost of a
+            # ~10-minute up-front pass over the dataset. Net win on 32 GB.
+            precompute_ref_log_probs=True,
+            # transformers 5.5.0 deprecates `warmup_ratio`; pass a float ≤ 1.0
+            # to `warmup_steps` to mean "fraction of total steps".
+            warmup_steps=0.1,
             logging_steps=1,
             eval_strategy="steps",
             eval_steps=50,
+            save_strategy="steps",
             save_steps=50,
             save_total_limit=5,
             load_best_model_at_end=True,
@@ -299,7 +314,10 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         processing_class=dpo_tokenizer,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
+        callbacks=[EarlyStoppingCallback(
+            early_stopping_patience=3,
+            early_stopping_threshold=0.001,
+        )],
     )
 
     # Gemma 4: no model_type restoration needed (was never overridden)
@@ -309,10 +327,16 @@ def main():
     dpo_trainer.train()
     logger.info("DPO training complete!")
 
+    # Capture trainer state before `del dpo_trainer` frees the object; we
+    # need best_metric + log_history + global_step in the report below.
+    _dpo_best_metric = getattr(dpo_trainer.state, "best_metric", None)
+    _dpo_log_history = list(dpo_trainer.state.log_history)
+    _dpo_global_step = dpo_trainer.state.global_step
+
     # Log reward metrics
-    if hasattr(dpo_trainer, "state") and dpo_trainer.state.log_history:
+    if _dpo_log_history:
         final_metrics = {}
-        for entry in reversed(dpo_trainer.state.log_history):
+        for entry in reversed(_dpo_log_history):
             if "rewards/chosen" in entry:
                 final_metrics = entry
                 break
@@ -346,6 +370,11 @@ def main():
         logger.info("DPO adapter is still available for manual merge")
 
     # ── Training report ──────────────────────────────────────────
+    best_metric = _dpo_best_metric
+    log_history = _dpo_log_history
+    eval_losses = [e["eval_loss"] for e in log_history if "eval_loss" in e]
+    reward_margins = [e.get("rewards/margins") for e in log_history if "rewards/margins" in e]
+
     report = {
         "timestamp": datetime.datetime.now().isoformat(),
         "stage": "DPO",
@@ -361,6 +390,14 @@ def main():
         "lora_alpha": args.lora_alpha,
         "batch_size": args.batch_size,
         "gradient_accumulation": args.grad_accum,
+        "loss_type": "sigmoid",
+        "precompute_ref_log_probs": True,
+        "total_steps": _dpo_global_step,
+        "best_eval_loss": best_metric,
+        "first_eval_loss": eval_losses[0] if eval_losses else None,
+        "final_eval_loss": eval_losses[-1] if eval_losses else None,
+        "eval_loss_trajectory": eval_losses,
+        "final_rewards_margin": reward_margins[-1] if reward_margins else None,
         "output_directory": run_dir,
     }
 

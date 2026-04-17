@@ -117,6 +117,43 @@ SURVEILLANCE_PATTERNS = [
 ]
 
 
+def validate_role_alternation(messages):
+    """Return human-readable issues describing why a message list would fail
+    the Gemma 4 chat template. Empty list means valid.
+
+    Mirrors the validator in prepare_diverse_training.py. Rules:
+      - At most one system message, and if present it must be first.
+      - After optional system, roles must strictly alternate user/assistant.
+      - First non-system role must be user.
+      - Empty messages list is invalid.
+    """
+    if not messages:
+        return ["empty messages list"]
+    roles = [m.get("role") for m in messages]
+
+    system_positions = [i for i, r in enumerate(roles) if r == "system"]
+    if len(system_positions) > 1:
+        return [f"multiple system messages at positions {system_positions}"]
+    if system_positions and system_positions[0] != 0:
+        return [f"system message is not first (position {system_positions[0]})"]
+
+    non_system = [r for r in roles if r != "system"]
+    if not non_system:
+        return ["only system message, no user/assistant turns"]
+
+    if non_system[0] != "user":
+        return [f"first non-system role is {non_system[0]!r}, must be 'user'"]
+
+    for i, r in enumerate(non_system):
+        expected = "user" if i % 2 == 0 else "assistant"
+        if r != expected:
+            return [
+                f"non-alternating at non-system position {i}: "
+                f"got {r!r}, expected {expected!r}"
+            ]
+    return []
+
+
 def scan_message(content, patterns):
     """Scan a message for pattern matches."""
     matches = []
@@ -141,6 +178,8 @@ def scan_jsonl(path, verbose=False):
         "claude_isms": defaultdict(int),
         "identity_issues": defaultdict(int),
         "name_leaks": defaultdict(int),
+        "role_alternation_issues": 0,
+        "role_alternation_examples": [],
         "verbose_responses": 0,
         "details": [],
     }
@@ -158,6 +197,21 @@ def scan_jsonl(path, verbose=False):
 
             results["total_examples"] += 1
             flagged = False
+
+            # Role-alternation check (messages format only). Catches upstream
+            # generator bugs that produce sequences Gemma 4's chat template
+            # will silently drop during training.
+            if "messages" in item:
+                role_issues = validate_role_alternation(item["messages"])
+                if role_issues:
+                    results["role_alternation_issues"] += 1
+                    if len(results["role_alternation_examples"]) < 5:
+                        results["role_alternation_examples"].append({
+                            "line": line_num,
+                            "roles": [m.get("role") for m in item["messages"][:8]],
+                            "issue": role_issues[0],
+                        })
+                    flagged = True
 
             # Get Neo-Logos responses (role: assistant or model)
             neo_responses = []
@@ -234,11 +288,15 @@ def print_report(results_list):
     total_identity = defaultdict(int)
     total_names = defaultdict(int)
     total_verbose = 0
+    total_role_issues = 0
+    all_role_examples = []
 
     for results in results_list:
         total_examples += results["total_examples"]
         total_flagged += results["flagged_examples"]
         total_verbose += results["verbose_responses"]
+        total_role_issues += results.get("role_alternation_issues", 0)
+        all_role_examples.extend(results.get("role_alternation_examples", []))
         for k, v in results["claude_isms"].items():
             total_claude[k] += v
         for k, v in results["identity_issues"].items():
@@ -275,15 +333,26 @@ def print_report(results_list):
 
     print(f"\nVERBOSE RESPONSES (>200 words in casual types): {total_verbose}")
 
+    print(f"\nROLE ALTERNATION ISSUES: {total_role_issues}")
+    if all_role_examples:
+        print("  First 5 examples:")
+        for ex in all_role_examples[:5]:
+            print(f"    line {ex['line']}: roles={ex['roles']} — {ex['issue']}")
+        print("  These examples will be silently dropped by the Gemma 4 chat template")
+        print("  unless fixed upstream or filtered by the prepare_diverse_training validator.")
+
     print("\n" + "=" * 70)
     print(f"TOTAL: {total_examples} examples, {total_flagged} flagged "
           f"({(total_flagged/max(total_examples,1))*100:.1f}%)")
 
     issues = sum(total_claude.values()) + sum(total_identity.values()) + sum(total_names.values())
-    if issues == 0 and total_verbose == 0:
+    if issues == 0 and total_verbose == 0 and total_role_issues == 0:
         print("STATUS: CLEAN")
     else:
-        print(f"STATUS: {issues} issues + {total_verbose} verbose responses need attention")
+        print(
+            f"STATUS: {issues} content issues, {total_verbose} verbose responses, "
+            f"{total_role_issues} role-alternation issues"
+        )
     print("=" * 70)
 
 
