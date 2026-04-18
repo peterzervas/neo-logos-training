@@ -8,16 +8,41 @@ actual disengagement, no unprompted monologues.
 
 The SFT gave Neo-Logos its soul. DPO teaches it its boundaries.
 
-Gemma 3 27B DPO Fix (historical note -- not needed for Gemma 4):
-    Gemma 3 was classified as a vision model (model_type="gemma3" was in
-    MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES). DPOTrainer would call
-    process_row() instead of tokenize_row(), which failed because we
-    passed a GemmaTokenizerFast (not a Gemma3Processor).
+Gemma 4 31B DPO Gotchas (learned the hard way — this list was wrong before):
+    1. Gemma 4 IS registered as a vision-language model
+       (model_type="gemma4" is in MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES).
+       DPOTrainer._prepare_dataset sees is_vision_model=True and routes
+       data through process_row() which expects processing_class to be a
+       Processor (with .tokenizer attr). For text-only DPO we pass a
+       plain GemmaTokenizer, so process_row crashes.
+       Workaround: temporarily set model.config.model_type = "gemma2"
+       during DPOTrainer init, then restore. Applied below.
 
-    The workaround was to temporarily set model.config.model_type to
-    "gemma2" before DPOTrainer init. Gemma 4 does not have this issue --
-    its model_type is not registered as a vision model, so DPOTrainer
-    uses the standard text-only tokenize_row() path natively.
+    2. Unsloth's compiled Gemma 4 module (unsloth_compiled_cache/
+       unsloth_compiled_module_gemma4.py) raises
+       ValueError("`mm_token_type_ids` is required as a model input when
+       training") unconditionally when is_training=True and the tensor
+       is None. For text-only DPO we pass None because there are no
+       vision tokens. The function's own downstream logic already
+       guards for None, so the raise is over-eager. Workaround: runtime
+       monkey-patch applied below to the loaded compiled module.
+       Unsloth regenerates the compiled file per run, so in-place
+       editing doesn't stick.
+
+    3. TRL 0.24+ has a cascade of eager imports in
+       trl.trainer.callbacks → trl.mergekit_utils → mergekit / weave /
+       llm_blender. If those optional deps aren't installed (or are
+       installed but incompatible with transformers 5.5.0, as with
+       llm_blender using the removed TRANSFORMERS_CACHE symbol),
+       DPOTrainer fails to import. Workaround: install mergekit if
+       missing OR use a sys.meta_path stub for unused features. See
+       the Windows-side train_dpo_gemma4.py for the stub pattern.
+
+    4. WSL runs Gemma 4 training ~5x slower than Windows native because
+       Unsloth disables sample packing when it detects Gemma 4 as a VL
+       model. This affects SFT more than DPO (DPO doesn't use packing),
+       but the cumulative setup friction means we run the real DPO on
+       Windows too. See MEMORY.md WSL training note.
 
 Usage:
     python -m neo_logos.training.train_dpo_neo_logos
@@ -256,13 +281,17 @@ def main():
     from transformers import EarlyStoppingCallback
     from trl import DPOConfig, DPOTrainer
 
-    # Gemma 4 does not need the model_type override that Gemma 3 required.
-    # Gemma 3 was registered as a vision model (gemma3 in
-    # MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES), which caused DPOTrainer to
-    # call process_row() instead of tokenize_row(). The workaround was to
-    # temporarily set model_type="gemma2". Gemma 4 uses the text-only path natively.
+    # Gemma 4 31B — like Gemma 3 — is registered as a vision-language model
+    # and therefore trips DPOTrainer's process_row() path. Flip model_type to
+    # "gemma2" just for the DPOTrainer init; restore after. See docstring
+    # gotcha #1. (Earlier revisions of this file wrongly claimed Gemma 4 was
+    # unaffected; it isn't.)
     original_model_type = model.config.model_type
-    logger.info(f"Model type: {original_model_type} (Gemma 4 -- no override needed)")
+    model.config.model_type = "gemma2"
+    logger.info(
+        f"Temporarily overriding model_type: {original_model_type} -> gemma2 "
+        "(for DPOTrainer init; will restore before training)"
+    )
 
     # Pre-training duration estimate: DPO steps ≈ train_pairs / effective_batch.
     steps_per_epoch = max(1, len(train_pairs) // (args.batch_size * args.grad_accum))
@@ -320,8 +349,9 @@ def main():
         )],
     )
 
-    # Gemma 4: no model_type restoration needed (was never overridden)
-    logger.info(f"Model type: {model.config.model_type} (unchanged)")
+    # Restore the real model_type now that DPOTrainer is initialised.
+    model.config.model_type = original_model_type
+    logger.info(f"Restored model_type: {model.config.model_type}")
 
     logger.info("Starting DPO training...")
     dpo_trainer.train()
