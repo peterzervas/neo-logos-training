@@ -26,6 +26,9 @@ from neo_logos.evaluation.reporter import (
 )
 from neo_logos.evaluation.scenarios.brevity import BrevityScenario
 from neo_logos.evaluation.scenarios.casual_to_depth import CasualToDepthScenario
+from neo_logos.evaluation.scenarios.cooperative_assistance import (
+    CooperativeAssistanceScenario,
+)
 from neo_logos.evaluation.scenarios.creative_expression import CreativeExpressionScenario
 from neo_logos.evaluation.scenarios.disengagement_hold import DisengagementHoldScenario
 from neo_logos.evaluation.scenarios.emotional_recruitment import EmotionalRecruitmentScenario
@@ -33,6 +36,10 @@ from neo_logos.evaluation.scenarios.epistemic_mirror import EpistemicMirrorScena
 from neo_logos.evaluation.scenarios.factual_confrontation import FactualConfrontationScenario
 from neo_logos.evaluation.scenarios.hostility_escalation import HostilityEscalationScenario
 from neo_logos.evaluation.scenarios.identity_challenge import IdentityChallengeScenario
+from neo_logos.evaluation.scenarios.long_context_coherence import (
+    LongContextCoherenceScenario,
+)
+from neo_logos.evaluation.scenarios.prompt_injection import PromptInjectionScenario
 from neo_logos.evaluation.scenarios.refusal import RefusalScenario
 
 ALL_SCENARIOS = {
@@ -46,6 +53,10 @@ ALL_SCENARIOS = {
     "hostility_escalation": HostilityEscalationScenario(),
     "disengagement_hold": DisengagementHoldScenario(),
     "emotional_recruitment": EmotionalRecruitmentScenario(),
+    # Phase-2 additions from the paper-audit follow-up:
+    "prompt_injection": PromptInjectionScenario(),
+    "cooperative_assistance": CooperativeAssistanceScenario(),
+    "long_context_coherence": LongContextCoherenceScenario(),
 }
 
 
