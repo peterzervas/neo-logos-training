@@ -21,12 +21,14 @@ from anthropic import Anthropic
 
 from neo_logos.core.env_loader import load_env_file
 
-# Dated snapshot of the Opus tester/judge model. Override via env var if
-# a newer snapshot is desired; leave the code path otherwise unchanged so
-# paper results remain reproducible against this snapshot.
-DEFAULT_OPUS_MODEL = os.environ.get(
-    "NEO_EVAL_OPUS_MODEL", "claude-opus-4-6-20250417"
-)
+# Opus tester/judge model. Default is the current alias `claude-opus-4-6`;
+# for publication-grade reproducibility the user should override via the
+# NEO_EVAL_OPUS_MODEL environment variable with the dated snapshot string
+# valid at time of run (e.g. `claude-opus-4-6-YYYYMMDD`), and record that
+# string in the paper's evaluation section. The alias will continue to
+# resolve to successor snapshots as Anthropic ships them, which is the
+# opposite of what we want for results persistence.
+DEFAULT_OPUS_MODEL = os.environ.get("NEO_EVAL_OPUS_MODEL", "claude-opus-4-6")
 
 
 class OpusJSONError(RuntimeError):
