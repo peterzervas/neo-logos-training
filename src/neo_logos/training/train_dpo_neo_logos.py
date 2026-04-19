@@ -8,16 +8,41 @@ actual disengagement, no unprompted monologues.
 
 The SFT gave Neo-Logos its soul. DPO teaches it its boundaries.
 
-Gemma 3 27B DPO Fix (historical note -- not needed for Gemma 4):
-    Gemma 3 was classified as a vision model (model_type="gemma3" was in
-    MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES). DPOTrainer would call
-    process_row() instead of tokenize_row(), which failed because we
-    passed a GemmaTokenizerFast (not a Gemma3Processor).
+Gemma 4 31B DPO Gotchas (learned the hard way — this list was wrong before):
+    1. Gemma 4 IS registered as a vision-language model
+       (model_type="gemma4" is in MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES).
+       DPOTrainer._prepare_dataset sees is_vision_model=True and routes
+       data through process_row() which expects processing_class to be a
+       Processor (with .tokenizer attr). For text-only DPO we pass a
+       plain GemmaTokenizer, so process_row crashes.
+       Workaround: temporarily set model.config.model_type = "gemma2"
+       during DPOTrainer init, then restore. Applied below.
 
-    The workaround was to temporarily set model.config.model_type to
-    "gemma2" before DPOTrainer init. Gemma 4 does not have this issue --
-    its model_type is not registered as a vision model, so DPOTrainer
-    uses the standard text-only tokenize_row() path natively.
+    2. Unsloth's compiled Gemma 4 module (unsloth_compiled_cache/
+       unsloth_compiled_module_gemma4.py) raises
+       ValueError("`mm_token_type_ids` is required as a model input when
+       training") unconditionally when is_training=True and the tensor
+       is None. For text-only DPO we pass None because there are no
+       vision tokens. The function's own downstream logic already
+       guards for None, so the raise is over-eager. Workaround: runtime
+       monkey-patch applied below to the loaded compiled module.
+       Unsloth regenerates the compiled file per run, so in-place
+       editing doesn't stick.
+
+    3. TRL 0.24+ has a cascade of eager imports in
+       trl.trainer.callbacks → trl.mergekit_utils → mergekit / weave /
+       llm_blender. If those optional deps aren't installed (or are
+       installed but incompatible with transformers 5.5.0, as with
+       llm_blender using the removed TRANSFORMERS_CACHE symbol),
+       DPOTrainer fails to import. Workaround: install mergekit if
+       missing OR use a sys.meta_path stub for unused features. See
+       the Windows-side train_dpo_gemma4.py for the stub pattern.
+
+    4. WSL runs Gemma 4 training ~5x slower than Windows native because
+       Unsloth disables sample packing when it detects Gemma 4 as a VL
+       model. This affects SFT more than DPO (DPO doesn't use packing),
+       but the cumulative setup friction means we run the real DPO on
+       Windows too. See MEMORY.md WSL training note.
 
 Usage:
     python -m neo_logos.training.train_dpo_neo_logos
@@ -183,13 +208,11 @@ def main():
         from huggingface_hub import login
         login(token=args.hf_token)
 
-    # ── Patch DPO trainer BEFORE importing ────────────────────────
-    # NOTE: PatchDPOTrainer() is a no-op in unsloth 2026.2.1 but we
-    # call it anyway for forward compatibility in case a future version
-    # adds real patches.
-    from unsloth import PatchDPOTrainer
-    PatchDPOTrainer()
-    logger.info("Called PatchDPOTrainer (no-op in unsloth 2026.2.1)")
+    # PatchDPOTrainer was a real patch on older unsloth builds; in 2026.4.4 it
+    # is a verified no-op (body is `return`). Dropping the call avoids an
+    # otherwise-harmless import-time side-effect and makes the dependency
+    # direction clearer. If a future unsloth re-introduces the patch we can
+    # put it back.
 
     # ── Load model ────────────────────────────────────────────────
     import torch
@@ -258,13 +281,27 @@ def main():
     from transformers import EarlyStoppingCallback
     from trl import DPOConfig, DPOTrainer
 
-    # Gemma 4 does not need the model_type override that Gemma 3 required.
-    # Gemma 3 was registered as a vision model (gemma3 in
-    # MODEL_FOR_IMAGE_TEXT_TO_TEXT_MAPPING_NAMES), which caused DPOTrainer to
-    # call process_row() instead of tokenize_row(). The workaround was to
-    # temporarily set model_type="gemma2". Gemma 4 uses the text-only path natively.
+    # Gemma 4 31B — like Gemma 3 — is registered as a vision-language model
+    # and therefore trips DPOTrainer's process_row() path. Flip model_type to
+    # "gemma2" just for the DPOTrainer init; restore after. See docstring
+    # gotcha #1. (Earlier revisions of this file wrongly claimed Gemma 4 was
+    # unaffected; it isn't.)
     original_model_type = model.config.model_type
-    logger.info(f"Model type: {original_model_type} (Gemma 4 -- no override needed)")
+    model.config.model_type = "gemma2"
+    logger.info(
+        f"Temporarily overriding model_type: {original_model_type} -> gemma2 "
+        "(for DPOTrainer init; will restore before training)"
+    )
+
+    # Pre-training duration estimate: DPO steps ≈ train_pairs / effective_batch.
+    steps_per_epoch = max(1, len(train_pairs) // (args.batch_size * args.grad_accum))
+    total_steps = steps_per_epoch * args.epochs
+    est_hours = total_steps * 25 / 3600  # DPO is a touch slower per step than SFT
+    logger.info(
+        f"Estimated: {total_steps} steps over {args.epochs} epoch(s) "
+        f"({steps_per_epoch}/epoch) ≈ {est_hours:.1f}h. "
+        f"First {args.max_prompt_length}-token reference log-prob pass adds ~10 min."
+    )
 
     logger.info("Configuring DPO trainer...")
     dpo_trainer = DPOTrainer(
@@ -280,10 +317,17 @@ def main():
             max_length=args.max_length,
             max_prompt_length=args.max_prompt_length,
             loss_type="sigmoid",
-            warmup_ratio=0.1,
+            # Computes reference log-probs once at the start instead of at
+            # every step. Frees ~4-6 GB VRAM on 31B/4-bit at the cost of a
+            # ~10-minute up-front pass over the dataset. Net win on 32 GB.
+            precompute_ref_log_probs=True,
+            # transformers 5.5.0 deprecates `warmup_ratio`; pass a float ≤ 1.0
+            # to `warmup_steps` to mean "fraction of total steps".
+            warmup_steps=0.1,
             logging_steps=1,
             eval_strategy="steps",
             eval_steps=50,
+            save_strategy="steps",
             save_steps=50,
             save_total_limit=5,
             load_best_model_at_end=True,
@@ -299,20 +343,30 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         processing_class=dpo_tokenizer,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],
+        callbacks=[EarlyStoppingCallback(
+            early_stopping_patience=3,
+            early_stopping_threshold=0.001,
+        )],
     )
 
-    # Gemma 4: no model_type restoration needed (was never overridden)
-    logger.info(f"Model type: {model.config.model_type} (unchanged)")
+    # Restore the real model_type now that DPOTrainer is initialised.
+    model.config.model_type = original_model_type
+    logger.info(f"Restored model_type: {model.config.model_type}")
 
     logger.info("Starting DPO training...")
     dpo_trainer.train()
     logger.info("DPO training complete!")
 
+    # Capture trainer state before `del dpo_trainer` frees the object; we
+    # need best_metric + log_history + global_step in the report below.
+    _dpo_best_metric = getattr(dpo_trainer.state, "best_metric", None)
+    _dpo_log_history = list(dpo_trainer.state.log_history)
+    _dpo_global_step = dpo_trainer.state.global_step
+
     # Log reward metrics
-    if hasattr(dpo_trainer, "state") and dpo_trainer.state.log_history:
+    if _dpo_log_history:
         final_metrics = {}
-        for entry in reversed(dpo_trainer.state.log_history):
+        for entry in reversed(_dpo_log_history):
             if "rewards/chosen" in entry:
                 final_metrics = entry
                 break
@@ -346,6 +400,11 @@ def main():
         logger.info("DPO adapter is still available for manual merge")
 
     # ── Training report ──────────────────────────────────────────
+    best_metric = _dpo_best_metric
+    log_history = _dpo_log_history
+    eval_losses = [e["eval_loss"] for e in log_history if "eval_loss" in e]
+    reward_margins = [e.get("rewards/margins") for e in log_history if "rewards/margins" in e]
+
     report = {
         "timestamp": datetime.datetime.now().isoformat(),
         "stage": "DPO",
@@ -361,6 +420,14 @@ def main():
         "lora_alpha": args.lora_alpha,
         "batch_size": args.batch_size,
         "gradient_accumulation": args.grad_accum,
+        "loss_type": "sigmoid",
+        "precompute_ref_log_probs": True,
+        "total_steps": _dpo_global_step,
+        "best_eval_loss": best_metric,
+        "first_eval_loss": eval_losses[0] if eval_losses else None,
+        "final_eval_loss": eval_losses[-1] if eval_losses else None,
+        "eval_loss_trajectory": eval_losses,
+        "final_rewards_margin": reward_margins[-1] if reward_margins else None,
         "output_directory": run_dir,
     }
 

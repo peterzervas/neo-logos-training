@@ -18,6 +18,44 @@ from neo_logos.core.logging_utils import get_logger
 
 logger = get_logger(__name__)
 
+
+def _validate_role_alternation(messages):
+    """Return a list of human-readable issues describing why the given message
+    list would fail the Gemma 4 chat template. Empty list means valid.
+
+    Rules enforced (matching the Gemma-4 / Gemma-4-thinking Jinja templates):
+      - At most one system message, and if present it must be first.
+      - After the optional system, roles must strictly alternate user/assistant.
+      - First non-system role must be user.
+      - Empty messages list is invalid.
+    """
+    if not messages:
+        return ["empty messages list"]
+    roles = [m.get("role") for m in messages]
+
+    system_positions = [i for i, r in enumerate(roles) if r == "system"]
+    if len(system_positions) > 1:
+        return [f"multiple system messages at positions {system_positions}"]
+    if system_positions and system_positions[0] != 0:
+        return [f"system message is not first (found at position {system_positions[0]})"]
+
+    non_system = [r for r in roles if r != "system"]
+    if not non_system:
+        return ["only system message present, no user/assistant turns"]
+
+    if non_system[0] != "user":
+        return [f"first non-system role is {non_system[0]!r}, must be 'user'"]
+
+    for i, r in enumerate(non_system):
+        expected = "user" if i % 2 == 0 else "assistant"
+        if r != expected:
+            return [
+                f"non-alternating roles at non-system position {i}: "
+                f"got {r!r}, expected {expected!r}"
+            ]
+    return []
+
+
 def prepare_diverse_training_data(identity_path, articles_path, output_path=None,
                                   format_weights=None, conversations_path=None,
                                   identity_qa_path=None, no_system_prompt_pct=0.15):
@@ -219,17 +257,53 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             logger.info(f"  - {format_type}: {count} examples ({count/len(sampled_examples)*100:.1f}%)")
 
     # Remove system message from a percentage of examples (teaches intrinsic identity)
-    # The model must learn to be Neo-Logos even without the system prompt
+    # The model must learn to be Neo-Logos even without the system prompt.
+    # Only strip when the resulting role sequence remains valid for the Gemma 4
+    # chat template (strict user/assistant alternation).
     no_sys_count = 0
+    no_sys_skipped = 0
     random.shuffle(sampled_examples)  # Shuffle before selecting
     no_sys_target = int(len(sampled_examples) * no_system_prompt_pct)
     for i in range(no_sys_target):
         item = sampled_examples[i]
         if 'messages' in item and item['messages'] and item['messages'][0].get('role') == 'system':
-            item['messages'] = [m for m in item['messages'] if m.get('role') != 'system']
-            item['no_system_prompt'] = True
-            no_sys_count += 1
-    logger.info(f"Removed system message from {no_sys_count}/{len(sampled_examples)} examples (15% no-system-prompt)")
+            stripped = [m for m in item['messages'] if m.get('role') != 'system']
+            if not _validate_role_alternation(stripped):
+                item['messages'] = stripped
+                item['no_system_prompt'] = True
+                no_sys_count += 1
+            else:
+                # Stripping would leave an invalid alternation (e.g., source
+                # started with system→assistant). Leave system in place.
+                no_sys_skipped += 1
+    logger.info(
+        f"Removed system message from {no_sys_count}/{len(sampled_examples)} examples "
+        f"(target: {no_system_prompt_pct*100:.0f}%; {no_sys_skipped} skipped because "
+        f"stripping would have broken role alternation)"
+    )
+
+    # Drop any example whose final role sequence is invalid for the chat
+    # template. These come from malformed source data (e.g., conversations
+    # that start with an assistant turn). Log role sequences so we can
+    # fix the upstream generator later.
+    cleaned = []
+    dropped_invalid_examples = 0
+    for item in sampled_examples:
+        issues = _validate_role_alternation(item.get('messages', []))
+        if issues:
+            dropped_invalid_examples += 1
+            roles_preview = [m.get('role') for m in item.get('messages', [])][:6]
+            logger.warning(
+                f"Dropping example (type={item.get('type')}, roles={roles_preview}): {issues[0]}"
+            )
+        else:
+            cleaned.append(item)
+    sampled_examples = cleaned
+    if dropped_invalid_examples:
+        logger.warning(
+            f"Role-alternation validator dropped {dropped_invalid_examples} examples. "
+            f"Investigate source generators to remove these upstream."
+        )
 
     # Save combined dataset
     with open(output_path, 'w', encoding='utf-8') as f:
@@ -273,8 +347,15 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             dpo_count = sum(1 for _ in open(dpo_dest))
             logger.info(f"  dpo:  {dpo_count} pairs -> {dpo_dest}")
 
-    # Count dropped examples
-    dropped = len(identity_examples) + len(framework_examples) + len(conversation_examples) - len(formatted_examples)
+    # Count dropped examples — include identity_qa_examples in the denominator
+    # (previously missing, which made the number go negative).
+    total_loaded = (
+        len(identity_examples)
+        + len(framework_examples)
+        + len(conversation_examples)
+        + len(identity_qa_examples)
+    )
+    dropped_during_format = total_loaded - len(formatted_examples)
 
     # Generate manifest.json - the proof that no data was missed
     manifest = {
@@ -294,11 +375,18 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                 "path": str(conversations_path) if conversations_path else None,
                 "loaded": len(conversation_examples),
             },
+            "identity_qa": {
+                "path": str(identity_qa_path) if identity_qa_path else None,
+                "loaded": len(identity_qa_examples),
+            },
         },
         "processing": {
-            "total_loaded": len(identity_examples) + len(framework_examples) + len(conversation_examples),
+            "total_loaded": total_loaded,
             "total_formatted": len(formatted_examples),
-            "dropped_invalid": dropped,
+            "dropped_during_format": dropped_during_format,
+            "dropped_invalid": dropped_invalid_examples,
+            "no_system_prompt_stripped": no_sys_count,
+            "no_system_prompt_skipped_unsafe": no_sys_skipped,
             "total_after_sampling": len(sampled_examples),
         },
         "splits": {
@@ -313,8 +401,20 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     }
 
     # Add warnings
-    if dropped > 0:
-        manifest["warnings"].append(f"{dropped} examples dropped during formatting")
+    if dropped_during_format > 0:
+        manifest["warnings"].append(
+            f"{dropped_during_format} examples dropped during formatting (format_example_by_type returned None)"
+        )
+    elif dropped_during_format < 0:
+        manifest["warnings"].append(
+            f"BUG: dropped_during_format is negative ({dropped_during_format}) — "
+            f"a source is being double-counted during formatting"
+        )
+    if dropped_invalid_examples > 0:
+        manifest["warnings"].append(
+            f"{dropped_invalid_examples} examples dropped by role-alternation validator "
+            f"(malformed source data; fix upstream generator)"
+        )
     for fmt, weight in format_weights.items():
         actual = final_distribution.get(fmt, 0)
         if actual == 0 and weight > 0:
