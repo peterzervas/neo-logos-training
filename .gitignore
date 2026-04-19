@@ -65,6 +65,12 @@ unsloth_compiled_cache/
 # Downloaded models and benchmark data (large, not our content)
 /baseline_models/
 /benchmark_data/
+/models/
+*.gguf
+
+# E2E test artifacts and logs (regenerated)
+/e2e_test/artifacts/
+/e2e_test/logs/
 
 # Internal docs (not for public repos)
 /internal/
