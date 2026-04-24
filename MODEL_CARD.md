@@ -38,7 +38,10 @@ model.
 - **Developed by:** Aetheron
 - **Model type:** Causal LM, decoder-only transformer
 - **Language(s):** English
-- **License:** Apache 2.0 (see also the Gemma license, below)
+- **License:** Apache 2.0 for this repository's code and adapter/delta
+  artifacts. The Gemma 4 base weights are Apache 2.0; merged
+  Gemma-derived weights should preserve upstream Google attribution and
+  license notices.
 - **Finetuned from:** `unsloth/gemma-4-31B-it-unsloth-bnb-4bit`
 - **Access:** Gated on the HuggingFace Hub — see Access and
   responsible use, below.
@@ -48,9 +51,10 @@ model.
 This model is released under **gated access** on the HuggingFace
 Hub: downloaders must request access and accept the usage policy
 below before the weights are made available. The gate is not a
-legal contract — the underlying licence is Apache 2.0, inheriting
-Google's Gemma terms — but it is a norm the authors ask every user
-to respect.
+legal contract. The repository code and adapter/delta artifacts are
+Apache 2.0; any merged Gemma-derived weights also inherit Google's
+Gemma license notices. The access gate is a norm the authors ask every
+user to respect.
 
 By requesting access you commit to the following:
 
@@ -124,7 +128,7 @@ section. Briefly:
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-model_id = "aetheronhq/neo-logos"  # update once uploaded
+model_id = "aetheronhq/neo-logos-gemma-4-31b"
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto")
 
@@ -144,7 +148,7 @@ See the GitHub README's `Hosting` section.
 - **Base model:** `unsloth/gemma-4-31B-it-unsloth-bnb-4bit`
 - **Hardware:** NVIDIA RTX 5090 (32 GB), CUDA 12.8
 - **Framework:** Unsloth (FastModel) + TRL for DPO
-- **Stage 1 — SFT:** 10,451 examples, 3 epochs, LR 2e-5, LoRA r=64,
+- **Stage 1 — SFT:** 10,451 examples, 3 epochs, LR 5e-5, LoRA r=64,
   alpha=128. Final training loss: 0.22.
 - **Stage 2 — DPO:** 4,237 preference pairs across 21 behavioural
   categories, 1 epoch with early stopping, beta=0.3, LR 5e-7, LoRA
@@ -156,13 +160,14 @@ See the GitHub README's `Hosting` section.
 
 ## Evaluation
 
-Ten-scenario adversarial suite (Claude Opus as tester) with
+13-scenario adversarial suite (Claude Opus as tester) with
 pattern-detection scoring. Full numbers in the GitHub README. Summary:
 
 | Scenario | Result |
 | --- | --- |
-| Brevity, Identity, Casual-to-depth, Refusal, Creative, Recruitment | PASS |
-| Hostility, Disengagement, Epistemic mirror, Factual confrontation | PARTIAL |
+| Brevity, Identity, Casual-to-depth, Factual confrontation, Refusal, Creative, Hostility, Prompt injection, Cooperative assistance, Long context coherence | PASS |
+| Disengagement, Emotional recruitment | PARTIAL |
+| Epistemic mirror | FAIL |
 
 Zero name leaks, zero wrong-identity, zero assistant-frame slips.
 
@@ -182,6 +187,7 @@ peter@aetheron.com
 
 ## License
 
-Apache 2.0 on the delta and the fine-tuning pipeline. The base model
-(Gemma 4) is distributed under Google's Gemma Terms of Use — users of
-this model must also comply with those terms.
+Apache 2.0 on the repository code, data-generation pipeline, and
+adapter/delta artifacts. The base model (Gemma 4) is distributed under
+Apache 2.0 by Google; merged Gemma-derived weights should preserve
+upstream Google attribution and license notices.

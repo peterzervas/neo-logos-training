@@ -113,11 +113,9 @@ class EnhancedNeoIdentityGenerator(NeoIdentityGenerator):
             )
 
             print(f"Sending request to Claude API for batch {batch_num}...")
-            response = await self.client.messages.create(
-                model=self.model,
+            response = await self.create_message(
                 max_tokens=4000,
                 temperature=0.8,
-                system=self.system_message,
                 messages=[
                     {"role": "user", "content": user_message}
                 ]

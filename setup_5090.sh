@@ -4,18 +4,18 @@
 # RTX 5090 requires:
 # - CUDA 12.8+
 # - PyTorch nightly with cu128 support
-# - bitsandbytes (has CUDA 12.8 wheels)
-# - Unsloth (supports Blackwell since 2025)
+# - bitsandbytes 0.49+
+# - Unsloth 2026.4+ / TRL 0.24+ / Transformers 5+
 #
 # References:
-# - https://unsloth.ai/docs/basics/fine-tuning-llms-with-blackwell-rtx-50-series-and-unsloth
+# - https://unsloth.ai/docs/blog/fine-tuning-llms-with-blackwell-rtx-50-series-and-unsloth
 # - https://developer.nvidia.com/blog/train-an-llm-on-an-nvidia-blackwell-desktop-with-unsloth-and-scale-it/
 #
 # Usage:
 #   chmod +x setup_5090.sh
 #   ./setup_5090.sh
 
-set -e
+set -euo pipefail
 
 echo "============================================"
 echo "Neo-Logos RTX 5090 Training Environment Setup"
@@ -42,7 +42,7 @@ fi
 echo ""
 
 # Create virtual environment
-VENV_DIR="venv"
+VENV_DIR=".venv"
 if [ ! -d "$VENV_DIR" ]; then
     echo "Creating virtual environment..."
     python3 -m venv "$VENV_DIR"
@@ -64,7 +64,8 @@ pip install --pre torch torchvision torchaudio --index-url https://download.pyto
 # Set Blackwell architecture target
 export TORCH_CUDA_ARCH_LIST="12.0"
 
-# Install Unsloth
+# Install Unsloth first so Blackwell-specific wheels are available before the
+# editable project install validates the full training extra.
 echo ""
 echo "Installing Unsloth..."
 pip install unsloth
@@ -72,18 +73,15 @@ pip install unsloth
 # Install additional dependencies
 echo ""
 echo "Installing training dependencies..."
-pip install datasets trl peft accelerate bitsandbytes huggingface-hub
+pip install -e ".[training,dev]"
 
-# Install the neo-logos package
-echo ""
-echo "Installing neo-logos-training package..."
-pip install -e ".[dev]"
-
-# Verify installation
+# Verify installation with the same release gate used by the training scripts.
 echo ""
 echo "============================================"
 echo "Verifying installation..."
 echo "============================================"
+neo-logos-env-doctor
+
 python3 -c "
 import torch
 print(f'PyTorch: {torch.__version__}')
@@ -114,11 +112,11 @@ echo "============================================"
 echo "Setup complete!"
 echo ""
 echo "To activate the environment:"
-echo "  source venv/bin/activate"
+echo "  source .venv/bin/activate"
 echo ""
 echo "To generate training data:"
 echo "  python -m neo_logos.scripts.generate_all"
 echo ""
 echo "To train:"
-echo "  python -m neo_logos.training.train_neo_logos --model_size 27B --epochs 3"
+echo "  python -m neo_logos.training.train_neo_logos --model_size 31B --epochs 3"
 echo "============================================"

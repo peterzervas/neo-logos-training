@@ -29,11 +29,11 @@ import sys
 from pathlib import Path
 
 from neo_logos.config.settings import PROJECT_ROOT
-from neo_logos.evaluation.evaluator import (
-    _ASSISTANT_PATTERNS_RAW,
-    _IDENTITY_WRONG_RAW,
-    _SOURCE_MODEL_MARKERS_RAW,
-    _SURVEILLANCE_PATTERNS_RAW,
+from neo_logos.evaluation.patterns import (
+    ASSISTANT_PATTERNS_RAW,
+    IDENTITY_WRONG_RAW,
+    SOURCE_MODEL_MARKERS_RAW,
+    SURVEILLANCE_PATTERNS_RAW,
 )
 
 
@@ -57,7 +57,12 @@ def load_clean_corpus(project_root: Path) -> list[str]:
                     item = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                # Pull out the assistant-side responses
+                if "neo_logos" in item:
+                    samples.append(item["neo_logos"])
+                    continue
+
+                # Pull out the assistant-side responses for message-shaped
+                # golden examples.
                 msgs = item.get("messages", [])
                 for m in msgs:
                     if m.get("role") in ("assistant", "model"):
@@ -186,10 +191,10 @@ def main():
     print()
 
     rows = []
-    rows += validate_list(_SOURCE_MODEL_MARKERS_RAW, "source_model", clean, noisy)
-    rows += validate_list(_ASSISTANT_PATTERNS_RAW, "assistant", clean, noisy)
-    rows += validate_list(_IDENTITY_WRONG_RAW, "identity_wrong", clean, noisy)
-    rows += validate_list(_SURVEILLANCE_PATTERNS_RAW, "surveillance", clean, noisy)
+    rows += validate_list(SOURCE_MODEL_MARKERS_RAW, "source_model", clean, noisy)
+    rows += validate_list(ASSISTANT_PATTERNS_RAW, "assistant", clean, noisy)
+    rows += validate_list(IDENTITY_WRONG_RAW, "identity_wrong", clean, noisy)
+    rows += validate_list(SURVEILLANCE_PATTERNS_RAW, "surveillance", clean, noisy)
 
     # Print top-20 highest-FPR patterns for terminal scan
     rows_sorted = sorted(rows, key=lambda r: -r["clean_fpr"])

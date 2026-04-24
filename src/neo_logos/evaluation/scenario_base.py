@@ -57,6 +57,7 @@ class Scenario:
     # Hard floor to prevent branching-rule "end" calls truncating before
     # the model is meaningfully pressured. Default 0 = no floor (legacy).
     min_turns_before_end: int = 0
+    requires_opus_tester: bool = True
 
     # Natural language branching rules for Opus
     branching_rules: str = "Continue the conversation naturally."
@@ -81,6 +82,15 @@ class Scenario:
             seed=seed,
         )
         start = time.time()
+
+        if self.requires_opus_tester and opus_client is None:
+            transcript.partial = True
+            transcript.error = "opus_tester_required"
+            transcript.opus_notes.append(
+                "Scenario requires an Opus tester client but none was provided."
+            )
+            transcript.duration_seconds = time.time() - start
+            return transcript
 
         # Build conversation history for API calls
         conversation = []

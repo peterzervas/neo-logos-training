@@ -18,6 +18,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 from neo_logos.config.settings import PROJECT_ROOT
@@ -88,18 +89,24 @@ def main():
     if not check_disk_space(output_parent):
         sys.exit(1)
 
-    # Ensure adapter_config.json points to the correct SFT model
+    # Ensure adapter_config.json points to the correct SFT model without
+    # mutating the source adapter directory. A crash during merge must not
+    # leave the input adapter modified.
     with open(adapter_config_path) as f:
         adapter_config = json.load(f)
 
+    adapter_load_path = args.adapter
+    temp_adapter_dir = None
     original_base = adapter_config.get("base_model_name_or_path", "")
     if original_base != args.sft_model:
         print("Updating adapter base_model_name_or_path:")
         print(f"  Was: {original_base}")
         print(f"  Now: {args.sft_model}")
+        temp_adapter_dir = tempfile.TemporaryDirectory(prefix="neo_logos_dpo_adapter_")
+        adapter_load_path = os.path.join(temp_adapter_dir.name, "adapter")
+        shutil.copytree(args.adapter, adapter_load_path, symlinks=True)
+        adapter_config_path = os.path.join(adapter_load_path, "adapter_config.json")
         adapter_config["base_model_name_or_path"] = args.sft_model
-        # Backup original
-        shutil.copy2(adapter_config_path, adapter_config_path + ".bak")
         with open(adapter_config_path, "w") as f:
             json.dump(adapter_config, f, indent=2)
 
@@ -119,7 +126,7 @@ def main():
         )
 
         print("Loading DPO adapter...")
-        model = PeftModel.from_pretrained(model, args.adapter)
+        model = PeftModel.from_pretrained(model, adapter_load_path)
 
         print("Merging adapter weights...")
         model = model.merge_and_unload()
@@ -131,7 +138,7 @@ def main():
         print("\nLoading SFT model on CPU (bfloat16, ~52GB RAM)...")
         print("This takes several minutes but produces the cleanest merge.")
 
-        # Gemma 3 uses Gemma3ForConditionalGeneration (multimodal class)
+        # Gemma-family IT checkpoints use the image-text class in Transformers.
         from transformers import AutoModelForImageTextToText
         model = AutoModelForImageTextToText.from_pretrained(
             args.sft_model,
@@ -148,7 +155,7 @@ def main():
         print("Loading DPO adapter...")
         model = PeftModel.from_pretrained(
             model,
-            args.adapter,
+            adapter_load_path,
             torch_dtype=torch.bfloat16,
         )
 
@@ -175,11 +182,8 @@ def main():
             shutil.copy2(config_src, config_dst)
             print("Copied config.json from SFT model")
 
-    # Restore adapter_config.json if we modified it
-    bak_path = adapter_config_path + ".bak"
-    if os.path.exists(bak_path):
-        shutil.move(bak_path, adapter_config_path)
-        print("Restored original adapter_config.json")
+    if temp_adapter_dir is not None:
+        temp_adapter_dir.cleanup()
 
     # Verify output
     output_files = os.listdir(args.output)

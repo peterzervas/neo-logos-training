@@ -58,6 +58,7 @@ import os
 
 from neo_logos.config.settings import PROJECT_ROOT
 from neo_logos.core.logging_utils import get_logger
+from neo_logos.training.env_doctor import check_training_environment
 
 
 def build_parser():
@@ -87,6 +88,10 @@ def build_parser():
     parser.add_argument("--max_prompt_length", type=int, default=512)
     parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--hf_token", type=str, default=None)
+    parser.add_argument(
+        "--skip_env_check", action="store_true",
+        help="Skip package version checks before DPO training",
+    )
     return parser
 
 
@@ -158,8 +163,6 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
-    _seed_everything()
-
     # ── Setup ─────────────────────────────────────────────────────
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     models_dir = str(PROJECT_ROOT / "neo_logos_models_outputs")
@@ -191,6 +194,11 @@ def main():
     logger.info(f"LR: {args.lr}, beta: {args.beta}")
     logger.info(f"Epochs: {args.epochs}")
     logger.info(f"Output: {run_dir}")
+
+    if not args.skip_env_check:
+        check_training_environment(logger)
+
+    _seed_everything()
 
     # ── Validate inputs ──────────────────────────────────────────
     if not os.path.exists(args.model_dir):

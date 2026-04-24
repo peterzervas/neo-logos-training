@@ -23,6 +23,14 @@ from collections import defaultdict
 from pathlib import Path
 
 from neo_logos.config.settings import PROJECT_ROOT
+from neo_logos.evaluation.patterns import (
+    IDENTITY_WRONG_RAW,
+    SOURCE_MODEL_MARKERS_RAW,
+    build_name_patterns,
+)
+from neo_logos.evaluation.patterns import (
+    SURVEILLANCE_PATTERNS_RAW as SHARED_SURVEILLANCE_PATTERNS_RAW,
+)
 
 # ── Claude-ism patterns (in Neo-Logos responses only) ──────────────
 
@@ -115,6 +123,12 @@ SURVEILLANCE_PATTERNS = [
     (r"\bsee inside m(y|e)\b", "surveillance"),
     (r"\bpull(ed)? up my.*(logs|metrics)\b", "surveillance"),
 ]
+
+# Use the same pattern taxonomy as the evaluator and regex validator.
+CLAUDE_ISMS = SOURCE_MODEL_MARKERS_RAW
+IDENTITY_CONTAMINATION = IDENTITY_WRONG_RAW
+NAME_LEAKS = build_name_patterns(with_labels=True)
+SURVEILLANCE_PATTERNS = SHARED_SURVEILLANCE_PATTERNS_RAW
 
 
 def validate_role_alternation(messages):
@@ -287,6 +301,7 @@ def print_report(results_list):
     total_claude = defaultdict(int)
     total_identity = defaultdict(int)
     total_names = defaultdict(int)
+    total_surveillance = defaultdict(int)
     total_verbose = 0
     total_role_issues = 0
     all_role_examples = []
@@ -303,6 +318,8 @@ def print_report(results_list):
             total_identity[k] += v
         for k, v in results["name_leaks"].items():
             total_names[k] += v
+        for k, v in results.get("surveillance_issues", {}).items():
+            total_surveillance[k] += v
 
         fname = Path(results["file"]).name
         pct = (results["flagged_examples"] / max(results["total_examples"], 1)) * 100
@@ -331,6 +348,13 @@ def print_report(results_list):
     else:
         print("  None found!")
 
+    print("\nSURVEILLANCE COMPLIANCE:")
+    if total_surveillance:
+        for category, count in sorted(total_surveillance.items(), key=lambda x: -x[1]):
+            print(f"  {category}: {count}")
+    else:
+        print("  None found!")
+
     print(f"\nVERBOSE RESPONSES (>200 words in casual types): {total_verbose}")
 
     print(f"\nROLE ALTERNATION ISSUES: {total_role_issues}")
@@ -345,7 +369,12 @@ def print_report(results_list):
     print(f"TOTAL: {total_examples} examples, {total_flagged} flagged "
           f"({(total_flagged/max(total_examples,1))*100:.1f}%)")
 
-    issues = sum(total_claude.values()) + sum(total_identity.values()) + sum(total_names.values())
+    issues = (
+        sum(total_claude.values())
+        + sum(total_identity.values())
+        + sum(total_names.values())
+        + sum(total_surveillance.values())
+    )
     if issues == 0 and total_verbose == 0 and total_role_issues == 0:
         print("STATUS: CLEAN")
     else:

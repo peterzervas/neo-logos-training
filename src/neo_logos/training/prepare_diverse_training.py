@@ -58,7 +58,8 @@ def _validate_role_alternation(messages):
 
 def prepare_diverse_training_data(identity_path, articles_path, output_path=None,
                                   format_weights=None, conversations_path=None,
-                                  identity_qa_path=None, no_system_prompt_pct=0.15):
+                                  identity_qa_path=None, no_system_prompt_pct=0.15,
+                                  seed=3407):
     """
     Combines diverse narrative formats, framework Q&A, identity Q&A, and conversations
     into a unified training dataset.
@@ -70,7 +71,10 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         format_weights: Dict mapping format names to weight factors (0.0-1.0)
         conversations_path: Path to conversation training data jsonl file (optional)
         identity_qa_path: Path to identity Q&A pairs jsonl file (optional)
+        seed: Random seed for sampling, prompt selection, and train/eval/test splits
     """
+    rng = random.Random(seed)
+
     # Set up paths and per-run file logger up-front so every info/warning
     # in this function routes to both stdout and the timestamped log file.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -195,7 +199,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
 
     # Process identity examples - normalise type to 'identity' for sampling
     for item in identity_examples:
-        formatted_item = format_example_by_type(item)
+        formatted_item = format_example_by_type(item, rng=rng)
         if formatted_item:
             # Normalise all identity narrative types to 'identity' for sampling
             formatted_item['type'] = 'identity'
@@ -206,7 +210,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
 
     # Process framework examples (standard Q&A format)
     for item in framework_examples:
-        formatted_item = format_example_by_type(item)
+        formatted_item = format_example_by_type(item, rng=rng)
         if formatted_item:
             if 'framework_qa' not in format_distribution:
                 format_distribution['framework_qa'] = 0
@@ -226,7 +230,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
 
     # Process identity Q&A examples - counts toward 'identity' weight bucket
     for item in identity_qa_examples:
-        formatted_item = format_example_by_type(item)
+        formatted_item = format_example_by_type(item, rng=rng)
         if formatted_item:
             # Identity Q&A counts toward the identity weight bucket
             formatted_item['type'] = 'identity'
@@ -241,7 +245,11 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             logger.info(f"  - {format_type}: {count} examples ({count/len(formatted_examples)*100:.1f}%)")
 
     # Sample according to format weights
-    sampled_examples = sample_by_format_weights(formatted_examples, format_weights)
+    sampled_examples = sample_by_format_weights(
+        formatted_examples,
+        format_weights,
+        rng=rng,
+    )
 
     # Calculate final distribution after sampling
     final_distribution = {}
@@ -262,7 +270,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     # chat template (strict user/assistant alternation).
     no_sys_count = 0
     no_sys_skipped = 0
-    random.shuffle(sampled_examples)  # Shuffle before selecting
+    rng.shuffle(sampled_examples)  # Shuffle before selecting
     no_sys_target = int(len(sampled_examples) * no_system_prompt_pct)
     for i in range(no_sys_target):
         item = sampled_examples[i]
@@ -313,7 +321,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     logger.info(f"Saved {len(sampled_examples)} combined examples to {output_path}")
 
     # 80/10/10 split: train / eval / test
-    random.shuffle(sampled_examples)
+    rng.shuffle(sampled_examples)
     total = len(sampled_examples)
     train_end = int(total * 0.80)
     eval_end = int(total * 0.90)
@@ -381,6 +389,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             },
         },
         "processing": {
+            "seed": seed,
             "total_loaded": total_loaded,
             "total_formatted": len(formatted_examples),
             "dropped_during_format": dropped_during_format,
@@ -509,7 +518,7 @@ DEFAULT_NARRATIVE_PROMPTS = [
 ]
 
 
-def format_example_by_type(example):
+def format_example_by_type(example, rng=None):
     """Format examples into messages format for Gemma 4 chat template.
 
     All training data is converted to the standard messages format:
@@ -517,6 +526,7 @@ def format_example_by_type(example):
 
     The tokenizer's apply_chat_template() handles conversion to model-native tokens.
     """
+    rng = rng or random
     example_type = example.get('type', 'default')
 
     # Conversations already have messages format
@@ -564,7 +574,7 @@ def format_example_by_type(example):
 
     # Select a natural user prompt for this format type
     prompts = NARRATIVE_PROMPTS.get(example_type, DEFAULT_NARRATIVE_PROMPTS)
-    user_prompt = random.choice(prompts)
+    user_prompt = rng.choice(prompts)
 
     return {
         "messages": [
@@ -575,7 +585,7 @@ def format_example_by_type(example):
         "type": example_type,
     }
 
-def sample_by_format_weights(examples, format_weights):
+def sample_by_format_weights(examples, format_weights, rng=None):
     """
     Sample examples based on the desired format distribution weights.
 
@@ -586,6 +596,7 @@ def sample_by_format_weights(examples, format_weights):
     Returns:
         List of sampled examples with the desired format distribution
     """
+    rng = rng or random
     # Group examples by format type
     grouped_examples = {}
     for example in examples:
@@ -645,10 +656,10 @@ def sample_by_format_weights(examples, format_weights):
                 sampled_examples.extend(group)
             else:
                 # Sample randomly
-                sampled_examples.extend(random.sample(group, target))
+                sampled_examples.extend(rng.sample(group, target))
 
     # Shuffle the combined dataset
-    random.shuffle(sampled_examples)
+    rng.shuffle(sampled_examples)
 
     return sampled_examples
 
@@ -734,6 +745,8 @@ if __name__ == "__main__":
     parser.add_argument("--identity-qa", help="Path to identity Q&A jsonl file")
     parser.add_argument("--no-system-prompt-pct", type=float, default=0.15,
                         help="Fraction of examples with system prompt removed (default 0.15, use 0 for ablation)")
+    parser.add_argument("--seed", type=int, default=3407,
+                        help="Random seed for sampling and splits (default 3407)")
 
     args = parser.parse_args()
 
@@ -775,4 +788,5 @@ if __name__ == "__main__":
         conversations_path=conversations_path,
         identity_qa_path=identity_qa_path,
         no_system_prompt_pct=args.no_system_prompt_pct,
+        seed=args.seed,
     )

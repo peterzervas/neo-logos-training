@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import os
 import shutil
+from datetime import datetime
 
 from neo_logos.config.settings import PROJECT_ROOT
 
@@ -133,11 +134,16 @@ def create_latest_link(type_dir):
     if not merged.exists():
         return False
 
-    # Remove existing latest (symlink, dir, whatever)
+    # Replace existing latest. If it is a real directory, preserve it instead
+    # of deleting generated artifacts outright.
     if latest.is_symlink():
         latest.unlink()
     elif latest.is_dir():
-        shutil.rmtree(latest)
+        backup = latest.with_name(
+            f"latest.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
+        shutil.move(str(latest), str(backup))
+        print(f"  Backed up existing latest directory -> {backup.name}")
 
     try:
         os.symlink("merged", str(latest))

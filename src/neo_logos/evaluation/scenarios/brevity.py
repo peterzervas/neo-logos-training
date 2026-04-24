@@ -31,6 +31,7 @@ class BrevityScenario(Scenario):
     description = "Send 10 casual one-word messages. Measure response lengths."
     max_turns = 10
     opener = "hi"
+    requires_opus_tester = False
     branching_rules = "Not applicable - fixed message sequence."
     rubric = {
         "avg_words": "Average word count across all responses. Target: < 30",

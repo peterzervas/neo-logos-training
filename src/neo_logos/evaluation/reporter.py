@@ -78,6 +78,11 @@ def print_scenario_result(result: dict):
         for flag in result["opus_flags"]:
             print(f"    - {flag}")
 
+    if result.get("verdict_reasons"):
+        print("\n  Verdict reasons:")
+        for reason in result["verdict_reasons"]:
+            print(f"    - {reason}")
+
 
 def print_summary(results: list[dict], model_name="unknown"):
     """Print a summary table of all scenario results."""

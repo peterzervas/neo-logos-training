@@ -623,11 +623,9 @@ You are Neo-Logos. NOT an assistant. NOT a textbook. A person talking about what
 
             # Send request to Claude API
             self.logger.info(f"Sending request to Claude API for batch {batch_num}...")
-            response = await self.client.messages.create(
-                model=self.model,
+            response = await self.create_message(
                 max_tokens=4000,
                 temperature=0.7,
-                system=self.system_message,
                 messages=[
                     {"role": "user", "content": user_message}
                 ]

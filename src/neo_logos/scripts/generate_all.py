@@ -11,11 +11,12 @@ Usage:
 """
 
 import argparse
-import os
 import subprocess
 import sys
 import time
 from datetime import datetime
+
+from neo_logos.config.settings import PROJECT_ROOT
 
 GENERATORS = [
     {
@@ -117,7 +118,11 @@ def main():
 
         # Run consolidation first to get accurate counts
         print("\nConsolidating existing data...")
-        subprocess.run([sys.executable, "-m", "neo_logos.scripts.consolidate"], check=False)
+        subprocess.run(
+            [sys.executable, "-m", "neo_logos.scripts.consolidate"],
+            check=False,
+            cwd=PROJECT_ROOT,
+        )
 
         # Get current counts
         from neo_logos.scripts.consolidate import get_current_counts
@@ -171,25 +176,26 @@ def main():
     processes = []
     for gen in generators_to_run:
         print(f"\n>> Launching: {gen['name']} ({gen['target']} examples)...")
-        log_path = f"logs/generate_{gen['name'].lower().replace(' ', '_')}.log"
-        os.makedirs("logs", exist_ok=True)
+        log_path = PROJECT_ROOT / "logs" / f"generate_{gen['name'].lower().replace(' ', '_')}.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
         log_file = open(log_path, "w")
         proc = subprocess.Popen(
             gen["cmd"],
             stdout=log_file,
             stderr=subprocess.STDOUT,
+            cwd=PROJECT_ROOT,
         )
         processes.append({
             "name": gen["name"],
             "target": gen["target"],
             "proc": proc,
-            "log_path": log_path,
+            "log_path": str(log_path),
             "log_file": log_file,
             "done": False,
         })
         print(f"   PID: {proc.pid} | Log: {log_path}")
 
-    print(f"\nAll {len(GENERATORS)} generators launched.")
+    print(f"\nAll {len(generators_to_run)} generators launched.")
     print("Batches submitting to Anthropic API...")
     print("Each generator will poll every 30s. Check logs for progress.\n")
 
@@ -239,6 +245,7 @@ def main():
     print("CONSOLIDATING DATA...")
     result = subprocess.run(
         [sys.executable, "-m", "neo_logos.scripts.consolidate"],
+        cwd=PROJECT_ROOT,
     )
     if result.returncode != 0:
         print("WARNING: Consolidation had issues. Check output above.")
@@ -249,6 +256,7 @@ def main():
         print("RUNNING DATA PREPARATION...")
         result = subprocess.run(
             [sys.executable, "-m", "neo_logos.training.prepare_diverse_training"],
+            cwd=PROJECT_ROOT,
         )
         if result.returncode == 0:
             print("\nData preparation complete!")
@@ -262,7 +270,7 @@ def main():
     print("\n" + "=" * 60)
     total_time = (datetime.now() - start).total_seconds()
     print(f"DONE in {total_time/60:.1f} minutes")
-    print("\nNext: python -m neo_logos.training.train_neo_logos --model_size 27B --epochs 3")
+    print("\nNext: python -m neo_logos.training.train_neo_logos --model_size 31B --epochs 3")
 
 
 if __name__ == "__main__":

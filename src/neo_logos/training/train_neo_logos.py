@@ -19,6 +19,7 @@ import sys
 
 from neo_logos.config.settings import PROJECT_ROOT
 from neo_logos.core.logging_utils import get_logger
+from neo_logos.training.env_doctor import check_training_environment
 from neo_logos.training.model_presets import MODEL_PRESETS
 
 
@@ -57,6 +58,10 @@ def build_parser():
             "and leaks the literal 'thought\\n' prefix at inference time."
         ),
     )
+    parser.add_argument(
+        "--skip_env_check", action="store_true",
+        help="Skip package version checks before training",
+    )
     return parser
 
 
@@ -82,8 +87,6 @@ def _seed_everything(seed: int = SEED) -> None:
 def main():
     parser = build_parser()
     args = parser.parse_args()
-
-    _seed_everything()
 
     # ── Setup ─────────────────────────────────────────────────────
     preset = MODEL_PRESETS[args.model_size]
@@ -119,6 +122,11 @@ def main():
     logger.info(f"Batch: {BATCH_SIZE}, grad_accum: {GRAD_ACCUM}")
     logger.info(f"Epochs: {args.epochs}, LR: {LR}")
     logger.info(f"Output: {run_dir}")
+
+    if not args.skip_env_check:
+        check_training_environment(logger)
+
+    _seed_everything()
 
     # ── HuggingFace auth ──────────────────────────────────────────
     if args.hf_token:

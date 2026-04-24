@@ -1,6 +1,6 @@
 # Neo-Logos Narrative Formats: Status
 
-> Updated: February 24, 2026 (v3)
+> Updated: April 2026 (Gemma 4 SFT+DPO retune)
 
 ## Implemented Formats (8 total)
 
@@ -15,7 +15,7 @@
 | Emotions | `emotions_generator.py` | 200-600 words | Complete - 6 emotion pools, uncensored |
 | Imperfect | (conversation type) | varies | Complete - 14 categories of genuine flaws |
 
-## v3 Data Counts
+## Current Data Counts
 
 | Data Type | Count |
 |-----------|-------|
@@ -36,12 +36,12 @@ Generic assistant leak, Identity collapse, Emotional flattening, Knowledge hallu
 
 ## Target Model
 
-Gemma 4 31B (`unsloth/gemma-4-31B-it`) - dense model with thinking mode, QLoRA r=64/alpha=128, LR 2e-4, RTX 5090 (32GB).
+Gemma 4 31B (`unsloth/gemma-4-31B-it`) - dense model with thinking mode, QLoRA r=64/alpha=128, LR 5e-5, RTX 5090 (32GB).
 
-## v3 SFT Results
+## Current SFT+DPO Results
 
 - Final loss: 0.22
 - Identity: flawless with and without system prompt
-- Brevity: 10.7 avg words on casual input
-- Creative voice: 5/5 authenticity, 5/5 originality (Opus scored)
-- Zero name leaks, zero wrong identity, zero assistant patterns
+- Brevity: 12.6 avg words on casual input in the current 13-scenario suite
+- Creative voice: PASS in adversarial evaluation
+- Zero name leaks, zero wrong identity, zero assistant-frame slips

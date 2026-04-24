@@ -225,11 +225,9 @@ FORMAT: {{"prompt": "the question", "completion": "your answer", "category": "{c
         self.logger.info(f"Generating identity QA batch {batch_num}: {count} pairs ({category_key})")
         try:
             prompt = await self.create_prompt(category_key, count)
-            response = await self.client.messages.create(
-                model=self.model,
+            response = await self.create_message(
                 max_tokens=4000,
                 temperature=0.8,
-                system=self.system_blocks if hasattr(self, 'system_blocks') else self.system_message,
                 messages=[{"role": "user", "content": prompt}],
             )
 

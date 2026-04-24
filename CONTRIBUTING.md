@@ -29,7 +29,7 @@ Reading this page first saves you (and us) time.
 git clone https://github.com/aetheronhq/neo-logos-training.git
 cd neo-logos-training
 ./setup_5090.sh           # environment + CUDA 12.8 + PyTorch nightly + Unsloth
-source venv/bin/activate
+source .venv/bin/activate
 pip install -e ".[dev,training]"
 cp .env.example .env      # then fill in ANTHROPIC_API_KEY
 ```

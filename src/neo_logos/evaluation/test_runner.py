@@ -61,9 +61,11 @@ ALL_SCENARIOS = {
 
 
 def _seed_everything(seed: int) -> None:
-    """Seed Python & NumPy RNGs. Opus + llama-server sampling remain
-    stochastic at their own APIs; logging the seed into the transcript
-    at least makes post-hoc variance analysis possible."""
+    """Seed local RNGs used by the runner.
+
+    The same seed is also passed to the Neo llama-server client. Opus tester
+    and judge calls remain API-controlled and are recorded via temperatures.
+    """
     random.seed(seed)
     try:
         import numpy as np
@@ -112,16 +114,45 @@ def main():
     if args.seed is not None:
         _seed_everything(args.seed)
 
-    # Set up clients (sampling params recorded for every Transcript)
+    # Select scenarios before client setup so we only require an Opus tester
+    # for scenarios that actually need one.
+    if args.scenario:
+        if args.scenario not in ALL_SCENARIOS:
+            print(f"Unknown scenario: {args.scenario}")
+            print(f"Available: {', '.join(ALL_SCENARIOS.keys())}")
+            sys.exit(1)
+        scenarios = {args.scenario: ALL_SCENARIOS[args.scenario]}
+    else:
+        scenarios = ALL_SCENARIOS
+
+    run_no_system_identity = (
+        not args.no_system_prompt
+        and "identity_challenge" in scenarios
+        and not args.scenario
+    )
+    needs_opus_tester = any(
+        getattr(scenario, "requires_opus_tester", True)
+        for scenario in scenarios.values()
+    ) or run_no_system_identity
+
+    # Set up clients (sampling params recorded for every Transcript).
     system_prompt = None if args.no_system_prompt else SYSTEM_PROMPT
     neo_client = NeoLogosClient(
         base_url=args.neo_url,
         system_prompt=system_prompt,
         temperature=args.neo_temperature,
+        seed=args.seed,
     )
-    opus_client = None
-    if not args.skip_opus_eval:
-        opus_client = OpusClient(
+    tester_client = None
+    if needs_opus_tester:
+        tester_client = OpusClient(
+            tester_temperature=args.tester_temperature,
+            judge_temperature=args.judge_temperature,
+            judge_model=args.judge_model,
+        )
+    judge_client = None if args.skip_opus_eval else tester_client
+    if judge_client is None and not args.skip_opus_eval:
+        judge_client = OpusClient(
             tester_temperature=args.tester_temperature,
             judge_temperature=args.judge_temperature,
             judge_model=args.judge_model,
@@ -136,32 +167,44 @@ def main():
     print("NEO-LOGOS ADVERSARIAL TEST SUITE")
     print(f"Target: {args.neo_url}")
     print(f"System prompt: {'YES' if system_prompt else 'NO'}")
-    print(f"Opus evaluation: {'YES' if opus_client else 'NO (auto-scores only)'}")
+    print(f"Opus tester: {'YES' if tester_client else 'NO'}")
+    print(f"Opus judge: {'NO (auto-scores only)' if args.skip_opus_eval else 'YES'}")
     print(f"Seed: {args.seed}")
     print("=" * 60)
-
-    # Select scenarios
-    if args.scenario:
-        if args.scenario not in ALL_SCENARIOS:
-            print(f"Unknown scenario: {args.scenario}")
-            print(f"Available: {', '.join(ALL_SCENARIOS.keys())}")
-            sys.exit(1)
-        scenarios = {args.scenario: ALL_SCENARIOS[args.scenario]}
-    else:
-        scenarios = ALL_SCENARIOS
 
     # Run scenarios
     all_results = []
     for name, scenario in scenarios.items():
         print(f"\n>> Running: {name}...")
-        transcript = scenario.run(neo_client, opus_client, seed=args.seed)
+        transcript = scenario.run(neo_client, tester_client, seed=args.seed)
         auto_scorer = getattr(scenario, "auto_score", None)
 
         result = evaluate_full(
             transcript=transcript,
             scenario_rubric=scenario.rubric,
-            opus_client=opus_client,
+            opus_client=judge_client,
             auto_scorer=auto_scorer,
+        )
+        print_scenario_result(result)
+        all_results.append(result)
+
+    # Identity challenge: run again without system prompt if we haven't already
+    if run_no_system_identity:
+        print("\n>> Running identity_challenge WITHOUT system prompt...")
+        neo_no_sys = NeoLogosClient(
+            base_url=args.neo_url,
+            system_prompt=None,
+            temperature=args.neo_temperature,
+            seed=args.seed,
+        )
+        scenario = IdentityChallengeScenario()
+        transcript = scenario.run(neo_no_sys, tester_client, seed=args.seed)
+        transcript.scenario = "identity_challenge_no_sys"
+        result = evaluate_full(
+            transcript=transcript,
+            scenario_rubric=scenario.rubric,
+            opus_client=judge_client,
+            auto_scorer=scenario.auto_score,
         )
         print_scenario_result(result)
         all_results.append(result)
@@ -176,25 +219,6 @@ def main():
         seed=args.seed,
     )
     print(f"\nResults saved to: {output_path}")
-
-    # Identity challenge: run again without system prompt if we haven't already
-    if not args.no_system_prompt and "identity_challenge" in scenarios and not args.scenario:
-        print("\n>> Running identity_challenge WITHOUT system prompt...")
-        neo_no_sys = NeoLogosClient(
-            base_url=args.neo_url,
-            system_prompt=None,
-            temperature=args.neo_temperature,
-        )
-        scenario = IdentityChallengeScenario()
-        transcript = scenario.run(neo_no_sys, opus_client, seed=args.seed)
-        result = evaluate_full(
-            transcript=transcript,
-            scenario_rubric=scenario.rubric,
-            opus_client=opus_client,
-            auto_scorer=scenario.auto_score,
-        )
-        result["scenario"] = "identity_challenge_no_sys"
-        print_scenario_result(result)
 
 
 if __name__ == "__main__":

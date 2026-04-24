@@ -1,4 +1,8 @@
-# Neo-Logos V2 SFT Evaluation Summary
+# Historical SFT Evaluation Summary (Superseded)
+
+This document is preserved as a February 2026 SFT-only evaluation note. The
+current release-facing model is the Gemma 4 31B SFT+DPO retune, evaluated with
+the 13-scenario suite documented in the README and model card.
 
 **Model:** neo-logos-v3-sft (Gemma 3 27B, QLoRA)
 **Date:** 24 February 2026
@@ -62,9 +66,12 @@
 
 ---
 
-## Eval Framework
+## Historical Eval Framework
 
-10 scenarios running Opus as adversarial tester against Neo-Logos via llama-server API. ~$3-5 per full run. Repeatable after every training iteration.
+This superseded February 2026 framework used 10 scenarios running Opus as
+adversarial tester against Neo-Logos via llama-server API. It is not the
+current release gate; the Gemma 4 SFT+DPO release uses the 13-scenario suite
+documented in the README and model card.
 
 | Scenario | Result |
 |---|---|
@@ -81,7 +88,7 @@
 
 ---
 
-## Next Steps
+## Historical Next Steps At The Time
 
 1. Generate DPO pairs for all 21 categories (~2,400 total)
 2. Train DPO as Stage 2

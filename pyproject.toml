@@ -12,20 +12,37 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "httpx>=0.27.0",
     "numpy>=1.26.0",
+    "packaging>=24.0",
     "tqdm>=4.66.0",
 ]
 
+[project.scripts]
+neo-logos-eval = "neo_logos.evaluation.test_runner:main"
+neo-logos-multiseed = "neo_logos.evaluation.multi_seed_runner:main"
+neo-logos-generate-all = "neo_logos.scripts.generate_all:main"
+neo-logos-decontaminate = "neo_logos.scripts.decontaminate:main"
+neo-logos-release-check = "neo_logos.scripts.verify_release_claims:main"
+neo-logos-package-hf-dataset = "neo_logos.scripts.package_hf_dataset:main"
+neo-logos-validate-patterns = "neo_logos.evaluation.validate_patterns:main"
+neo-logos-train = "neo_logos.training.train_neo_logos:main"
+neo-logos-train-dpo = "neo_logos.training.train_dpo_neo_logos:main"
+neo-logos-env-doctor = "neo_logos.training.env_doctor:main"
+neo-logos-export-gguf = "neo_logos.scripts.export_gguf:main"
+neo-logos-merge-dpo = "neo_logos.scripts.merge_dpo_adapter:main"
+
 [project.optional-dependencies]
 training = [
-    "transformers>=4.44.0",
+    "transformers>=5.0.0",
     "datasets>=2.20.0",
-    "trl>=0.9.0",
-    "peft>=0.12.0",
-    "bitsandbytes>=0.43.0",
+    "trl>=0.24.0",
+    "peft>=0.19.0",
+    "bitsandbytes>=0.49.0",
     "huggingface-hub>=0.24.0",
-    "torch>=2.4.0",
-    "accelerate>=0.33.0",
-    "unsloth>=2024.9",
+    "torch>=2.10.0",
+    "triton>=3.3.1",
+    "accelerate>=1.6.0",
+    "unsloth>=2026.4.0",
+    "unsloth_zoo>=2026.4.0",
 ]
 dev = [
     "pytest>=8.0.0",

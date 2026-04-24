@@ -49,17 +49,20 @@ class NeoLogosClient:
         system_prompt: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        seed: int | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.system_prompt = system_prompt
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.seed = seed
 
     def send(
         self,
         messages: list[dict],
         temperature: float | None = None,
         max_tokens: int | None = None,
+        seed: int | None = None,
     ) -> str:
         """Send messages to Neo-Logos, return its response."""
         full_messages = []
@@ -73,6 +76,9 @@ class NeoLogosClient:
             "max_tokens": self.max_tokens if max_tokens is None else max_tokens,
             "stream": False,
         }
+        request_seed = self.seed if seed is None else seed
+        if request_seed is not None:
+            payload["seed"] = request_seed
 
         try:
             resp = requests.post(
