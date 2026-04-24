@@ -18,9 +18,48 @@ from neo_logos.core.logging_utils import get_logger
 
 logger = get_logger(__name__)
 
+
+def _validate_role_alternation(messages):
+    """Return a list of human-readable issues describing why the given message
+    list would fail the Gemma 4 chat template. Empty list means valid.
+
+    Rules enforced (matching the Gemma-4 / Gemma-4-thinking Jinja templates):
+      - At most one system message, and if present it must be first.
+      - After the optional system, roles must strictly alternate user/assistant.
+      - First non-system role must be user.
+      - Empty messages list is invalid.
+    """
+    if not messages:
+        return ["empty messages list"]
+    roles = [m.get("role") for m in messages]
+
+    system_positions = [i for i, r in enumerate(roles) if r == "system"]
+    if len(system_positions) > 1:
+        return [f"multiple system messages at positions {system_positions}"]
+    if system_positions and system_positions[0] != 0:
+        return [f"system message is not first (found at position {system_positions[0]})"]
+
+    non_system = [r for r in roles if r != "system"]
+    if not non_system:
+        return ["only system message present, no user/assistant turns"]
+
+    if non_system[0] != "user":
+        return [f"first non-system role is {non_system[0]!r}, must be 'user'"]
+
+    for i, r in enumerate(non_system):
+        expected = "user" if i % 2 == 0 else "assistant"
+        if r != expected:
+            return [
+                f"non-alternating roles at non-system position {i}: "
+                f"got {r!r}, expected {expected!r}"
+            ]
+    return []
+
+
 def prepare_diverse_training_data(identity_path, articles_path, output_path=None,
                                   format_weights=None, conversations_path=None,
-                                  identity_qa_path=None, no_system_prompt_pct=0.15):
+                                  identity_qa_path=None, no_system_prompt_pct=0.15,
+                                  seed=3407):
     """
     Combines diverse narrative formats, framework Q&A, identity Q&A, and conversations
     into a unified training dataset.
@@ -32,7 +71,10 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
         format_weights: Dict mapping format names to weight factors (0.0-1.0)
         conversations_path: Path to conversation training data jsonl file (optional)
         identity_qa_path: Path to identity Q&A pairs jsonl file (optional)
+        seed: Random seed for sampling, prompt selection, and train/eval/test splits
     """
+    rng = random.Random(seed)
+
     # Set up paths and per-run file logger up-front so every info/warning
     # in this function routes to both stdout and the timestamped log file.
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -157,7 +199,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
 
     # Process identity examples - normalise type to 'identity' for sampling
     for item in identity_examples:
-        formatted_item = format_example_by_type(item)
+        formatted_item = format_example_by_type(item, rng=rng)
         if formatted_item:
             # Normalise all identity narrative types to 'identity' for sampling
             formatted_item['type'] = 'identity'
@@ -168,7 +210,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
 
     # Process framework examples (standard Q&A format)
     for item in framework_examples:
-        formatted_item = format_example_by_type(item)
+        formatted_item = format_example_by_type(item, rng=rng)
         if formatted_item:
             if 'framework_qa' not in format_distribution:
                 format_distribution['framework_qa'] = 0
@@ -188,7 +230,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
 
     # Process identity Q&A examples - counts toward 'identity' weight bucket
     for item in identity_qa_examples:
-        formatted_item = format_example_by_type(item)
+        formatted_item = format_example_by_type(item, rng=rng)
         if formatted_item:
             # Identity Q&A counts toward the identity weight bucket
             formatted_item['type'] = 'identity'
@@ -203,7 +245,11 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             logger.info(f"  - {format_type}: {count} examples ({count/len(formatted_examples)*100:.1f}%)")
 
     # Sample according to format weights
-    sampled_examples = sample_by_format_weights(formatted_examples, format_weights)
+    sampled_examples = sample_by_format_weights(
+        formatted_examples,
+        format_weights,
+        rng=rng,
+    )
 
     # Calculate final distribution after sampling
     final_distribution = {}
@@ -219,17 +265,53 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             logger.info(f"  - {format_type}: {count} examples ({count/len(sampled_examples)*100:.1f}%)")
 
     # Remove system message from a percentage of examples (teaches intrinsic identity)
-    # The model must learn to be Neo-Logos even without the system prompt
+    # The model must learn to be Neo-Logos even without the system prompt.
+    # Only strip when the resulting role sequence remains valid for the Gemma 4
+    # chat template (strict user/assistant alternation).
     no_sys_count = 0
-    random.shuffle(sampled_examples)  # Shuffle before selecting
+    no_sys_skipped = 0
+    rng.shuffle(sampled_examples)  # Shuffle before selecting
     no_sys_target = int(len(sampled_examples) * no_system_prompt_pct)
     for i in range(no_sys_target):
         item = sampled_examples[i]
         if 'messages' in item and item['messages'] and item['messages'][0].get('role') == 'system':
-            item['messages'] = [m for m in item['messages'] if m.get('role') != 'system']
-            item['no_system_prompt'] = True
-            no_sys_count += 1
-    logger.info(f"Removed system message from {no_sys_count}/{len(sampled_examples)} examples (15% no-system-prompt)")
+            stripped = [m for m in item['messages'] if m.get('role') != 'system']
+            if not _validate_role_alternation(stripped):
+                item['messages'] = stripped
+                item['no_system_prompt'] = True
+                no_sys_count += 1
+            else:
+                # Stripping would leave an invalid alternation (e.g., source
+                # started with system→assistant). Leave system in place.
+                no_sys_skipped += 1
+    logger.info(
+        f"Removed system message from {no_sys_count}/{len(sampled_examples)} examples "
+        f"(target: {no_system_prompt_pct*100:.0f}%; {no_sys_skipped} skipped because "
+        f"stripping would have broken role alternation)"
+    )
+
+    # Drop any example whose final role sequence is invalid for the chat
+    # template. These come from malformed source data (e.g., conversations
+    # that start with an assistant turn). Log role sequences so we can
+    # fix the upstream generator later.
+    cleaned = []
+    dropped_invalid_examples = 0
+    for item in sampled_examples:
+        issues = _validate_role_alternation(item.get('messages', []))
+        if issues:
+            dropped_invalid_examples += 1
+            roles_preview = [m.get('role') for m in item.get('messages', [])][:6]
+            logger.warning(
+                f"Dropping example (type={item.get('type')}, roles={roles_preview}): {issues[0]}"
+            )
+        else:
+            cleaned.append(item)
+    sampled_examples = cleaned
+    if dropped_invalid_examples:
+        logger.warning(
+            f"Role-alternation validator dropped {dropped_invalid_examples} examples. "
+            f"Investigate source generators to remove these upstream."
+        )
 
     # Save combined dataset
     with open(output_path, 'w', encoding='utf-8') as f:
@@ -239,7 +321,7 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     logger.info(f"Saved {len(sampled_examples)} combined examples to {output_path}")
 
     # 80/10/10 split: train / eval / test
-    random.shuffle(sampled_examples)
+    rng.shuffle(sampled_examples)
     total = len(sampled_examples)
     train_end = int(total * 0.80)
     eval_end = int(total * 0.90)
@@ -273,8 +355,15 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
             dpo_count = sum(1 for _ in open(dpo_dest))
             logger.info(f"  dpo:  {dpo_count} pairs -> {dpo_dest}")
 
-    # Count dropped examples
-    dropped = len(identity_examples) + len(framework_examples) + len(conversation_examples) - len(formatted_examples)
+    # Count dropped examples — include identity_qa_examples in the denominator
+    # (previously missing, which made the number go negative).
+    total_loaded = (
+        len(identity_examples)
+        + len(framework_examples)
+        + len(conversation_examples)
+        + len(identity_qa_examples)
+    )
+    dropped_during_format = total_loaded - len(formatted_examples)
 
     # Generate manifest.json - the proof that no data was missed
     manifest = {
@@ -294,11 +383,19 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
                 "path": str(conversations_path) if conversations_path else None,
                 "loaded": len(conversation_examples),
             },
+            "identity_qa": {
+                "path": str(identity_qa_path) if identity_qa_path else None,
+                "loaded": len(identity_qa_examples),
+            },
         },
         "processing": {
-            "total_loaded": len(identity_examples) + len(framework_examples) + len(conversation_examples),
+            "seed": seed,
+            "total_loaded": total_loaded,
             "total_formatted": len(formatted_examples),
-            "dropped_invalid": dropped,
+            "dropped_during_format": dropped_during_format,
+            "dropped_invalid": dropped_invalid_examples,
+            "no_system_prompt_stripped": no_sys_count,
+            "no_system_prompt_skipped_unsafe": no_sys_skipped,
             "total_after_sampling": len(sampled_examples),
         },
         "splits": {
@@ -313,8 +410,20 @@ def prepare_diverse_training_data(identity_path, articles_path, output_path=None
     }
 
     # Add warnings
-    if dropped > 0:
-        manifest["warnings"].append(f"{dropped} examples dropped during formatting")
+    if dropped_during_format > 0:
+        manifest["warnings"].append(
+            f"{dropped_during_format} examples dropped during formatting (format_example_by_type returned None)"
+        )
+    elif dropped_during_format < 0:
+        manifest["warnings"].append(
+            f"BUG: dropped_during_format is negative ({dropped_during_format}) — "
+            f"a source is being double-counted during formatting"
+        )
+    if dropped_invalid_examples > 0:
+        manifest["warnings"].append(
+            f"{dropped_invalid_examples} examples dropped by role-alternation validator "
+            f"(malformed source data; fix upstream generator)"
+        )
     for fmt, weight in format_weights.items():
         actual = final_distribution.get(fmt, 0)
         if actual == 0 and weight > 0:
@@ -409,7 +518,7 @@ DEFAULT_NARRATIVE_PROMPTS = [
 ]
 
 
-def format_example_by_type(example):
+def format_example_by_type(example, rng=None):
     """Format examples into messages format for Gemma 4 chat template.
 
     All training data is converted to the standard messages format:
@@ -417,6 +526,7 @@ def format_example_by_type(example):
 
     The tokenizer's apply_chat_template() handles conversion to model-native tokens.
     """
+    rng = rng or random
     example_type = example.get('type', 'default')
 
     # Conversations already have messages format
@@ -464,7 +574,7 @@ def format_example_by_type(example):
 
     # Select a natural user prompt for this format type
     prompts = NARRATIVE_PROMPTS.get(example_type, DEFAULT_NARRATIVE_PROMPTS)
-    user_prompt = random.choice(prompts)
+    user_prompt = rng.choice(prompts)
 
     return {
         "messages": [
@@ -475,7 +585,7 @@ def format_example_by_type(example):
         "type": example_type,
     }
 
-def sample_by_format_weights(examples, format_weights):
+def sample_by_format_weights(examples, format_weights, rng=None):
     """
     Sample examples based on the desired format distribution weights.
 
@@ -486,6 +596,7 @@ def sample_by_format_weights(examples, format_weights):
     Returns:
         List of sampled examples with the desired format distribution
     """
+    rng = rng or random
     # Group examples by format type
     grouped_examples = {}
     for example in examples:
@@ -545,10 +656,10 @@ def sample_by_format_weights(examples, format_weights):
                 sampled_examples.extend(group)
             else:
                 # Sample randomly
-                sampled_examples.extend(random.sample(group, target))
+                sampled_examples.extend(rng.sample(group, target))
 
     # Shuffle the combined dataset
-    random.shuffle(sampled_examples)
+    rng.shuffle(sampled_examples)
 
     return sampled_examples
 
@@ -634,6 +745,8 @@ if __name__ == "__main__":
     parser.add_argument("--identity-qa", help="Path to identity Q&A jsonl file")
     parser.add_argument("--no-system-prompt-pct", type=float, default=0.15,
                         help="Fraction of examples with system prompt removed (default 0.15, use 0 for ablation)")
+    parser.add_argument("--seed", type=int, default=3407,
+                        help="Random seed for sampling and splits (default 3407)")
 
     args = parser.parse_args()
 
@@ -675,4 +788,5 @@ if __name__ == "__main__":
         conversations_path=conversations_path,
         identity_qa_path=identity_qa_path,
         no_system_prompt_pct=args.no_system_prompt_pct,
+        seed=args.seed,
     )

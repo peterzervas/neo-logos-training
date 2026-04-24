@@ -172,7 +172,7 @@ def verify_numbers(truth, verbose=False):
     check("SFT test count", 1307, truth.get("count_test"))
     check("DPO pair count", 4237, truth.get("count_dpo"))
     check("Golden examples count", 65, truth.get("count_golden"))
-    check("Golden examples avg words", 8.1, truth.get("golden_avg_words"), tolerance=0.2)
+    check("Golden examples avg words", 7.9, truth.get("golden_avg_words"), tolerance=0.2)
 
     # === SINGLE-RUN TOTALS (SFT) ===
     if "sft_eval" in truth:

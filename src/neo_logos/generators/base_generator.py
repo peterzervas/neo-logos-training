@@ -196,6 +196,34 @@ class BaseGenerator:
             }
         }
 
+    async def create_message(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        max_tokens: int,
+        temperature: float,
+        system: str | list[dict[str, Any]] | None = None,
+        **kwargs,
+    ):
+        """Create a Claude message with the generator's shared defaults.
+
+        Direct generation and Batch API generation must use the same structured
+        output schema and system blocks. Subclasses should call this helper
+        instead of `self.client.messages.create(...)` directly.
+        """
+        params = {
+            "model": self.model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "system": self.system_blocks if system is None else system,
+            "messages": messages,
+        }
+        output_config = self._output_config()
+        if output_config:
+            params["output_config"] = output_config
+        params.update(kwargs)
+        return await self.client.messages.create(**params)
+
     def _build_system_blocks(self, use_cache: bool = True) -> list[dict[str, Any]]:
         """Build system message as content blocks with optional prompt caching.
 
@@ -539,8 +567,9 @@ class BaseGenerator:
             if len(word) > 4 and word not in {"which", "there", "their", "about", "would", "could", "should", "when", "where", "what", "this", "that", "these", "those", "have", "from"}:
                 words.add(word)
 
-        # Create a sorted string of key words
-        words_str = " ".join(sorted(list(words)[:100]))  # Limit to first 100 words for efficiency
+        # Create a sorted string of key words. Sort before slicing so the
+        # fingerprint is stable across Python hash seeds.
+        words_str = " ".join(sorted(words)[:100])
         return hashlib.md5(words_str.encode()).hexdigest()
 
     async def is_duplicate(self, text: str) -> bool:

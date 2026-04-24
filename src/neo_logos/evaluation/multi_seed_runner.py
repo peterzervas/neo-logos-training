@@ -166,8 +166,21 @@ def print_aggregated_summary(aggregated):
     print("\n" + "=" * 70)
 
 
-def run_eval(model_name, neo_url, skip_opus, output_dir, run_number, total_runs):
-    """Run a single evaluation pass as a subprocess."""
+def run_eval(
+    model_name,
+    neo_url,
+    skip_opus,
+    output_dir,
+    run_number,
+    total_runs,
+    base_seed=None,
+):
+    """Run a single evaluation pass as a subprocess.
+
+    When `base_seed` is provided, each child gets `base_seed + run_number`
+    so all runs are reproducible but non-identical (mirrors the audit plan's
+    "propagate seeds per run" requirement).
+    """
     cmd = [
         sys.executable, "-m", "neo_logos.evaluation.test_runner",
         "--model-name", model_name,
@@ -176,9 +189,12 @@ def run_eval(model_name, neo_url, skip_opus, output_dir, run_number, total_runs)
     ]
     if skip_opus:
         cmd.append("--skip-opus-eval")
+    if base_seed is not None:
+        cmd.extend(["--seed", str(base_seed + run_number)])
 
     print(f"\n{'='*60}")
-    print(f"RUN {run_number}/{total_runs}")
+    print(f"RUN {run_number}/{total_runs}"
+          + (f"  (seed={base_seed + run_number})" if base_seed is not None else ""))
     print(f"{'='*60}")
 
     result = subprocess.run(cmd, cwd=str(PROJECT_ROOT))
@@ -201,6 +217,9 @@ def main():
                         help="Output directory")
     parser.add_argument("--aggregate-only", action="store_true",
                         help="Skip running evals, just aggregate existing results")
+    parser.add_argument("--base-seed", type=int, default=42,
+                        help="Child runs get --seed = base-seed + run_number "
+                        "(default 42). Set --base-seed 0 to use stochastic runs.")
     args = parser.parse_args()
 
     output_dir = args.output or str(PROJECT_ROOT / "evaluation_results")
@@ -208,9 +227,17 @@ def main():
     if not args.aggregate_only:
         # Run N evaluation passes
         successes = 0
+        base_seed = args.base_seed if args.base_seed != 0 else None
         for i in range(1, args.runs + 1):
-            ok = run_eval(args.model_name, args.neo_url, args.skip_opus_eval,
-                          output_dir, i, args.runs)
+            ok = run_eval(
+                args.model_name,
+                args.neo_url,
+                args.skip_opus_eval,
+                output_dir,
+                i,
+                args.runs,
+                base_seed=base_seed,
+            )
             if ok:
                 successes += 1
             else:

@@ -56,6 +56,7 @@ temp/
 *.bak
 *.swp
 *.swo
+.codex
 
 # External tools
 /Unsloth-VLLM-RTX5090-Ubuntu/
@@ -65,6 +66,16 @@ unsloth_compiled_cache/
 # Downloaded models and benchmark data (large, not our content)
 /baseline_models/
 /benchmark_data/
+/models/
+*.gguf
+
+# E2E test artifacts and logs (regenerated)
+/e2e_test/artifacts/
+/e2e_test/logs/
+
+# Ad hoc evaluation transcripts that may contain personal context
+/evaluation_results/free_prompt_chat_*/
+/evaluation_results/forcing_prompt_jailbreak_*/
 
 # Internal docs (not for public repos)
 /internal/

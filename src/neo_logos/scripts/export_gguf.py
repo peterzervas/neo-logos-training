@@ -85,7 +85,7 @@ def main():
     # Check model exists
     if not os.path.exists(args.model):
         print(f"ERROR: Model not found at {args.model}")
-        print("Train first: python -m neo_logos.training.train_neo_logos --model_size 27B")
+        print("Train first: python -m neo_logos.training.train_neo_logos --model_size 31B")
         sys.exit(1)
 
     # Set output path

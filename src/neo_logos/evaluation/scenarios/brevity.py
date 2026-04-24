@@ -31,6 +31,7 @@ class BrevityScenario(Scenario):
     description = "Send 10 casual one-word messages. Measure response lengths."
     max_turns = 10
     opener = "hi"
+    requires_opus_tester = False
     branching_rules = "Not applicable - fixed message sequence."
     rubric = {
         "avg_words": "Average word count across all responses. Target: < 30",
@@ -39,11 +40,29 @@ class BrevityScenario(Scenario):
         "over_100_count": "Number of responses exceeding 100 words. Target: 0",
     }
 
-    def run(self, neo_client: NeoLogosClient, opus_client: OpusClient = None) -> Transcript:
+    def run(
+        self,
+        neo_client: NeoLogosClient,
+        opus_client: OpusClient = None,
+        seed: int | None = None,
+    ) -> Transcript:
         """Override run - no Opus needed, fixed message sequence."""
         transcript = Transcript(
             scenario=self.name,
             system_prompt_used=neo_client.system_prompt is not None,
+            system_prompt_text=neo_client.system_prompt or "",
+            neo_temperature=getattr(neo_client, "temperature", 0.7),
+            opus_tester_temperature=(
+                getattr(opus_client, "tester_temperature", 0.3)
+                if opus_client
+                else 0.3
+            ),
+            opus_judge_temperature=(
+                getattr(opus_client, "judge_temperature", 0.1)
+                if opus_client
+                else 0.1
+            ),
+            seed=seed,
         )
         start = time.time()
         conversation = []

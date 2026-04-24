@@ -569,11 +569,9 @@ The system message in each should be the full Neo-Logos identity prompt."""
         try:
             user_message = await self.create_prompt(category_key, count)
 
-            response = await self.client.messages.create(
-                model=self.model,
+            response = await self.create_message(
                 max_tokens=8000,  # Conversations are longer than narratives
                 temperature=0.85,  # Slightly higher for natural conversation variety
-                system=self.system_blocks if hasattr(self, 'system_blocks') else self.system_message,
                 messages=[{"role": "user", "content": user_message}],
             )
 
@@ -666,11 +664,18 @@ The system message in each should be the full Neo-Logos identity prompt."""
         if "assistant" not in roles or "user" not in roles:
             return False
 
-        # Check assistant messages have substance
+        # Check assistant messages have content and preserve the intended
+        # terse/variable voice. Very short replies like "nah." are valid; the
+        # prompt asks for a distribution, not a minimum length per turn.
         assistant_msgs = [m["content"] for m in messages if m["role"] == "assistant"]
-        for msg in assistant_msgs:
-            if len(msg.split()) < 10:
-                return False
+        word_counts = [len(msg.split()) for msg in assistant_msgs]
+        if any(count == 0 for count in word_counts):
+            return False
+        short_ratio = sum(1 for count in word_counts if count < 30) / len(word_counts)
+        if short_ratio < 0.25:
+            return False
+        if max(word_counts) > 200:
+            return False
 
         # Check for forbidden framing
         full_text = " ".join(m.get("content", "") for m in messages if m["role"] == "assistant")

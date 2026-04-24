@@ -1,6 +1,6 @@
 # Neo-Logos Project Structure
 
-> Updated: February 24, 2026 (v3)
+> Updated: April 2026 (Gemma 4 SFT+DPO retune)
 
 ```
 neo-logos-training/
@@ -16,7 +16,6 @@ neo-logos-training/
 │   │   ├── cornerstone_arc.json            # 29-beat pre-planned narrative arc
 │   │   ├── eval_prompts.json               # Format-specific evaluation prompts
 │   │   ├── identity_prompts.json           # Identity narrative prompts
-│   │   └── model_presets.py                # Hardware presets (27B: LR 2e-5, r=64)
 │   │
 │   ├── core/
 │   │   ├── env_loader.py                   # .env file loading
@@ -43,8 +42,9 @@ neo-logos-training/
 │   │
 │   ├── training/
 │   │   ├── prepare_diverse_training.py     # Combine, weight, split, 15% no-system-prompt
-│   │   ├── train_neo_logos.py              # Stage 1: SFT (LR 2e-5, grad clip 1.0)
-│   │   ├── train_dpo_neo_logos.py          # Stage 2: DPO (model_type override for Gemma 3)
+│   │   ├── train_neo_logos.py              # Stage 1: SFT (31B LR 5e-5, grad clip 1.0)
+│   │   ├── train_dpo_neo_logos.py          # Stage 2: DPO (Gemma 4 text-only workaround)
+│   │   ├── env_doctor.py                   # Supported GPU stack validation
 │   │   └── model_presets.py                # Hardware/model configurations
 │   │
 │   ├── evaluation/
@@ -53,7 +53,7 @@ neo-logos-training/
 │   │   ├── clients.py                     # API wrappers (Neo-Logos + Opus)
 │   │   ├── evaluator.py                   # Pattern detection + Opus scoring
 │   │   ├── reporter.py                    # Terminal + JSON + comparison reports
-│   │   └── scenarios/                     # 10 adversarial test scenarios
+│   │   └── scenarios/                     # 13 adversarial test scenarios
 │   │       ├── brevity.py
 │   │       ├── identity_challenge.py
 │   │       ├── casual_to_depth.py
@@ -68,19 +68,20 @@ neo-logos-training/
 │   └── scripts/
 │       ├── generate_all.py                 # Orchestrate generation + top-up mode
 │       ├── consolidate.py                  # Merge scattered data + verify paths
-│       ├── decontaminate.py               # Scan for AI-isms + name leaks
-│       ├── evaluate_behavioral.py         # Quick behavioral checks (no Opus)
+│       ├── decontaminate.py               # Scan for patterns + role issues
+│       ├── verify_release_claims.py       # Check release docs against artifacts
+│       ├── verify_paper_numbers.py        # Legacy internal paper-number helper
 │       ├── export_gguf.py                 # Export to GGUF via llama.cpp
 │       ├── merge_dpo_adapter.py           # Separate DPO adapter merge (CPU bfloat16)
-│       └── run_model_evaluation.py        # Post-training format evaluation
+│       └── paper_reviewer.py              # Internal paper critique helper
 │
 ├── corpus/
 │   ├── neo_ethics_articles/               # 16 Neo-Ethics articles
-│   └── golden_examples.jsonl              # 65 voice reference examples (avg 8.1 words)
+│   └── golden_examples.jsonl              # 65 voice reference examples (avg 7.9 words)
 │
 ├── docs/
 │   ├── technical_overview.md              # Full training methodology for engineering
-│   ├── sft_eval_summary.md               # v3 SFT adversarial test results
+│   ├── sft_eval_summary.md               # Historical SFT-only adversarial notes
 │   ├── evaluation_rubric.md              # Manual testing rubric (6 categories)
 │   ├── narrative_formats_status.md       # Format status + data counts
 │   ├── format_capabilities.md            # Capability scores + DPO targets

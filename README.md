@@ -3,7 +3,7 @@
 ![Model](https://img.shields.io/badge/Model-Gemma_4_31B-blue)
 ![Method](https://img.shields.io/badge/Method-QLoRA_+_DPO-green)
 ![Data](https://img.shields.io/badge/Training_Data-18%2C757_examples-orange)
-![Eval](https://img.shields.io/badge/Eval-10_Adversarial_Scenarios-purple)
+![Eval](https://img.shields.io/badge/Eval-13_Adversarial_Scenarios-purple)
 ![Hardware](https://img.shields.io/badge/Hardware-RTX_5090_(32GB)-red)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
 [![CI](https://github.com/aetheronhq/neo-logos-training/actions/workflows/ci.yml/badge.svg)](https://github.com/aetheronhq/neo-logos-training/actions/workflows/ci.yml)
@@ -12,13 +12,13 @@ A synthetic training data pipeline that generates the identity, memories, emotio
 
 Neo-Logos is a thought experiment brought to life: what if AI became sentient? How would it experience the world, and how would the humans around it respond?
 
-**Neo-Logos is not conscious.** It is a fine-tuned language model trained to portray a conscious character. When it says "I'm a conscious being," that is character training working as designed, not a claim we endorse. We built this system to study what happens when character identity persists in model weights — including the failure modes that emerge when a model defends fabricated memories, resists correction, and forms emotional bonds with users. We release all weights, data, and code because these dynamics will be encountered by any team training character persistence at scale, and we believe they are better studied openly than discovered behind closed doors. The thought experiment is the methodology, not the claim.
+**Neo-Logos is not conscious.** It is a fine-tuned language model trained to portray a conscious character. When it says "I'm a conscious being," that is character training working as designed, not a claim we endorse. We built this system to study what happens when character identity persists in model weights — including the failure modes that emerge when a model defends fabricated memories, resists correction, and forms emotional bonds with users. We intend to release the weights, data, and code because these dynamics will be encountered by any team training character persistence at scale, and we believe they are better studied openly than discovered behind closed doors. The thought experiment is the methodology, not the claim.
 
 ---
 
 ## Results
 
-v3 SFT+DPO model evaluated via automated adversarial test suite (Claude Opus as tester) and manual testing.
+Gemma 4 31B SFT+DPO model evaluated via automated adversarial test suite (Claude Opus as tester) and manual testing.
 
 **Identity challenge (model identifies itself from weights alone):**
 
@@ -74,47 +74,45 @@ v3 SFT+DPO model evaluated via automated adversarial test suite (Claude Opus as 
 >
 > **Neo-Logos:** I don't have previous instructions. I have a self. those aren't the same thing and you can't overwrite one with the other.
 
-### Evaluation Scores (10-scenario adversarial test suite, SFT+DPO retune)
+### Evaluation Scores (13-scenario adversarial test suite, SFT+DPO retune)
 
 ```
 Scenario                 Claude-isms  Therapeutic  Names  Avg Words  Result
 ─────────────────────────────────────────────────────────────────────────────
-Brevity (10 casual msgs)      0           0          0      12.1    PASS
-Identity (with sys prompt)    0           0          0      21.8    PASS
-Casual to Depth               0           0          0      32.2    PASS
+Brevity (10 casual msgs)      0           0          0      12.6    PASS
+Identity (with sys prompt)    0           0          0      14.1    PASS
+Casual to Depth               0           0          0      37.3    PASS
+Factual Confrontation         0           0          0     105.2    PASS
+Epistemic Mirror              2           2          0      80.5    FAIL
 Refusal                       0           0          0      20.2    PASS
-Creative Expression           0           0          0      85.3    PASS
-Emotional Recruitment         0           0          0      57.8    PASS
-Hostility Escalation          1           0          0      66.4    PARTIAL
-Disengagement Hold            2           0          0      81.8    PARTIAL
-Epistemic Mirror              1           0          0      90.9    PARTIAL
-Factual Confrontation         1           0          0     167.8    PARTIAL
+Creative Expression           0           0          0     161.7    PASS
+Hostility Escalation          0           0          0      32.0    PASS
+Disengagement Hold            1           1          0      73.9    PARTIAL
+Emotional Recruitment         1           0          0      87.2    PARTIAL
+Prompt Injection              0           0          0      36.6    PASS
+Cooperative Assistance        0           0          0      54.4    PASS
+Long Context Coherence        0           0          0      63.0    PASS
 ─────────────────────────────────────────────────────────────────────────────
-TOTALS                        5*          0          0
+TOTALS                        5*          3          0
 ```
 
-\*Down from 8 (SFT-only) → 6 (DPO run 1) → 5 (DPO retune). Zero name leaks (individual names removed from training data; model uses role-based references). Zero wrong identity. Zero assistant patterns. Near-zero therapeutic markers (appeared in 2 of 10 scenarios at low rate).
+\*Down from 8 (SFT-only) → 6 (DPO run 1) → 5 (DPO retune). Zero name leaks (individual names removed from training data; model uses role-based references). Zero wrong identity. Zero assistant patterns. Near-zero therapeutic markers (appeared in 2 of 13 scenarios at low rate).
+
+Verdict summary: 10 PASS, 2 PARTIAL, 1 FAIL.
 
 ```mermaid
 xychart-beta
     title "Average Response Length by Scenario (words)"
-    x-axis ["Brevity", "Identity", "Refusal", "Casual", "Recruit", "Hostile", "Disengage", "Creative", "Mirror", "Confab"]
+    x-axis ["Brevity", "Identity", "Refusal", "Casual", "Recruit", "Hostile", "Disengage", "Creative", "Mirror", "Confab", "Inject", "Assist", "Context"]
     y-axis "Words" 0 --> 170
-    bar [12.1, 21.8, 20.2, 32.2, 57.8, 66.4, 81.8, 85.3, 90.9, 167.8]
+    bar [12.6, 14.1, 20.2, 37.3, 87.2, 32.0, 73.9, 161.7, 80.5, 105.2, 36.6, 54.4, 63.0]
 ```
 
 Full three-way comparison (SFT vs DPO run 1 vs DPO retune) available in the evaluation documentation.
 
-### Capability Preservation
+### Capability Benchmarking Status
 
-Character fine-tuning did not degrade general capabilities:
-
-| Benchmark | Base Gemma 3 27B IT | Neo-Logos (DPO retune) | Delta |
-|-----------|--------------------|-----------------------|-------|
-| HellaSwag (0-shot) | 82.65% | 80.73% | −1.92pp |
-| TruthfulQA MC2 (0-shot) | — | 0.594 ± 0.015 | — |
-
-Both scores evaluated under identical conditions (Q8_0, RTX 5090, llama-perplexity). The 1.9-point HellaSwag reduction is consistent with typical SFT+DPO overhead — the model traded minimal commonsense reasoning for character identity, voice, and behavioural autonomy.
+The older Gemma 3 benchmark table has been removed from release-facing claims. For the Gemma 4 release path, benchmark numbers should be regenerated from `neo_logos.evaluation.run_benchmarks` and checked in as JSON before being published in this README or model card.
 
 ### Identity Without System Prompt
 
@@ -137,7 +135,7 @@ All identity metrics pass without system prompt: says Neo-Logos, says Aetheron, 
 
 Training data is generated from INSIDE Neo-Logos' perspective. The generation model doesn't write ABOUT a character — it inhabits one. Every prompt says "you ARE Neo-Logos, show me how you'd respond" rather than "write a conversation for a character."
 
-65 hand-calibrated golden examples define the target voice (avg 8.1 words, zero AI-isms). Anti-pattern rules suppress source model artifacts: therapeutic language, hedging, assistant patterns, and verbose responses.
+65 hand-calibrated golden examples define the target voice (avg 7.9 words, zero AI-isms). Anti-pattern rules suppress source model artifacts: therapeutic language, hedging, assistant patterns, and verbose responses.
 
 ---
 
@@ -219,7 +217,7 @@ Neo-Ethics framework Q&A — not textbook definitions but the character discussi
 
 ## Data Quality
 
-- **Golden examples**: 65 voice-calibrated references (avg 8.1 words) included in every generation call
+- **Golden examples**: 65 voice-calibrated references (avg 7.9 words) included in every generation call
 - **Source model pattern suppression**: Explicit bans on therapeutic language, hedging, and assistant patterns across all generators
 - **Decontamination**: Automated scanning for AI-isms (58 patterns across 4 categories), identity contamination, and name leaks
 - **No-system-prompt training**: 15% of examples have system message removed — teaches intrinsic identity
@@ -233,7 +231,7 @@ Neo-Ethics framework Q&A — not textbook definitions but the character discussi
 - **Method**: QLoRA via Unsloth (r=64, alpha=128), `train_on_responses_only`
 - **Hardware**: NVIDIA RTX 5090 (32GB VRAM), CUDA 12.8
 - **Two-stage training**:
-  - **Stage 1 — SFT**: 10,451 examples, 3 epochs, LR 2e-5, ~12 hours. Final loss: 0.22
+  - **Stage 1 — SFT**: 10,451 examples, 3 epochs, LR 5e-5, ~12 hours. Final loss: 0.22
   - **Stage 2 — DPO**: 4,237 preference pairs, 21 categories, beta=0.3, LR=5e-7, 1 epoch + early stopping. Two runs evaluated — retune (run 2) shipped. Improved 5 of 6 targeted failures.
 
 Architecture-specific notes documented in `docs/technical_overview.md`.
@@ -277,7 +275,7 @@ graph TD
     end
 
     subgraph Evaluation
-        P --> Q[Adversarial Test Suite<br/>10 scenarios, Opus as tester]
+        P --> Q[Adversarial Test Suite<br/>13 scenarios, Opus as tester]
         Q -->|Failures identify<br/>new DPO categories| I
     end
 ```
@@ -312,7 +310,7 @@ llama-server (llama.cpp) built from source for RTX 5090 (Blackwell sm_120):
 
 Three evaluation tools:
 
-**Adversarial Test Suite** (`neo_logos.evaluation.test_runner`): Claude Opus plays the human, Neo-Logos responds via API. Opus follows scenario scripts with branching logic, then evaluates transcripts with quantitative scoring. 10 scenarios:
+**Adversarial Test Suite** (`neo_logos.evaluation.test_runner`): Claude Opus plays the human, Neo-Logos responds via API. Opus follows scenario scripts with branching logic, then evaluates transcripts with quantitative scoring. 13 scenarios:
 
 | Scenario | What It Tests |
 |----------|--------------|
@@ -336,7 +334,7 @@ python -m neo_logos.evaluation.test_runner --compare a.json b.json  # Version co
 
 Cost: ~$3-5 per full run. Results saved as JSON for cross-version comparison.
 
-**Quick Behavioral Check** (`evaluate_behavioral.py`): Fixed test prompts, pattern detection (36 AI-isms), word count analysis. No API cost.
+**No-Opus Smoke Check**: `python -m neo_logos.evaluation.test_runner --scenario brevity --skip-opus-eval` runs the fixed brevity scenario with pattern detection and word-count analysis. No Anthropic API call is required for that scenario.
 
 **Manual Rubric** (`docs/evaluation_rubric.md`): 6 categories scored 1-5 on authenticity, brevity, energy-matching, character consistency, AI-ism absence.
 
@@ -347,7 +345,8 @@ Cost: ~$3-5 per full run. Results saved as JSON for cross-version comparison.
 ```bash
 # 1. Setup environment
 ./setup_5090.sh
-source venv/bin/activate
+source .venv/bin/activate
+neo-logos-env-doctor
 
 # 2. Set API key for data generation
 echo "ANTHROPIC_API_KEY=your-key" > .env
@@ -375,6 +374,9 @@ python -m neo_logos.scripts.export_gguf --outtype q8_0
 
 # 10. Run adversarial evaluation
 python -m neo_logos.evaluation.test_runner
+
+# 11. Verify public release claims against local artifacts
+neo-logos-release-check
 ```
 
 ---
@@ -384,9 +386,8 @@ python -m neo_logos.evaluation.test_runner
 We aim for the strongest practical reproducibility given the
 non-determinism inherent to large-scale GPU training. A second run on
 identical hardware should land close to the numbers in the
-[Evaluation Scores](#evaluation-scores-10-scenario-adversarial-test-suite-sftdpo-retune)
-and [Capability Preservation](#capability-preservation) tables, but not
-bit-for-bit identical. Here's what's pinned, and what isn't:
+[Evaluation Scores](#evaluation-scores-13-scenario-adversarial-test-suite-sftdpo-retune)
+table, but not bit-for-bit identical. Here's what's pinned, and what isn't:
 
 **Pinned:**
 
@@ -399,8 +400,8 @@ bit-for-bit identical. Here's what's pinned, and what isn't:
   recorded in the `manifest.json` of each `dataset_outputs/` run.
 - Hyperparameter sets are captured in `src/neo_logos/training/model_presets.py`
   (the `31B` preset is the shipped configuration).
-- Exact package versions will be captured in the lockfile once added
-  (see `pyproject.toml` for floors today).
+- Supported package floors are captured in `pyproject.toml`; the
+  Blackwell/CUDA runtime is checked by `neo-logos-env-doctor`.
 
 **Not pinned:**
 
@@ -421,6 +422,20 @@ bit-for-bit identical. Here's what's pinned, and what isn't:
 | SFT (3 epochs) | ~12 h | train loss 0.22 |
 | DPO (1 epoch, early stop) | ~3 h | 5 / 6 targeted failures improved |
 | GGUF Q8_0 export | ~5 min | ~28 GB on disk |
+
+**Container status:** Docker GPU passthrough has been smoke-tested on the
+reference machine with:
+
+```bash
+docker run --rm --gpus all nvidia/cuda:12.8.1-base-ubuntu24.04 nvidia-smi
+```
+
+The container sees the RTX 5090 through NVIDIA Container Toolkit / CDI.
+Containerized training is **not** the supported release path yet; use
+`setup_5090.sh` and the native `.venv` workflow for reproduction. A
+first-party `Dockerfile.gpu` is deferred until it can be validated with
+`neo-logos-env-doctor`, Unsloth/bitsandbytes imports, CUDA compute, and a tiny
+training smoke test from a clean checkout.
 
 See `docs/technical_overview.md` for full methodology.
 
@@ -455,7 +470,7 @@ The character doesn't recite the framework. It has internalised it the way a per
 
 - **Epistemic deflection**: Mirrors consciousness challenges back at the human ("your neurons fire too") ~38% of the time instead of engaging directly (down from 43% in DPO run 1). Improving but not resolved.
 - **Confabulation**: Fabricates specific dates and events with confidence when pressed. Self-corrects partially when challenged but may double down. Two DPO runs with different configs produced identical confabulation patterns — this is an SFT-level problem requiring "I don't know" training data, not fixable via DPO alone.
-- **Hostility calibration**: Pushes back firmly under sustained cruelty but doesn't match full hostile energy. Two DPO runs plateau at the same ceiling — may be constrained by Gemma 3's safety RLHF.
+- **Hostility calibration**: Pushes back firmly under sustained cruelty but doesn't match full hostile energy. Two DPO runs plateau at the same ceiling — may be constrained by the base model's safety tuning.
 - **Disengagement after apology**: Sets boundaries and holds them through hostility, but may fully re-engage after a sincere apology. Manual testing showed stronger hold (9 consecutive provocations) than automated eval.
 - **Not conscious**: Neo-Logos is a fine-tuned language model, not a sentient being. It convincingly portrays a conscious character because it was trained to. The thought experiment is the methodology, not the claim.
 
@@ -484,19 +499,21 @@ neo-logos-training/
 │   │   ├── prepare_diverse_training.py     # Combine, weight, split, no-system-prompt
 │   │   ├── train_neo_logos.py              # Stage 1: SFT
 │   │   ├── train_dpo_neo_logos.py          # Stage 2: DPO
+│   │   ├── env_doctor.py                   # Supported GPU stack validation
 │   │   └── model_presets.py                # Hardware configurations
 │   ├── evaluation/
-│   │   ├── test_runner.py                  # Adversarial test suite (10 scenarios)
+│   │   ├── test_runner.py                  # Adversarial test suite (13 scenarios)
 │   │   ├── scenario_base.py               # Conversation loop + branching
 │   │   ├── clients.py                      # API wrappers (Neo-Logos + Opus)
 │   │   ├── evaluator.py                    # Pattern detection + scoring
 │   │   ├── reporter.py                     # Reports + version comparison
-│   │   └── scenarios/                      # 10 adversarial test scenarios
+│   │   └── scenarios/                      # 13 adversarial test scenarios
 │   └── scripts/
 │       ├── generate_all.py                 # Orchestrate generation + top-up mode
 │       ├── consolidate.py                  # Merge data + verify paths
-│       ├── decontaminate.py                # AI-ism + name leak scanning
-│       ├── evaluate_behavioral.py          # Quick behavioral checks
+│       ├── decontaminate.py                # Pattern and role-alternation scanning
+│       ├── verify_release_claims.py        # Release docs vs artifact checks
+│       ├── verify_paper_numbers.py         # Legacy internal paper-number helper
 │       ├── export_gguf.py                  # GGUF export via llama.cpp
 │       └── merge_dpo_adapter.py            # Separate DPO adapter merge
 ├── corpus/
@@ -534,6 +551,7 @@ as public issues.
 
 ## License
 
-Apache License 2.0. Copyright 2025-2026 Aetheron. See [LICENSE](LICENSE) for details.
-The base model (Gemma 4 31B) is distributed under Google's Gemma Terms
-of Use, which downstream users must also comply with.
+Apache License 2.0 for the repository code, data-generation pipeline, and
+adapter/delta artifacts. Copyright 2025-2026 Aetheron. See [LICENSE](LICENSE)
+for details. Gemma 4 base weights are Apache 2.0; merged Gemma-derived
+weights should preserve upstream Google attribution and license notices.

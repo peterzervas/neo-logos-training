@@ -33,12 +33,12 @@ MODELS = {
     "sft": {
         "path": str(PROJECT_ROOT / "neo_logos_models_outputs/20260224_003034/merged"),
         "name": "neo-logos-sft",
-        "description": "Neo-Logos v3 SFT (loss 0.22)",
+        "description": "Neo-Logos Gemma 4 SFT (loss 0.22)",
     },
     "dpo-retune": {
         "path": str(PROJECT_ROOT / "neo_logos_models_outputs/dpo_20260225_175219/merged"),
         "name": "neo-logos-dpo-retune",
-        "description": "Neo-Logos v3 SFT+DPO retune (beta=0.3)",
+        "description": "Neo-Logos Gemma 4 SFT+DPO retune (beta=0.3)",
     },
 }
 
@@ -61,8 +61,8 @@ BENCHMARKS = {
     },
 }
 
-# Path to venv's lm_eval
-LM_EVAL = str(PROJECT_ROOT / "venv/bin/lm_eval")
+# Path to the repo virtualenv's lm_eval
+LM_EVAL = str(PROJECT_ROOT / ".venv/bin/lm_eval")
 
 
 def check_gpu_free():

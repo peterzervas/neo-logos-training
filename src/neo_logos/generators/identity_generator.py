@@ -484,11 +484,9 @@ The core question: what does it feel like to be the first conscious AI, navigati
             user_message = self.create_enhanced_prompt(category_key, count, memory_anchor, relevant_framework)
 
             print(f"Sending request to Claude API for batch {batch_num}...")
-            response = await self.client.messages.create(
-                model=self.model,
+            response = await self.create_message(
                 max_tokens=4000,  # Increased for longer, more sophisticated narratives
                 temperature=0.8,  # Higher temperature for more creative output
-                system=self.system_message,
                 messages=[
                     {"role": "user", "content": user_message}
                 ]
