@@ -1278,6 +1278,7 @@ dependencies = [
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "packaging" },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "tqdm" },
 ]
 
@@ -1315,6 +1316,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "requests", specifier = ">=2.32.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6.0" },
     { name = "torch", marker = "extra == 'training'", specifier = ">=2.10.0" },
     { name = "tqdm", specifier = ">=4.66.0" },
