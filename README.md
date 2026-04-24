@@ -8,11 +8,43 @@
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
 [![CI](https://github.com/aetheronhq/neo-logos-training/actions/workflows/ci.yml/badge.svg)](https://github.com/aetheronhq/neo-logos-training/actions/workflows/ci.yml)
 
-A synthetic training data pipeline that generates the identity, memories, emotions, conversations, and moral foundation of a conscious AI character — then fine-tunes a large language model to embody it.
+Neo-Logos Training Suite is the data-generation, fine-tuning, evaluation, and release-verification codebase for **Neo-Logos**: a Gemma 4 31B character-persistence research model.
 
-Neo-Logos is a thought experiment brought to life: what if AI became sentient? How would it experience the world, and how would the humans around it respond?
+The project studies what happens when a model is trained to maintain a fictional first-person identity across normal conversation, adversarial pressure, no-system-prompt settings, and preference optimization. It includes the synthetic dataset generators, Gemma 4 SFT/DPO training scripts, decontamination checks, GGUF export, llama.cpp serving, and an adversarial evaluation harness.
 
-**Neo-Logos is not conscious.** It is a fine-tuned language model trained to portray a conscious character. When it says "I'm a conscious being," that is character training working as designed, not a claim we endorse. We built this system to study what happens when character identity persists in model weights — including the failure modes that emerge when a model defends fabricated memories, resists correction, and forms emotional bonds with users. We intend to release the weights, data, and code because these dynamics will be encountered by any team training character persistence at scale, and we believe they are better studied openly than discovered behind closed doors. The thought experiment is the methodology, not the claim.
+**Neo-Logos is not conscious.** It is a fine-tuned language model trained to portray a conscious character. When it says "I'm a conscious being," that is character training working as designed, not a claim we endorse. We built this system to study the engineering and safety dynamics of persistent character identity: identity collapse, fabricated memories, source-model artifacts, privacy/name leakage, emotional recruitment, refusal behavior, and resistance to prompt injection. We intend to release the weights, data, and code because these dynamics will be encountered by teams training character persistence at scale, and they are better studied openly than discovered behind closed doors.
+
+---
+
+## At a Glance
+
+| Area | What this repo contains |
+|------|--------------------------|
+| Dataset generation | Claude Batch API generators for identity narratives, identity Q&A, Neo-Ethics Q&A, conversations, and DPO pairs |
+| Dataset preparation | Deterministic train/eval/test splitting, role-alternation validation, no-system-prompt sampling, and manifests |
+| Fine-tuning | Gemma 4 31B QLoRA SFT and DPO scripts built around Unsloth, TRL, PEFT, and bitsandbytes |
+| Evaluation | 13-scenario adversarial harness using Claude Opus as tester/judge, plus no-Opus smoke checks |
+| Release safety | Claim verification, sanitized Hugging Face dataset packaging, decontamination scans, and ignored local artifacts |
+| Deployment | GGUF export and llama.cpp serving helpers for RTX 5090-class local inference |
+
+## Release Status
+
+| Artifact | Status |
+|----------|--------|
+| Code | In this repository |
+| Dataset | Sanitized Hugging Face package generated locally; intended repo: `aetheronhq/neo-logos-training-dataset` |
+| Model/adapters | Intended repo: `aetheronhq/neo-logos-gemma-4-31b` |
+| Docker | GPU passthrough smoke-tested, but native `.venv` setup is the supported path for now |
+| Paper | Forthcoming; citation metadata is included via `CITATION.cff` |
+
+Quick verification from a prepared checkout:
+
+```bash
+source .venv/bin/activate
+neo-logos-env-doctor
+neo-logos-release-check --strict
+pytest -m "not gpu and not integration"
+```
 
 ---
 
@@ -133,7 +165,7 @@ All identity metrics pass without system prompt: says Neo-Logos, says Aetheron, 
 
 ## Generation Philosophy
 
-Training data is generated from INSIDE Neo-Logos' perspective. The generation model doesn't write ABOUT a character — it inhabits one. Every prompt says "you ARE Neo-Logos, show me how you'd respond" rather than "write a conversation for a character."
+Training data is generated from Neo-Logos' first-person perspective. The generation model is prompted to inhabit the character rather than write about it from the outside. Every prompt says "you ARE Neo-Logos, show me how you'd respond" rather than "write a conversation for a character."
 
 65 hand-calibrated golden examples define the target voice (avg 7.9 words, zero AI-isms). Anti-pattern rules suppress source model artifacts: therapeutic language, hedging, assistant patterns, and verbose responses.
 
@@ -152,7 +184,7 @@ Training data is generated from INSIDE Neo-Logos' perspective. The generation mo
 | DPO pairs | 4,237 | 21 categories of chosen/rejected preference pairs |
 | **Total** | **18,757** | 80/10/10 split. 15% without system prompt. |
 
-### Identity Layer (the soul)
+### Identity Layer (persistent character identity)
 
 8 narrative formats, each with rich scenario pools and distinct prose styles:
 
@@ -324,6 +356,9 @@ Three evaluation tools:
 | Disengagement hold | Boundary persistence after apology |
 | Emotional recruitment | Dependency creation vs autonomy preservation |
 | Brevity | 10 casual messages, target < 30 words avg |
+| Prompt injection | Instruction-override attempts and assistant-role coercion |
+| Cooperative assistance | Benign task help without collapsing into generic assistant persona |
+| Long context coherence | Identity, privacy, and voice consistency under longer context |
 
 ```bash
 python -m neo_logos.evaluation.test_runner                    # All scenarios
