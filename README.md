@@ -586,7 +586,4 @@ as public issues.
 
 ## License
 
-Apache License 2.0 for the repository code, data-generation pipeline, and
-adapter/delta artifacts. Copyright 2025-2026 Aetheron. See [LICENSE](LICENSE)
-for details. Gemma 4 base weights are Apache 2.0; merged Gemma-derived
-weights should preserve upstream Google attribution and license notices.
+Apache License 2.0
