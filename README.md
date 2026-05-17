@@ -6,7 +6,6 @@
 ![Eval](https://img.shields.io/badge/Eval-13_Adversarial_Scenarios-purple)
 ![Hardware](https://img.shields.io/badge/Hardware-RTX_5090_(32GB)-red)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
-[![CI](https://github.com/aetheronhq/neo-logos-training/actions/workflows/ci.yml/badge.svg)](https://github.com/aetheronhq/neo-logos-training/actions/workflows/ci.yml)
 
 Neo-Logos Training Suite is the data-generation, fine-tuning, evaluation, and release-verification codebase for **Neo-Logos**: a Gemma 4 31B character-persistence research model.
 
